@@ -1,0 +1,202 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<title>IMAGE INPAINTER BY AKM KORISHEE APURBO</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+
+<meta name="description" content="Free Stable Diffusion inpainting. Modify an existing image with a prompt text.">
+
+<meta property="og:title" content="Free Stable Diffusion inpainting. Modify an existing image with a prompt text.">
+<meta property="og:description" content="Free Stable Diffusion inpainting. Modify an existing image with a prompt text.">
+<meta property="og:image" content="https://stablediffusion.fr/sd.png">
+<meta property="og:url" content="https://stablediffusion.fr">
+<meta property="og:site_name" content="Stable Diffusion online AI">
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="website">
+
+<meta name="twitter:title" content="Stable Diffusion Inpainting">
+<meta name="twitter:description" content="Free Stable Diffusion inpainting. Modify an existing image with a prompt text.">
+<meta name="twitter:url" content="https://stablediffusion.fr">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://stablediffusion.fr/sd.png">
+
+<link rel="apple-touch-icon" href="https://stablediffusion.fr/sd.png">
+<link rel="icon" type="image/x-icon" href="https://stablediffusion.fr/favicon.ico">
+<link rel="canonical" href="https://stablediffusion.fr/inpainting" />
+
+<link href="/static/sty-demo.css" rel="stylesheet">
+
+<link rel="preload" fetchpriority="high" as="image" href="https://stablediffusion.fr/assets/background.webp" type="image/webp">
+
+
+<style>
+@charset "UTF-8";/*!
+ * Bootstrap  v5.2.0 (https://getbootstrap.com/)
+ * Copyright 2011-2022 The Bootstrap Authors
+ * Copyright 2011-2022 Twitter, Inc.
+ * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
+ */*,html{-webkit-text-size-adjust:100%}.w3-btn,.w3-button,img,svg{vertical-align:middle}:root{--bs-blue:#0d6efd;--bs-indigo:#6610f2;--bs-purple:#6f42c1;--bs-pink:#d63384;--bs-red:#dc3545;--bs-orange:#fd7e14;--bs-yellow:#ffc107;--bs-green:#198754;--bs-teal:#20c997;--bs-cyan:#0dcaf0;--bs-black:#000;--bs-white:#fff;--bs-gray:#6c757d;--bs-gray-dark:#343a40;--bs-gray-100:#f8f9fa;--bs-gray-200:#e9ecef;--bs-gray-300:#dee2e6;--bs-gray-400:#ced4da;--bs-gray-500:#adb5bd;--bs-gray-600:#6c757d;--bs-gray-700:#495057;--bs-gray-800:#343a40;--bs-gray-900:#212529;--bs-primary:#0d6efd;--bs-secondary:#6c757d;--bs-success:#198754;--bs-info:#0dcaf0;--bs-warning:#ffc107;--bs-danger:#dc3545;--bs-light:#f8f9fa;--bs-dark:#212529;--bs-primary-rgb:13,110,253;--bs-secondary-rgb:108,117,125;--bs-success-rgb:25,135,84;--bs-info-rgb:13,202,240;--bs-warning-rgb:255,193,7;--bs-danger-rgb:220,53,69;--bs-light-rgb:248,249,250;--bs-dark-rgb:33,37,41;--bs-white-rgb:255,255,255;--bs-black-rgb:0,0,0;--bs-body-color-rgb:33,37,41;--bs-body-bg-rgb:255,255,255;--bs-font-sans-serif:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans","Liberation Sans",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";--bs-font-monospace:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;--bs-gradient:linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0));--bs-body-font-family:var(--bs-font-sans-serif);--bs-body-font-size:1rem;--bs-body-font-weight:400;--bs-body-line-height:1.5;--bs-body-color:#212529;--bs-body-bg:#fff;--bs-border-width:1px;--bs-border-style:solid;--bs-border-color:#dee2e6;--bs-border-color-translucent:rgba(0, 0, 0, 0.175);--bs-border-radius:0.375rem;--bs-border-radius-sm:0.25rem;--bs-border-radius-lg:0.5rem;--bs-border-radius-xl:1rem;--bs-border-radius-2xl:2rem;--bs-border-radius-pill:50rem;--bs-link-color:#0d6efd;--bs-link-hover-color:#0a58ca;--bs-code-color:#d63384;--bs-highlight-bg:#fff3cd}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{font-family:var(--bs-body-font-family);font-size:var(--bs-body-font-size);font-weight:var(--bs-body-font-weight);line-height:var(--bs-body-line-height);color:var(--bs-body-color);text-align:var(--bs-body-text-align);background-color:var(--bs-body-bg);-webkit-tap-highlight-color:transparent}.h1,.h2,.h3,.h4,.h5,.h6,h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}.h1,h1{font-size:calc(1.375rem + 1.5vw)}.h2,h2{font-size:calc(1.325rem + .9vw)}.h3,h3{font-size:calc(1.3rem + .6vw)}.h4,h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){.h1,h1{font-size:2.5rem}.h2,h2{font-size:2rem}.h3,h3{font-size:1.75rem}.h4,h4{font-size:1.5rem}}dl,ol,p,ul{margin-top:0;margin-bottom:1rem}ol,ul{padding-left:2rem}a{color:var(--bs-link-color);text-decoration:underline;background-color:transparent;color:inherit}iframe{border:0}.text-center,.w3-center{text-align:center!important}.fa,.w3-btn,.w3-button{display:inline-block;text-decoration:none;text-align:center}body{background-image:url('/assets/background.webp');background-size:cover;background-repeat:no-repeat;margin:0}.menu-boxes{border:1px solid;border-radius:12px;padding:10px;min-width:200px;background-color: #f0f0f0;cursor:pointer;}h1,h2,h3{padding:5px}.fa-envelope-o:before{content:"\f003"}.fa-instagram:before{content:"\f16d"}.toto-cls,.toto-img-home2{transform:scale(1,1)}.toto-img-home{width:368px;max-width:100%;aspect-ratio:1/1;border-radius:12px}.fa{font:30px/1 FontAwesome;text-rendering:auto;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;padding:8px;width:34px;margin:5px 2px;border-radius:42%}.fa-instagram{background:#125688;color:#fff}.ft60{font-size:23px!important}.pied2{width:100%;position:fixed;bottom:0;padding-top:7px}html{-ms-text-size-adjust:100%;overflow-x:hidden}*,:after,:before{box-sizing:inherit}article,aside,details,figcaption,figure,footer,header,main,menu,nav,section{display:block}b,strong{font-weight:bolder}img{border-style:none}body,html{font-family:Verdana,sans-serif;font-size:15px;line-height:1.5}h1{font-size:36px}h2{font-size:30px}h3{font-size:24px;margin-bottom:10px;}h4{font-size:20px}h1,h2,h3,h4,h5,h6{font-family:"Segoe UI",Arial,sans-serif;font-weight:400;margin:10px 0}.w3-btn,.w3-button{border:none;padding:8px 16px;overflow:hidden;color:inherit;background-color:inherit;cursor:pointer;white-space:nowrap;-webkit-touch-callout:none;-webkit-user-select:none;-khtml-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.w3-display-container,.w3-tooltip{position:relative}.w3-bar{width:100%;overflow:hidden}.w3-bar .w3-bar-item{padding:8px 16px;float:left;width:auto;border:none;display:block;outline:0}.w3-bar .w3-button{white-space:normal}@media (max-width:600px){.w3-modal-content{margin:0 10px;width:auto!important}.w3-modal{padding-top:30px}.w3-dropdown-click.w3-mobile .w3-dropdown-content,.w3-dropdown-hover.w3-mobile .w3-dropdown-content{position:relative}.w3-hide-small{display:none!important}.w3-mobile{display:block;width:100%!important}.w3-bar-item.w3-mobile,.w3-dropdown-click.w3-mobile,.w3-dropdown-hover.w3-mobile{text-align:center}.w3-dropdown-click.w3-mobile,.w3-dropdown-click.w3-mobile .w3-btn,.w3-dropdown-click.w3-mobile .w3-button,.w3-dropdown-hover.w3-mobile,.w3-dropdown-hover.w3-mobile .w3-btn,.w3-dropdown-hover.w3-mobile .w3-button{width:100%}}.w3-bar:after,.w3-bar:before,.w3-cell-row:after,.w3-cell-row:before,.w3-clear:after,.w3-clear:before,.w3-container:after,.w3-container:before,.w3-panel:after,.w3-panel:before,.w3-row-padding:after,.w3-row-padding:before,.w3-row:after,.w3-row:before{content:"";display:table;clear:both}.w3-col,.w3-half,.w3-quarter,.w3-third,.w3-threequarter,.w3-twothird{float:left;width:100%}@media (min-width:601px){.w3-col.m1{width:8.33333%}.w3-col.m2{width:16.66666%}.w3-col.m3,.w3-quarter{width:24.99999%}.w3-col.m4,.w3-third{width:33.33333%}.w3-col.m5{width:41.66666%}.w3-col.m6,.w3-half{width:49.99999%}.w3-col.m7{width:58.33333%}.w3-col.m8,.w3-twothird{width:66.66666%}.w3-col.m9,.w3-threequarter{width:74.99999%}.w3-col.m10{width:83.33333%}.w3-col.m11{width:91.66666%}.w3-col.m12{width:99.99999%}}@media (min-width:993px){.w3-col.l1{width:8.33333%}.w3-col.l2{width:16.66666%}.w3-col.l3{width:24.99999%}.w3-col.l4{width:33.33333%}.w3-col.l5{width:41.66666%}.w3-col.l6{width:49.99999%}.w3-col.l7{width:58.33333%}.w3-col.l8{width:66.66666%}.w3-col.l9{width:74.99999%}.w3-col.l10{width:83.33333%}.w3-col.l11{width:91.66666%}.w3-col.l12{width:99.99999%}}.w3-auto,.w3-content{margin-left:auto;margin-right:auto}.w3-content{max-width:980px}.w3-bottom,.w3-top{position:fixed;width:100%;z-index:1}.w3-top{top:0}.w3-display-topleft{position:absolute;left:0;top:0}.w3-row-padding,.w3-row-padding>.w3-col,.w3-row-padding>.w3-half,.w3-row-padding>.w3-quarter,.w3-row-padding>.w3-third,.w3-row-padding>.w3-threequarter,.w3-row-padding>.w3-twothird{padding:0 8px}.w3-card,.w3-card-2{box-shadow:0 2px 5px 0 rgba(0,0,0,.16),0 2px 10px 0 rgba(0,0,0,.12)}.w3-card-4,.w3-hover-shadow:hover{box-shadow:0 4px 10px 0 rgba(0,0,0,.2),0 4px 20px 0 rgba(0,0,0,.19)}.w3-border-bottom{border-bottom:1px solid #ccc!important}.w3-margin-bottom{margin-bottom:16px!important}.w3-padding{padding:8px 16px!important}.w3-right{float:right!important}.w3-hover-white:hover,.w3-white{color:#000!important;background-color:#fff!important}.w3-black,.w3-hover-black:hover{color:#fff!important;background-color:#000!important}.w3-border-light-gray,.w3-border-light-grey,.w3-hover-border-light-gray:hover,.w3-hover-border-light-grey:hover{border-color:#f1f1f1!important}
+
+form {
+    padding: 0 1em;
+    padding-top: 5px;
+    padding-right: 1em;
+    padding-bottom: 0px;
+    padding-left: 1em;
+    margin-right: 10px;
+    width: 300px;
+}
+.mentions {
+    margin-top: 10px;
+    display: block;
+    width: 100%;
+    padding-top: 7px;
+    padding-bottom: 50px;
+}
+.foot01 {
+    display: block;
+    width: 100%;
+    position: fixed;
+    bottom: 0;
+}
+.app-container {
+  display: block;
+  min-height: 2600px;
+  height: 2600px;
+  max-height: 100%;
+  width: 100%;
+  max-width: 100%;
+}
+.app {
+  min-height: 2600px;
+  height: 2600px;
+  max-height: 100%;
+  width: 100%;
+  max-width: 100%;
+}
+@media (max-width: 1000px) {
+  .app {
+    min-height: 2600px;
+    height: 2600px;
+    width: 100%;
+    max-height: 100%;
+    max-width: 100%;
+  }
+}
+.par1 {
+  margin-right: 10vw;
+  margin-left: 10vw;
+}
+</style>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph":[
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://stablediffusion.fr/inpainting",
+      "applicationCategory": "WebApplication",
+      "name": "Stable Diffusion inpainting - Free Online Demo",
+      "image": "https://stablediffusion.fr/assets/sd.jpg",
+      "featureList": "image genaration",
+      "operatingSystem": "All Platforms",
+      "screenshot": "https://stablediffusion.fr/assets/sd.jpg",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "category": "Creativity",
+        "url": "https://stablediffusion.fr/inpainting"
+      }
+    },
+    {
+      "@type": "ImageObject",
+      "contentUrl": "https://stablediffusion.fr/assets/sd.jpg"
+    },
+    {
+      "@type": "Organization",
+      "name": "Stable Diffusion online AI",
+      "url": "https://stablediffusion.fr",
+      "logo": "https://stablediffusion.fr/assets/sd.webp"
+    },
+    {
+      "@type":"ItemList",
+      "itemListElement": [
+        {
+          "@type":"ListItem",
+          "position":1,
+          "url":"https://stablediffusion.fr/demo"
+        },
+        {
+          "@type":"ListItem",
+          "position":2,
+          "url":"https://stablediffusion.fr/xl"
+        },
+        {
+          "@type":"ListItem",
+          "position":3,
+          "url":"https://stablediffusion.fr/webui"
+        },
+        {
+          "@type":"ListItem",
+          "position":4,
+          "url":"https://stablediffusion.fr/inpainting"
+        }
+      ]
+    }
+  ]
+}
+</script>
+
+<!-- tags -->
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4156219881314646"
+     crossorigin="anonymous"></script>
+
+<script data-cfasync="false" nonce="cc2a8518-dc18-443f-a62e-6dc66a1f6452">try{(function(w,d){!function(a,b,c,d){if(a.zaraz)console.error("zaraz is loaded twice");else{a[c]=a[c]||{};a[c].executed=[];a.zaraz={deferred:[],listeners:[]};a.zaraz._v="5848";a.zaraz._n="cc2a8518-dc18-443f-a62e-6dc66a1f6452";a.zaraz.q=[];a.zaraz._f=function(e){return async function(){var f=Array.prototype.slice.call(arguments);a.zaraz.q.push({m:e,a:f})}};for(const g of["track","set","ecommerce","debug"])a.zaraz[g]=a.zaraz._f(g);a.zaraz.init=()=>{var h=b.getElementsByTagName(d)[0],i=b.createElement(d),j=b.getElementsByTagName("title")[0];j&&(a[c].t=b.getElementsByTagName("title")[0].text);a[c].x=Math.random();a[c].w=a.screen.width;a[c].h=a.screen.height;a[c].j=a.innerHeight;a[c].e=a.innerWidth;a[c].l=a.location.href;a[c].r=b.referrer;a[c].k=a.screen.colorDepth;a[c].n=b.characterSet;a[c].o=(new Date).getTimezoneOffset();a[c].q=[];for(;a.zaraz.q.length;){const n=a.zaraz.q.shift();a[c].q.push(n)}i.defer=!0;for(const o of[localStorage,sessionStorage])Object.keys(o||{}).filter((q=>q.startsWith("_zaraz_"))).forEach((p=>{try{a[c]["z_"+p.slice(7)]=JSON.parse(o.getItem(p))}catch{a[c]["z_"+p.slice(7)]=o.getItem(p)}}));i.referrerPolicy="origin";i.src="/cdn-cgi/zaraz/s.js?z="+btoa(encodeURIComponent(JSON.stringify(a[c])));h.parentNode.insertBefore(i,h)};["complete","interactive"].includes(b.readyState)?zaraz.init():a.addEventListener("DOMContentLoaded",zaraz.init)}}(w,d,"zarazData","script");window.zaraz._p=async bs=>new Promise((bt=>{if(bs){bs.e&&bs.e.forEach((bu=>{try{const bv=d.querySelector("script[nonce]"),bw=bv?.nonce||bv?.getAttribute("nonce"),bx=d.createElement("script");bw&&(bx.nonce=bw);bx.innerHTML=bu;bx.onload=()=>{d.head.removeChild(bx)};d.head.appendChild(bx)}catch(by){console.error(`Error executing script: ${bu}\n`,by)}}));Promise.allSettled((bs.f||[]).map((bz=>fetch(bz[0],bz[1]))))}bt()}));zaraz._p({"e":["(function(w,d){})(window,document)"]});})(window,document)}catch(e){throw fetch("/cdn-cgi/zaraz/t"),e;};</script></head>
+<body style="background-color: black;">
+
+
+<div id="ai-online" class="w3-content" style="max-width:1564px">
+
+  <br><br><br>
+    <h1 class="w3-center">Inpainting</h1>
+
+    <div class="w3-center app-container" id="inpainting">
+    <script
+	type="module"
+	src="https://gradio.s3-us-west-2.amazonaws.com/3.47.1/gradio.js"
+></script>
+
+<gradio-app class="app" src="https://pair-hd-painter.hf.space"></gradio-app>
+
+  </div>
+<br>
+
+
+<div class="w3-center">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4156219881314646"
+     crossorigin="anonymous"></script>
+<!-- pub-A -->
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-4156219881314646"
+     data-ad-slot="8182635671"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"8fd15c306f643e13","serverTiming":{"name":{"cfExtPri":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2024.10.5","token":"5e1fab6d50214b45897527c8b82eee23"}' crossorigin="anonymous"></script>
+</body>
+
+</html>
+
