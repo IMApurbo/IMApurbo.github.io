@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate CTF Flag Hunt Checklist</title>
+    <style>
+        body {
+            background-color: #0a0a0a;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        h1 {
+            text-align: center;
+            text-transform: uppercase;
+            border-bottom: 3px solid #00ff00;
+            padding-bottom: 15px;
+            text-shadow: 0 0 15px #00ff00;
+            font-size: 2em;
+        }
+        h2 {
+            color: #00cc00;
+            margin-top: 25px;
+            border-left: 5px solid #00ff00;
+            padding-left: 15px;
+            font-size: 1.5em;
+        }
+        .checklist {
+            background-color: #1a1a1a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
+        .checklist ul {
+            list-style: none;
+            padding: 0;
+        }
+        .checklist li {
+            margin: 12px 0;
+            display: flex;
+            align-items: flex-start;
+        }
+        .checklist input[type="checkbox"] {
+            margin-right: 12px;
+            accent-color: #00ff00;
+            transform: scale(1.2);
+        }
+        .checklist label {
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .checklist label:hover {
+            text-decoration: underline;
+            color: #00ffcc;
+        }
+        .tool {
+            color: #00ffcc;
+            font-weight: bold;
+        }
+        .command {
+            background-color: #000;
+            padding: 6px 12px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-left: 15px;
+            color: #00ff00;
+            font-size: 13px;
+        }
+        .note {
+            color: #00cc00;
+            font-style: italic;
+            margin-left: 10px;
+            font-size: 12px;
+        }
+        .hacker-name {
+            text-align: center;
+            color: #ff0000;
+            font-size: 1.5em;
+            text-shadow: 0 0 10px #ff0000;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            color: #00cc00;
+            font-size: 12px;
+            text-shadow: 0 0 5px #00cc00;
+        }
+        @media (max-width: 600px) {
+            .checklist {
+                padding: 15px;
+            }
+            .command {
+                font-size: 12px;
+                margin-left: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="hacker-name">AKM KOrishee's</div>
+    <h1>Ultimate CTF Flag Hunt Checklist</h1>
+    <div class="checklist">
+        <h2>1. Initial Reconnaissance</h2>
+        <ul>
+            <li><input type="checkbox" id="scan_network"><label for="scan_network">Scan network for open ports/services (<span class="tool">nmap</span>) <span class="command">nmap -sV -sC -p- --open [target_ip]</span> <span class="note">Enable scripts and version detection</span></label></li>
+            <li><input type="checkbox" id="udp_scan"><label for="udp_scan">Perform UDP scan for hidden services (<span class="tool">nmap</span>) <span class="command">nmap -sU [target_ip]</span> <span class="note">UDP services may hide flags</span></label></li>
+            <li><input type="checkbox" id="enum_web"><label for="enum_web">Enumerate web directories/files (<span class="tool">dirb/gobuster</span>) <span class="command">gobuster dir -u http://[target] -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -x php,txt,html</span></label></li>
+            <li><input type="checkbox" id="nikto_scan"><label for="nikto_scan">Scan web server for vulnerabilities (<span class="tool">nikto</span>) <span class="command">nikto -h http://[target]</span></label></li>
+            <li><input type="checkbox" id="check_files"><label for="check_files">List and inspect provided files (<span class="tool">ls/file</span>) <span class="command">ls -laR; file *</span> <span class="note">Check hidden files with .prefix</span></label></li>
+            <li><input type="checkbox" id="dns_enum"><label for="dns_enum">Enumerate DNS records (<span class="tool">dnsenum/dig</span>) <span class="command">dnsenum [domain]; dig any [domain]</span></label></li>
+            <li><input type="checkbox" id="subdomain_enum"><label for="subdomain_enum">Enumerate subdomains (<span class="tool">sublist3r/amass</span>) <span class="command">amass enum -d [domain]</span></label></li>
+            <li><input type="checkbox" id="source_code"><label for="source_code">Check source code/comments in web pages (<span class="tool">browser dev tools</span>) <span class="command">Right-click > View Source</span> <span class="note">Look for hidden comments or keys</span></label></li>
+        </ul>
+    </div>
+    <div class="checklist">
+        <h2>2. File Analysis</h2>
+        <ul>
+            <li><input type="checkbox" id="search_text"><label for="search_text">Search for plaintext flags in files (<span class="tool">grep</span>) <span class="command">grep -r -i "flag\\{.*\\}" .</span> <span class="note">Case-insensitive search</span></label></li>
+            <li><input type="checkbox" id="decode_base64"><label for="decode_base64">Decode base64/hex/URL encodings (<span class="tool">base64/xxd/cyberchef</span>) <span class="command">echo [string] | base64 -d</span></label></li>
+            <li><input type="checkbox" id="stego_image"><label for="stego_image">Analyze images for steganography (<span class="tool">stegsolve/stegseek</span>) <span class="command">stegseek [image.jpg]</span> <span class="note">Try common passwords</span></label></li>
+            <li><input type="checkbox" id="exif_data"><label for="exif_data">Check image metadata (<span class="tool">exiftool</span>) <span class="command">exiftool [image.jpg]</span></label></li>
+            <li><input type="checkbox" id="extract_files"><label for="extract_files">Extract archives or hidden files (<span class="tool">unzip/tar/binwalk</span>) <span class="command">binwalk -e [file]</span></label></li>
+            <li><input type="checkbox" id="check_alternate"><label for="check_alternate">Check alternate data streams or hidden partitions (<span class="tool">foremost</span>) <span class="command">foremost -i [file]</span></label></li>
+            <li><input type="checkbox" id="hash_crack"><label for="hash_crack">Crack hashes found in files (<span class="tool">hashcat/john</span>) <span class="command">hashcat -m 0 [hashfile] /usr/share/wordlists/rockyou.txt</span></label></li>
+            <li><input type="checkbox" id="qr_code"><label for="qr_code">Scan images for QR codes (<span class="tool">zbarimg</span>) <span class="command">zbarimg [image.png]</span></label></li>
+        </ul>
+    </div>
+    <div class="checklist">
+        <h2>3. Binary Analysis</h2>
+        <ul>
+            <li><input type="checkbox" id="strings_binary"><label for="strings_binary">Extract strings from binary (<span class="tool">strings</span>) <span class="command">strings [binary] | grep -i "flag"</span></label></li>
+            <li><input type="checkbox" id="check_filetype"><label for="check_filetype">Verify binary file type (<span class="tool">file</span>) <span class="command">file [binary]</span> <span class="note">Check for ELF, PE, etc.</span></label></li>
+            <li><input type="checkbox" id="disassemble"><label for="disassemble">Disassemble binary (<span class="tool">objdump/radare2</span>) <span class="command">objdump -d [binary]</span></label></li>
+            <li><input type="checkbox" id="debug_binary"><label for="debug_binary">Debug binary for runtime behavior (<span class="tool">gdb</span>) <span class="command">gdb [binary]; break main; run</span></label></li>
+            <li><input type="checkbox" id="decompile"><label for="decompile">Decompile binary (<span class="tool">ghidra/ida-free</span>) <span class="command">ghidra [binary]</span></label></li>
+            <li><input type="checkbox" id="patch_binary"><label for="patch_binary">Patch binary to bypass checks (<span class="tool">radare2</span>) <span class="command">r2 -w [binary]</span> <span class="note">Warning: Backup binary first</span></label></li>
+            <li><input type="checkbox" id="check_symbols"><label for="check_symbols">Check for debug symbols (<span class="tool">nm</span>) <span class="command">nm -a [binary]</span></label></li>
+            <li><input type="checkbox" id="fuzz_binary"><label for="fuzz_binary">Fuzz binary inputs (<span class="tool">afl-fuzz</span>) <span class="command">afl-fuzz -i in -o out [binary]</span></label></li>
+        </ul>
+    </div>
+    <div class="checklist">
+        <h2>4. Web Exploitation</h2>
+        <ul>
+            <li><input type="checkbox" id="inspect_web"><label for="inspect_web">Inspect web page source/cookies/headers (<span class="tool">browser dev tools</span>) <span class="command">Right-click > Inspect</span></label></li>
+            <li><input type="checkbox" id="sql_injection"><label for="sql_injection">Test for SQL injection (<span class="tool">sqlmap</span>) <span class="command">sqlmap -u http://[target]/login --forms --dbs</span></label></li>
+            <li><input type="checkbox" id="xss"><label for="xss">Test for XSS vulnerabilities (<span class="tool">burpsuite/xsstrike</span>) <span class="command">xsstrike -u http://[target]</span></label></li>
+            <li><input type="checkbox" id="dir_traversal"><label for="dir_traversal">Attempt directory traversal (<span class="tool">curl</span>) <span class="command">curl http://[target]/../../etc/passwd</span></label></li>
+            <li><input type="checkbox" id="lfi_rfi"><label for="lfi_rfi">Test for LFI/RFI vulnerabilities (<span class="tool">burpsuite</span>) <span class="command">curl http://[target]?file=/etc/passwd</span></label></li>
+            <li><input type="checkbox" id="csrf"><label for="csrf">Check for CSRF vulnerabilities (<span class="tool">manual</span>) <span class="command">Inspect form tokens</span></label></li>
+            <li><input type="checkbox" id="jwt"><label for="jwt">Analyze/decode JWT tokens (<span class="tool">jwt_tool</span>) <span class="command">jwt_tool [token]</span></label></li>
+            <li><input type="checkbox" id="brute_force"><label for="brute_force">Brute-force login forms (<span class="tool">hydra</span>) <span class="command">hydra -l user -P /usr/share/wordlists/rockyou.txt http-post-form [target]</span></label></li>
+            <li><input type="checkbox" id="robots_txt"><label for="robots_txt">Check robots.txt and sitemap.xml (<span class="tool">curl</span>) <span class="command">curl http://[target]/robots.txt</span></label></li>
+        </ul>
+    </div>
+    <div class="checklist">
+        <h2>5. Network Analysis</h2>
+        <ul>
+            <li><input type="checkbox" id="analyze_pcap"><label for="analyze_pcap">Analyze PCAP for flags/credentials (<span class="tool">wireshark/tshark</span>) <span class="command">tshark -r [file.pcap] -Y "http contains flag"</span></label></li>
+            <li><input type="checkbox" id="sniff_traffic"><label for="sniff_traffic">Sniff live traffic (<span class="tool">tcpdump</span>) <span class="command">tcpdump -i eth0 -w capture.pcap</span></label></li>
+            <li><input type="checkbox" id="extract_objects"><label for="extract_objects">Extract files/objects from PCAP (<span class="tool">networkminer</span>) <span class="command">networkminer [file.pcap]</span></label></li>
+            <li><input type="checkbox" id="dns_traffic"><label for="dns_traffic">Analyze DNS traffic for hidden data (<span class="tool">wireshark</span>) <span class="command">wireshark -r [file.pcap] -Y "dns"</span></label></li>
+            <li><input type="checkbox" id="ftp_smtp"><label for="ftp_smtp">Check FTP/SMTP credentials in PCAP (<span class="tool">wireshark</span>) <span class="command">wireshark -r [file.pcap] -Y "ftp || smtp"</span></label></li>
+            <li><input type="checkbox" id="decode_protocols"><label for="decode_protocols">Decode protocol-specific data (<span class="tool">wireshark</span>) <span class="command">Right-click > Decode As</span></label></li>
+        </ul>
+    </div>
+    <div class="checklist">
+        <h2>6. Memory/Process Analysis</h2>
+        <ul>
+            <li><input type="checkbox" id="check_processes"><label for="check_processes">List running processes (<span class="tool">ps/top/htop</span>) <span class="command">ps aux | grep [keyword]</span></label></li>
+            <li><input type="checkbox" id="dump_memory"><label for="dump_memory">Dump process memory (<span class="tool">gcore</span>) <span class="command">gcore [pid]</span></label></li>
+            <li><input type="checkbox" id="analyze_dump"><label for="analyze_dump">Analyze memory dump for flags (<span class="tool">volatility</span>) <span class="command">volatility -f [dump] --profile=[profile] pslist</span></label></li>
+            <li><input type="checkbox" id="strings_memory"><label for="strings_memory">Extract strings from memory dump (<span class="tool">strings</span>) <span class="command">strings [dump] | grep "flag"</span></label></li>
+            <li><input type="checkbox" id="check_env"><label for="check_env">Check process environment variables (<span class="tool">proc</span>) <span class="command">cat /proc/[pid]/environ</span></label></li>
+        </ul>
+    </div>
+    <div class="checklist">
+        <h2>7. Cryptography</h2>
+        <ul>
+            <li><input type="checkbox" id="identify_cipher"><label for="identify_cipher">Identify cipher type (<span class="tool">cipher_identifier/cryptool</span>) <span class="command">Paste cipher in online tool</span></label></li>
+            <li><input type="checkbox" id="decode_common"><label for="decode_common">Decode common ciphers (ROT, Vigenere, etc.) (<span class="tool">cyberchef</span>) <span class="command">Use CyberChef ROT13/Vigenere</span></label></li>
+            <li><input type="checkbox" id="rsa_crack"><label for="rsa_crack">Crack RSA with weak keys (<span class="tool">rsactftool</span>) <span class="command">RsaCtfTool.py --publickey [pubkey] --private</span></label></li>
+            <li><input type="checkbox" id="freq_analysis"><label for="freq_analysis">Perform frequency analysis (<span class="tool">dcode.fr</span>) <span class="command">Paste cipher in online tool</span></label></li>
+            <li><input type="checkbox" id="check_padding"><label for="check_padding">Check for padding oracle attacks (<span class="tool">padbuster</span>) <span class="command">padbuster [url] [encrypted_string]</span></label></li>
+        </ul>
+    </div>
+    <div class="checklist">
+        <h2>8. Forensics</h2>
+        <ul>
+            <li><input type="checkbox" id="disk_image"><label for="disk_image">Analyze disk image for hidden files (<span class="tool">autopsy</span>) <span class="command">autopsy [image]</span></label></li>
+            <li><input type="checkbox" id="recover_deleted"><label for="recover_deleted">Recover deleted files (<span class="tool">testdisk</span>) <span class="command">testdisk [image]</span></label></li>
+            <li><input type="checkbox" id="timeline"><label for="timeline">Create timeline of file activity (<span class="tool">fls</span>) <span class="command">fls [image] > timeline.txt</span></label></li>
+            <li><input type="checkbox" id="check_logs"><label for="check_logs">Inspect system logs for clues (<span class="tool">cat/grep</span>) <span class="command">cat /var/log/syslog | grep [keyword]</span></label></li>
+            <li><input type="checkbox" id="stego_audio"><label for="stego_audio">Analyze audio for steganography (<span class="tool">sonic-visualiser</span>) <span class="command">sonic-visualiser [audio.wav]</span></label></li>
+        </ul>
+    </div>
+    <div class="checklist">
+        <h2>9. Privilege Escalation</h2>
+        <ul>
+            <li><input type="checkbox" id="check_sudo"><label for="check_sudo">Check sudo permissions (<span class="tool">sudo</span>) <span class="command">sudo -l</span></label></li>
+            <li><input type="checkbox" id="find_suid"><label for="find_suid">Find SUID/SGID binaries (<span class="tool">find</span>) <span class="command">find / -perm -4000 2>/dev/null</span></label></li>
+            <li><input type="checkbox" id="kernel_exploit"><label for="kernel_exploit">Check for kernel exploits (<span class="tool">linux-exploit-suggester</span>) <span class="command">./linux-exploit-suggester.sh</span></label></li>
+            <li><input type="checkbox" id="cron_jobs"><label for="cron_jobs">Inspect cron jobs for misconfigurations (<span class="tool">cat</span>) <span class="command">cat /etc/crontab</span></label></li>
+            <li><input type="checkbox" id="path_exploit"><label for="path_exploit">Check PATH vulnerabilities (<span class="tool">env</span>) <span class="command">echo $PATH</span></label></li>
+        </ul>
+    </div>
+    <div class="checklist">
+        <h2>10. Flag Verification</h2>
+        <ul>
+            <li><input type="checkbox" id="check_format"><label for="check_format">Verify flag format (e.g., flag{...}, ctf{...}, [A-Z0-9]{32}) <span class="tool">manual</span></label></li>
+            <li><input type="checkbox" id="submit_flag"><label for="submit_flag">Submit flag to CTF platform (<span class="tool">browser</span>) <span class="command">Enter flag in CTF portal</span></label></li>
+            <li><input type="checkbox" id="troubleshoot"><label for="troubleshoot">If no flag found, revisit steps or try alternative tools (<span class="tool">manual</span>) <span class="note">Check for multi-step flags</span></label></li>
+            <li><input type="checkbox" id="false_positives"><label for="false_positives">Verify against false positives (<span class="tool">manual</span>) <span class="note">Ensure flag is valid</span></label></li>
+        </ul>
+    </div>
+    <footer>Ultimate CTF Checklist v2.0 | By AKM Korishee  | May 2025</footer>
+</body>
+</html>
