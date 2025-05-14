@@ -3,11 +3,9 @@ import subprocess
 import time
 import sys
 import argparse
+import threading
 import json
 import signal
-import platform
-import tempfile
-import shutil
 from groq import Groq
 from colorama import init, Fore, Style
 from pyfiglet import Figlet
@@ -15,36 +13,28 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn
-import keyboard  # For cross-platform keyboard interrupt handling
+import tempfile
+import shutil
 
-# Initialize colorama for cross-platform console colors
+# Initialize colorama
 init(autoreset=True, strip=False)
 
 # Initialize rich console
 console = Console(stderr=True, style="bold red")
 
-# Define config path (cross-platform)
-CONFIG_PATH = os.path.join(os.path.expanduser("~"), ".code_solver_config.json")
+# Define config path
+CONFIG_PATH = os.path.expanduser("~/.code_solver_config.json")
 
 # Supported languages and their execution commands
 LANGUAGES = {
-    "python": {
-        "ext": ".py",
-        "run": "python {file}" if platform.system() == "Windows" else "python3 {file}"
-    },
-    "javascript": {
-        "ext": ".js",
-        "run": "node {file}"
-    },
+    "python": {"ext": ".py", "run": "python3 {file}"},
+    "javascript": {"ext": ".js", "run": "node {file}"},
     "java": {
         "ext": ".java",
         "run": "javac {file} && java {class_name}",
         "class_name": lambda code: code.split("class ")[1].split()[0] if "class " in code else "Main"
     },
-    "cpp": {
-        "ext": ".cpp",
-        "run": "g++ {file} -o temp && temp.exe" if platform.system() == "Windows" else "g++ {file} -o temp && ./temp"
-    },
+    "cpp": {"ext": ".cpp", "run": "g++ {file} -o temp && ./temp"},
 }
 
 # Global variables for command execution state
@@ -52,8 +42,8 @@ current_process = None
 is_command_running = False
 was_interrupted = False
 
-# Cross-platform keyboard interrupt handler
-def handle_interrupt():
+# Signal handler for Ctrl+C
+def signal_handler(sig, frame):
     global current_process, is_command_running, was_interrupted
     if is_command_running and current_process:
         current_process.terminate()
@@ -67,8 +57,8 @@ def handle_interrupt():
         console.print("\n[bold cyan]Exiting... 👋[/]")
         sys.exit(0)
 
-# Register keyboard interrupt handler
-keyboard.on_press_key("ctrl+c", lambda e: handle_interrupt())
+# Register the signal handler
+signal.signal(signal.SIGINT, signal_handler)
 
 # Typewriter animation
 def typewriter_print(text, delay=0.03):
@@ -117,23 +107,8 @@ def validate_api_key(api_key):
     except Exception:
         return False
 
-def check_language_support(language):
-    """Check if the language's runtime is available."""
-    try:
-        if language == "python":
-            subprocess.run(["python" if platform.system() == "Windows" else "python3", "--version"], check=True, capture_output=True)
-        elif language == "javascript":
-            subprocess.run(["node", "--version"], check=True, capture_output=True)
-        elif language == "java":
-            subprocess.run(["javac", "--version"], check=True, capture_output=True)
-        elif language == "cpp":
-            subprocess.run(["g++", "--version"], check=True, capture_output=True)
-        return True
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return False
-
 def detect_language(code):
-    """Detect programming language based on code patterns."""
+    """Detect programming language based on code patterns or user input."""
     code = code.lower()
     if "def " in code or "import " in code:
         return "python"
@@ -149,9 +124,6 @@ def run_code_in_background(language, code):
     global current_process, is_command_running, was_interrupted
     temp_dir = tempfile.mkdtemp()
     try:
-        if not check_language_support(language):
-            return None, f"Runtime for {language} is not installed or not found 😞"
-
         is_command_running = True
         was_interrupted = False
         lang_config = LANGUAGES.get(language)
@@ -160,7 +132,7 @@ def run_code_in_background(language, code):
 
         file_ext = lang_config["ext"]
         file_path = os.path.join(temp_dir, f"temp{file_ext}")
-        with open(file_path, "w", encoding="utf-8") as f:
+        with open(file_path, "w") as f:
             f.write(code)
 
         command = lang_config["run"].format(
@@ -201,7 +173,7 @@ def run_code_in_background(language, code):
                 )
                 time.sleep(0.1)
 
-            elapsed_time = progress.tasks[task].elapsed
+            elapsed_time = progress.tasks[task].elapsed    elapsed_time = progress.tasks[task].elapsed
             minutes, seconds = divmod(int(elapsed_time), 60)
             time_str = f"{minutes}:{seconds:02d}"
             progress.update(
