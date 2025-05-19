@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -67,7 +68,9 @@
       padding: 10px;
     }
     .output-error::before {
-      content: "❌ Sofol hoyni, Kothao vul ache\n";
+      content: "❌ Sofol hoyni, Kothao vul ache";
+      display: block;
+      margin-bottom: 0.5rem;
     }
     .language-banlang .token.keyword {
       color: #ff0000;
@@ -128,6 +131,21 @@
     }
     .autocomplete div:hover {
       background: #111;
+    }
+    #compilerOutput ul {
+
+      list-style: none;
+
+      padding: 0;
+
+      margin: 0;
+
+    }
+
+    #compilerOutput li {
+
+      margin-bottom: 0.5rem;
+
     }
   </style>
 </head>
@@ -347,7 +365,7 @@ sesh koro</code></pre>
 
         return jsCode;
       } catch (error) {
-        throw new Error(`Details: ${error.message}`);
+        throw new Error(`${error.message}`);
       }
     }
 
@@ -377,8 +395,9 @@ sesh koro</code></pre>
         }
         outputElement.className = 'language-banlang';
       } catch (error) {
-        outputElement.innerHTML = `<div class="output-error">Details: ${error.message}</div>`;
+        outputElement.innerHTML = `<ul><li class="output-error">Details: ${error.message}</li></ul>`;
         outputElement.className = 'language-banlang output-error';
+        Prism.highlightElement(outputElement);
       }
     });
 
