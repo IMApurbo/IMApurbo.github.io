@@ -55,7 +55,7 @@
     }
     .syntax-section {
       background: #111;
-      border: 1px solid #ff0000; /* Changed border color to red */
+      border: 1px solid #ff0000;
       padding: 1rem;
     }
     #compilerOutput {
@@ -151,7 +151,10 @@ jodi (a > b) {
 sesh koro</textarea>
             <pre id="codeDisplay" class="language-banlang"></pre>
           </div>
-          <button id="compileButton" class="mt-2">
+        </div>
+        <!-- Moved button outside the red boundary and centered -->
+        <div class="flex justify-center mt-2">
+          <button id="compileButton">
             Compile & Run
           </button>
         </div>
@@ -165,7 +168,7 @@ sesh koro</textarea>
       </div>
     </div>
 
-    <!-- Banlang Syntax (Moved before examples) -->
+    <!-- Banlang Syntax -->
     <div class="syntax-section mt-4">
       <h2 class="text-lg font-semibold mb-2">Banlang Syntax</h2>
       <ul class="list-disc ml-6 text-sm">
