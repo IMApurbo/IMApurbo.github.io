@@ -211,7 +211,7 @@ sesh koro</textarea>
         <li><strong>Output:</strong> <code>dekhao expression;</code></li>
         <li><strong>Input:</strong> <code>dhoro x = daw("prompt");</code> or <code>dhoro x = daw();</code></li>
         <li><strong>Conditionals:</strong> <code>jodi (condition) {...} othoba {...} ta na hole {...}</code></li>
-        <li><strong>Loops:</strong> <code>jotokkhon na (condition) {...}</code>, <code>thamo;</code></li>
+        <li><strong>Loops:</strong> <code>jotokkhon (condition) {...}</code>, <code>thamo;</code></li>
         <li><strong>Start/End:</strong> <code>shuru koro</code>, <code>sesh koro</code></li>
       </ul>
     </div>
@@ -254,7 +254,7 @@ sesh koro</code></pre>
           <h3 class="text-md font-semibold">4. Loop with Break</h3>
           <pre><code class="language-banlang">shuru koro
 dhoro a = 0;
-jotokkhon na (a < 5) {
+jotokkhon (a < 5) {
     dekhao a;
     jodi (a == 3) {
         thamo;
@@ -283,9 +283,9 @@ sesh koro</code></pre>
           <h3 class="text-md font-semibold">6. Nested Loops</h3>
           <pre><code class="language-banlang">shuru koro
 dhoro x = 0;
-jotokkhon na (x < 3) {
+jotokkhon (x < 3) {
     dhoro y = 0;
-    jotokkhon na (y < 2) {
+    jotokkhon (y < 2) {
         dekhao "x: " + x + ", y: " + y;
         y += 1;
     }
@@ -319,7 +319,7 @@ sesh koro</code></pre>
   <script>
     // Define Prism.js language for Banlang
     Prism.languages.banlang = {
-      'keyword': /\b(shuru koro|sesh koro|dhoro|dekhao|jodi|othoba|ta na hole|jotokkhon na|thamo)\b/,
+      'keyword': /\b(shuru koro|sesh koro|dhoro|dekhao|jodi|othoba|ta na hole|jotokkhon|thamo)\b/,
       'function': /\b(daw)\b/,
       'string': /"[^"]*"/,
       'number': /\b\d+\b/,
@@ -426,7 +426,7 @@ sesh koro</code></pre>
           .replace(/jodi\s*\((.+)\)\s*{/g, 'if ($1) {')
           .replace(/othoba\s*\((.+)\)\s*{/g, 'else if ($1) {')
           .replace(/ta na hole\s*{/g, 'else {')
-          .replace(/jotokkhon na\s*\((.+)\)\s*{/g, 'while ($1) {')
+          .replace(/jotokkhon\s*\((.+)\)\s*{/g, 'while ($1) {')
           .replace(/thamo;/g, 'break;')
           .replace(/\+=/g, '+=');
         if (isFullProgram) {
