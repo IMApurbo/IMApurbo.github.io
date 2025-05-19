@@ -20,7 +20,7 @@
     #codeEditor {
       background: transparent;
       border: 1px solid #00ff00;
-      color: transparent; /* Keep text hidden to show highlighted version */
+      color: transparent;
       caret-color: #00ff00;
       tab-size: 4;
       padding: 10px;
@@ -55,7 +55,7 @@
     }
     .syntax-section {
       background: #111;
-      border: 1px solid #00ff00;
+      border: 1px solid #ff0000; /* Changed border color to red */
       padding: 1rem;
     }
     #compilerOutput {
@@ -162,19 +162,19 @@ sesh koro</textarea>
           <h2 class="text-lg font-semibold mb-2">Output</h2>
           <div id="compilerOutput" class="language-banlang"></div>
         </div>
-
-        <!-- Banlang Syntax -->
-        <div class="syntax-section">
-          <h2 class="text-lg font-semibold mb-2">Banlang Syntax</h2>
-          <ul class="list-disc ml-6 text-sm">
-            <li><strong>Variables:</strong> <code>dhoro name = value;</code></li>
-            <li><strong>Output:</strong> <code>dekhao expression;</code></li>
-            <li><strong>Conditionals:</strong> <code>jodi (condition) {...} othoba {...} ta na hole {...}</code></li>
-            <li><strong>Loops:</strong> <code>jotokkhon na (condition) {...}</code>, <code>thamo;</code></li>
-            <li><strong>Start/End:</strong> <code>shuru koro</code>, <code>sesh koro</code></li>
-          </ul>
-        </div>
       </div>
+    </div>
+
+    <!-- Banlang Syntax (Moved before examples) -->
+    <div class="syntax-section mt-4">
+      <h2 class="text-lg font-semibold mb-2">Banlang Syntax</h2>
+      <ul class="list-disc ml-6 text-sm">
+        <li><strong>Variables:</strong> <code>dhoro name = value;</code></li>
+        <li><strong>Output:</strong> <code>dekhao expression;</code></li>
+        <li><strong>Conditionals:</strong> <code>jodi (condition) {...} othoba {...} ta na hole {...}</code></li>
+        <li><strong>Loops:</strong> <code>jotokkhon na (condition) {...}</code>, <code>thamo;</code></li>
+        <li><strong>Start/End:</strong> <code>shuru koro</code>, <code>sesh koro</code></li>
+      </ul>
     </div>
 
     <!-- Examples Section -->
