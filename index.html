@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro CRT Hacker Deface Page</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        body {
+            background: #0a0a0a;
+            color: #00ff00;
+            overflow: hidden;
+        }
+        .crt {
+            position: relative;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            border: 10px solid #111;
+            box-shadow: inset 0 0 50px rgba(0, 255, 0, 0.3);
+            filter: url(#crt-curve);
+            z-index: 1;
+        }
+        .container {
+            display: flex;
+            height: 100%;
+        }
+        .sidebar {
+            width: 250px;
+            background: rgba(0, 10, 0, 0.5);
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 2px solid #00ff00;
+            position: relative;
+        }
+        .sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #00ff00;
+            border-radius: 4px;
+        }
+        .sidebar button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            background: rgba(10, 10, 10, 0.8);
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            cursor: pointer;
+            text-align: left;
+            font-size: 16px;
+            transition: all 0.3s;
+            position: relative;
+            transform: translateY(100vh);
+            opacity: 0;
+            text-shadow: 0 0 5px #00ff00;
+        }
+        .sidebar button.glitching {
+            position: relative;
+        }
+        .sidebar button.glitching::before, .sidebar button.glitching::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 10px;
+            text-align: left;
+        }
+        .sidebar button.glitching::before {
+            color: #ff0000;
+            animation: glitch-rgb 0.5s infinite;
+            transform: translate(-2px, -2px);
+        }
+        .sidebar button.glitching::after {
+            color: #0000ff;
+            animation: glitch-rgb 0.5s infinite reverse;
+            transform: translate(2px, 2px);
+        }
+        .sidebar button.animate-in {
+            transform: translateY(0);
+            opacity: 1;
+            transition: transform 0.5s ease-out, opacity 0.5s ease-out;
+        }
+        .sidebar button:hover {
+            background: #00ff00;
+            color: #000;
+            animation: pixel-glitch 0.3s infinite;
+            box-shadow: 0 0 15px #00ff00;
+        }
+        @keyframes pixel-glitch {
+            0% { transform: translate(0, 0); }
+            20% { transform: translate(2px, -2px); }
+            40% { transform: translate(-2px, 2px); }
+            60% { transform: translate(2px, 0); }
+            80% { transform: translate(-2px, -2px); }
+        }
+        .main {
+            flex: 1;
+            padding: 40px;
+            position: relative;
+        }
+        .header {
+            font-size: 48px;
+            text-align: center;
+            position: relative;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+        }
+        .header::before, .header::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            text-align: center;
+        }
+        .header::before {
+            color: #ff0000;
+            animation: glitch-rgb 0.5s infinite;
+            transform: translate(-2px, -2px);
+        }
+        .header::after {
+            color: #0000ff;
+            animation: glitch-rgb 0.5s infinite reverse;
+            transform: translate(2px, 2px);
+        }
+        @keyframes glitch-rgb {
+            0% { clip-path: inset(0 0 90% 0); }
+            20% { clip-path: inset(10% 0 80% 0); }
+            40% { clip-path: inset(20% 0 70% 0); }
+            60% { clip-path: inset(30% 0 60% 0); }
+            80% { clip-path: inset(40% 0 50% 0); }
+        }
+        .terminal {
+            margin-top: 20px;
+            font-size: 18px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            min-height: 200px;
+            text-shadow: 0 0 5px #00ff00;
+            position: relative;
+        }
+        .terminal.glitching {
+            animation: text-glitch 0.5s infinite;
+        }
+        .terminal.glitching::before, .terminal.glitching::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+        }
+        .terminal.glitching::before {
+            color: #ff0000;
+            animation: text-glitch-color 0.5s infinite;
+            transform: translate(-2px, 0);
+        }
+        .terminal.glitching::after {
+            color: #0000ff;
+            animation: text-glitch-color 0.5s infinite reverse;
+            transform: translate(2px, 0);
+        }
+        @keyframes text-glitch {
+            0% { transform: translate(0, 0); }
+            20% { transform: translate(2px, 0) skew(2deg); }
+            40% { transform: translate(-2px, 0) skew(-2deg); }
+            60% { transform: translate(1px, 0); }
+            80% { transform: translate(-1px, 0) skew(1deg); }
+        }
+        @keyframes text-glitch-color {
+            0% { clip-path: inset(0 0 80% 0); }
+            20% { clip-path: inset(10% 0 70% 0); }
+            40% { clip-path: inset(20% 0 60% 0); }
+            60% { clip-path: inset(30% 0 50% 0); }
+            80% { clip-path: inset(40% 0 40% 0); }
+        }
+        .typing::after {
+            content: '|';
+            animation: blink 0.7s infinite;
+        }
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+        .scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(0, 255, 0, 0.3);
+            animation: scanline 6s linear infinite;
+        }
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100vh); }
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.5;
+        }
+        svg {
+            position: absolute;
+            width: 0;
+            height: 0;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="matrix"></canvas>
+    <svg>
+        <filter id="crt-curve">
+            <feComponentTransfer>
+                <feFuncR type="gamma" amplitude="1.2" exponent="0.8"/>
+                <feFuncG type="gamma" amplitude="1.2" exponent="0.8"/>
+                <feFuncB type="gamma" amplitude="1.2" exponent="0.8"/>
+            </feComponentTransfer>
+            <feDisplacementMap in="SourceGraphic" in2="SourceGraphic" scale="10" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+    </svg>
+    <div class="crt">
+        <div class="scanline"></div>
+        <div class="container">
+            <div class="sidebar" id="sidebar">
+                <!-- Buttons will be added dynamically -->
+            </div>
+            <div class="main">
+                <div class="header" data-text="AKM KORISHEE APURBO">AKM KORISHEE APURBO</div>
+                <div class="terminal" id="terminal"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Matrix Rain Effect
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+        canvas.height = window.innerHeight;
+        canvas.width = window.innerWidth;
+        const chars = '01ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const drops = Array(Math.floor(columns)).fill(1);
+
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#00ff00';
+            ctx.font = fontSize + 'px monospace';
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+        setInterval(draw, 33);
+
+        // Dynamic button creation with animation and initial glitch
+        const sidebar = document.getElementById('sidebar');
+        const buttons = [
+            { text: 'Black Market', url: 'https://example.com/blackmarket' },
+            { text: 'Exploit Archive', url: 'https://example.com/exploits' },
+            { text: 'Shadow Net', url: 'https://example.com/shadownet' },
+            { text: 'Cracker Hub', url: 'https://example.com/crackerhub' },
+            { text: 'Anon Tools', url: 'https://example.com/anontools' }
+        ];
+
+        buttons.forEach((btn, index) => {
+            const button = document.createElement('button');
+            button.textContent = btn.text;
+            button.setAttribute('data-text', btn.text);
+            button.classList.add('glitching');
+            button.onclick = () => {
+                new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=').play();
+                window.open(btn.url, '_blank');
+            };
+            sidebar.appendChild(button);
+            setTimeout(() => {
+                button.classList.add('animate-in');
+                // Remove glitching class after animation completes
+                setTimeout(() => {
+                    button.classList.remove('glitching');
+                }, 500);
+            }, index * 200);
+        });
+
+        // Terminal with access denied, message, ASCII skull, and enhanced typer effect
+        const terminal = document.getElementById('terminal');
+        const asciiSkull = `
+>>=============================================================================================<<
+||  __     ___      ___       __         _______   ____  ____   _______   _______     ______   ||
+|| |" \   |"  \    /"  |     /""\       |   __ "\ ("  _||_ " | /"      \ |   _  "\   /    " \  ||
+|| ||  |   \   \  //   |    /    \      (. |__) :)|   (  ) : ||:        |(. |_)  :) // ____  \ ||
+|| |:  |   /\\  \/.    |   /' /\  \     |:  ____/ (:  |  | . )|_____/   )|:     \/ /  /    ) :)||
+|| |.  |  |: \.        |  //  __'  \    (|  /      \\ \__/ //  //      / (|  _  \\(: (____/ // ||
+|| /\  |\ |.  \    /:  | /   /  \\  \  /|__/ \     /\\ __ //\ |:  __   \ |: |_)  :)\        /  ||
+||(__\_|_)|___|\__/|___|(___/    \___)(_______)   (__________)|__|  \___)(_______/  \"_____/   ||
+>>=============================================================================================<<
+        `;
+        const finalText = `System breach detected...\nAccess granted.\nPayload deployed.\nYou are now in the grid.\nStay vigilant.\n\n${asciiSkull}`;
+        let phase = 0;
+        let displayText = '';
+        let deniedCount = 0;
+        let charIndex = 0;
+        let scrambleCount = 0;
+        const maxDenied = 3;
+        const scrambleChars = '01!@#$%^&*()_+-=[]{}|;:,.<>?';
+        const scrambleMax = 3;
+
+        function updateTerminal() {
+            if (phase === 0) {
+                // Access denied phase
+                if (deniedCount < maxDenied) {
+                    displayText = `Access Denied${'.'.repeat(deniedCount + 1)}\n`;
+                    deniedCount++;
+                    terminal.textContent = displayText;
+                    terminal.setAttribute('data-text', displayText);
+                    terminal.classList.add('typing');
+                    terminal.classList.add('glitching');
+                    setTimeout(updateTerminal, 800);
+                } else {
+                    phase = 1;
+                    displayText = '';
+                    charIndex = 0;
+                    scrambleCount = 0;
+                    terminal.classList.remove('typing');
+                    terminal.classList.remove('glitching');
+                    setTimeout(updateTerminal, 500);
+                }
+            } else if (phase == 1) {
+                // Enhanced typer with scramble and glitch effect
+                if (charIndex < finalText.length) {
+                    if (scrambleCount < scrambleMax) {
+                        // Display random character
+                        let tempText = displayText + scrambleChars.charAt(Math.floor(Math.random() * scrambleChars.length));
+                        terminal.textContent = tempText;
+                        terminal.setAttribute('data-text', tempText);
+                        terminal.classList.add('typing');
+                        terminal.classList.add('glitching');
+                        scrambleCount++;
+                        setTimeout(updateTerminal, 30);
+                    } else {
+                        // Append correct character
+                        displayText += finalText.charAt(charIndex);
+                        terminal.textContent = displayText;
+                        terminal.setAttribute('data-text', displayText);
+                        charIndex++;
+                        scrambleCount = 0;
+                        setTimeout(updateTerminal, 50);
+                    }
+                } else {
+                    terminal.classList.remove('typing');
+                    terminal.classList.remove('glitching');
+                    // Reset for infinite loop
+                    setTimeout(() => {
+                        phase = 0;
+                        displayText = '';
+                        deniedCount = 0;
+                        charIndex = 0;
+                        scrambleCount = 0;
+                        terminal.textContent = '';
+                        terminal.setAttribute('data-text', '');
+                        updateTerminal();
+                    }, 2000);
+                }
+            }
+        }
+        updateTerminal();
+    </script>
+</body>
+</html>
