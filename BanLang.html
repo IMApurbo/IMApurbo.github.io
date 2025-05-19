@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -66,6 +65,7 @@
       height: 500px;
       overflow-y: auto;
       padding: 10px;
+      position: relative;
     }
     .output-error::before {
       content: "❌ Sofol hoyni, Kothao vul ache";
@@ -89,6 +89,9 @@
     }
     .language-banlang .token.variable {
       color: #ffff00;
+    }
+    .language-banlang .token.function {
+      color: #00ffff;
     }
     .editor-container {
       position: relative;
@@ -133,19 +136,35 @@
       background: #111;
     }
     #compilerOutput ul {
-
       list-style: none;
-
       padding: 0;
-
       margin: 0;
-
     }
-
     #compilerOutput li {
-
       margin-bottom: 0.5rem;
-
+    }
+    .input-prompt {
+      color: #00ffff;
+      display: inline;
+    }
+    .terminal-input {
+      background: #000;
+      border: none;
+      color: #00ff00;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 1rem;
+      outline: none;
+      caret-color: #00ff00;
+      margin-left: 5px;
+      width: auto;
+      display: inline;
+    }
+    .terminal-input:focus {
+      outline: none;
+    }
+    .terminal-input::selection {
+      background: #00ff00;
+      color: #000;
     }
   </style>
 </head>
@@ -162,13 +181,10 @@
           <h2 class="text-lg font-semibold mb-2">Code Editor</h2>
           <div class="editor-container">
             <textarea id="codeEditor">shuru koro
-dhoro a = 15;
-dhoro b = 10;
-jodi (a > b) {
-    dekhao "a is greater than b";
-} ta na hole {
-    dekhao "a is not greater than b";
-}
+dhoro name = daw("Enter your name: ");
+dekhao "Hello, " + name;
+dhoro age = daw("Enter your age: ");
+dekhao "You are " + age + " years old";
 sesh koro</textarea>
             <pre id="codeDisplay" class="language-banlang"></pre>
           </div>
@@ -180,7 +196,6 @@ sesh koro</textarea>
           </button>
         </div>
       </div>
-
       <div class="w-full lg:w-1/2 flex flex-col gap-4">
         <div id="compilerOutputSection" class="syntax-section">
           <h2 class="text-lg font-semibold mb-2">Output</h2>
@@ -188,19 +203,18 @@ sesh koro</textarea>
         </div>
       </div>
     </div>
-
     <!-- Banlang Syntax -->
     <div class="syntax-section mt-4" id="banlangSyntax">
       <h2 class="text-lg font-semibold mb-2">Banlang Syntax</h2>
       <ul class="list-disc ml-6 text-sm">
         <li><strong>Variables:</strong> <code>dhoro name = value;</code></li>
         <li><strong>Output:</strong> <code>dekhao expression;</code></li>
+        <li><strong>Input:</strong> <code>dhoro x = daw("prompt");</code> or <code>dhoro x = daw();</code></li>
         <li><strong>Conditionals:</strong> <code>jodi (condition) {...} othoba {...} ta na hole {...}</code></li>
         <li><strong>Loops:</strong> <code>jotokkhon na (condition) {...}</code>, <code>thamo;</code></li>
         <li><strong>Start/End:</strong> <code>shuru koro</code>, <code>sesh koro</code></li>
       </ul>
     </div>
-
     <!-- Examples Section -->
     <div class="example-section mt-4">
       <h2 class="text-lg font-semibold mb-2">Examples</h2>
@@ -281,7 +295,17 @@ sesh koro</code></pre>
           <p>Output: x: 0, y: 0<br>x: 0, y: 1<br>x: 1, y: 0<br>x: 1, y: 1<br>x: 2, y: 0<br>x: 2, y: 1</p>
         </div>
         <div>
-          <h3 class="text-md font-semibold">7. Error Handling</h3>
+          <h3 class="text-md font-semibold">7. User Input</h3>
+          <pre><code class="language-banlang">shuru koro
+dhoro name = daw("Enter your name: ");
+dekhao "Hello, " + name;
+dhinvestigate("Enter your age: ");
+dekhao "You are " + age + " years old";
+sesh koro</code></pre>
+          <p>Output: Enter your name: [user types name, presses Enter]<br>Hello, [name]<br>Enter your age: [user types age, presses Enter]<br>You are [age] years old</p>
+        </div>
+        <div>
+          <h3 class="text-md font-semibold">8. Error Handling</h3>
           <pre><code class="language-banlang">shuru koro
 dhoro z = 10
 dekhao z;
@@ -292,23 +316,21 @@ sesh koro</code></pre>
     </div>
   </main>
   <div id="autocomplete" class="autocomplete hidden"></div>
-
   <script>
     // Define Prism.js language for Banlang
     Prism.languages.banlang = {
       'keyword': /\b(shuru koro|sesh koro|dhoro|dekhao|jodi|othoba|ta na hole|jotokkhon na|thamo)\b/,
+      'function': /\b(daw)\b/,
       'string': /"[^"]*"/,
       'number': /\b\d+\b/,
       'operator': /[+\-*/=<>!]=?|\+\+|--/,
       'punctuation': /[;{}()]/,
       'variable': /[a-zA-Z_][a-zA-Z0-9_]*/
     };
-
     const codeEditor = document.getElementById('codeEditor');
     const codeDisplay = document.getElementById('codeDisplay');
     const compilerOutput = document.getElementById('compilerOutput');
     const autocomplete = document.getElementById('autocomplete');
-
     // Update editor display with syntax highlighting
     function updateEditorDisplay() {
       const code = codeEditor.value;
@@ -317,7 +339,6 @@ sesh koro</code></pre>
       codeDisplay.style.height = `${codeEditor.clientHeight}px`;
       codeDisplay.scrollTop = codeEditor.scrollTop;
     }
-
     // Sync cursor position on click
     codeEditor.addEventListener('click', (e) => {
       const cursorPos = codeEditor.selectionStart;
@@ -325,34 +346,92 @@ sesh koro</code></pre>
       codeEditor.focus();
       updateEditorDisplay();
     });
-
     codeEditor.addEventListener('input', (e) => {
       const cursorPos = codeEditor.selectionStart;
       updateEditorDisplay();
       codeEditor.selectionStart = cursorPos;
       codeEditor.selectionEnd = cursorPos;
     });
-
     codeEditor.addEventListener('scroll', () => {
       codeDisplay.scrollTop = codeEditor.scrollTop;
     });
-
+    // Custom input handling
+    let outputLog = [];
+    let inputResolve = null;
+    function daw(prompt = '') {
+      return new Promise((resolve) => {
+        // Log the prompt
+        outputLog.push(`[Prompt] ${prompt}`);
+        // Render current output
+        renderOutput();
+        // Create input container
+        const inputContainer = document.createElement('div');
+        inputContainer.className = 'input-container';
+        // Create input field
+        const inputField = document.createElement('input');
+        inputField.type = 'text';
+        inputField.className = 'terminal-input';
+        inputField.autofocus = true;
+        // Append input
+        inputContainer.appendChild(inputField);
+        compilerOutput.appendChild(inputContainer);
+        // Scroll to bottom
+        compilerOutput.scrollTop = compilerOutput.scrollHeight;
+        // Focus the input field
+        inputField.focus();
+        // Handle input submission
+        inputField.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const userInput = inputField.value;
+            // Remove input field
+            inputContainer.remove();
+            // Log the input as output
+            outputLog.push(userInput);
+            // Render updated output
+            renderOutput();
+            // Resolve the promise with the input
+            resolve(userInput);
+            inputResolve = null;
+          }
+        });
+        inputResolve = resolve;
+      });
+    }
+    // Render output to the terminal
+    function renderOutput() {
+      compilerOutput.innerHTML = '';
+      outputLog.forEach(line => {
+        const div = document.createElement('div');
+        if (line.startsWith('[Prompt]')) {
+          div.className = 'input-prompt';
+          div.textContent = line.slice(8);
+        } else if (line.startsWith('[Success]')) {
+          div.textContent = line.slice(9);
+        } else {
+          div.textContent = line;
+        }
+        compilerOutput.appendChild(div);
+      });
+      compilerOutput.scrollTop = compilerOutput.scrollHeight;
+    }
     // Banlang to JavaScript transpiler
     function transpileBanlang(code, isFullProgram = true) {
       try {
         let jsCode = code
           .replace(/dhoro\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=/g, 'let $1 =')
           .replace(/dekhao\s+(.+);/g, 'console.log($1);')
+          .replace(/daw\s*\(\s*"([^"]*)"\s*\);/g, 'await daw("$1");')
+          .replace(/daw\s*\(\s*\);/g, 'await daw();')
           .replace(/jodi\s*\((.+)\)\s*{/g, 'if ($1) {')
           .replace(/othoba\s*\((.+)\)\s*{/g, 'else if ($1) {')
           .replace(/ta na hole\s*{/g, 'else {')
           .replace(/jotokkhon na\s*\((.+)\)\s*{/g, 'while ($1) {')
           .replace(/thamo;/g, 'break;')
           .replace(/\+=/g, '+=');
-
         if (isFullProgram) {
           jsCode = jsCode
-            .replace(/shuru koro/g, '(function() {')
+            .replace(/shuru koro/g, '(async function() {')
             .replace(/sesh koro/g, '})();');
           if (!code.includes('shuru koro') || !code.includes('sesh koro')) {
             throw new Error('Code must start with "shuru koro" and end with "sesh koro"');
@@ -362,45 +441,35 @@ sesh koro</code></pre>
             .replace(/shuru koro/g, '')
             .replace(/sesh koro/g, '');
         }
-
         return jsCode;
       } catch (error) {
         throw new Error(`${error.message}`);
       }
     }
-
     // Custom console.log to capture output
-    let outputLog = [];
     const originalConsoleLog = console.log;
     console.log = function (...args) {
       outputLog.push(args.join(' '));
       originalConsoleLog.apply(console, args);
     };
-
     // Compiler handling
-    document.getElementById('compileButton').addEventListener('click', () => {
+    document.getElementById('compileButton').addEventListener('click', async () => {
       const code = codeEditor.value;
       const outputElement = document.getElementById('compilerOutput');
       outputLog = [];
-
+      outputLog.push('[Success] ✅ Sofol hoyecho 🎉');
       try {
         const jsCode = transpileBanlang(code);
-        eval(jsCode);
-        outputElement.innerHTML = '';
-        outputElement.innerHTML += '<div>✅ Sofol hoyecho 🎉</div>';
-        if (outputLog.length > 0) {
-          outputLog.forEach(line => {
-            outputElement.innerHTML += `<div>${line}</div>`;
-          });
-        }
+        await eval(jsCode);
+        renderOutput();
         outputElement.className = 'language-banlang';
       } catch (error) {
+        outputLog = [];
         outputElement.innerHTML = `<ul><li class="output-error">Details: ${error.message}</li></ul>`;
         outputElement.className = 'language-banlang output-error';
         Prism.highlightElement(outputElement);
       }
     });
-
     // Initial display update
     updateEditorDisplay();
     codeEditor.focus();
