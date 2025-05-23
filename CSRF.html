@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSRF Token Analyzer & Attack Simulator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0 auto;
+            padding: clamp(1rem, 3vw, 1.5rem);
+            line-height: 1.6;
+            max-width: 900px;
+        }
+        h1 {
+            color: #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+            text-align: center;
+            font-size: clamp(1.8rem, 5vw, 2.2rem);
+            margin-bottom: clamp(1rem, 3vw, 1.5rem);
+        }
+        h3 {
+            color: #00ff00;
+            text-shadow: 0 0 3px #00ff00;
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+            margin: 0.5rem 0;
+        }
+        .container {
+            background-color: #161b22;
+            padding: clamp(1rem, 3vw, 1.5rem);
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+        textarea, input[type="text"], select {
+            width: 100%;
+            background-color: #1c2526;
+            color: #c9d1d9;
+            border: 2px solid #00ff00;
+            padding: 0.8rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: clamp(0.9rem, 2vw, 1rem);
+            margin-bottom: 1rem;
+            resize: vertical;
+        }
+        textarea {
+            height: 120px;
+        }
+        .button-group, .box-buttons {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 0.5rem 0;
+        }
+        button {
+            padding: clamp(0.6rem, 2vw, 0.8rem) clamp(1rem, 3vw, 1.2rem);
+            background: none;
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 100px;
+            position: relative;
+        }
+        button:hover {
+            background: rgba(0, 255, 0, 0.1);
+            box-shadow: 0 0 15px #00ff00;
+        }
+        button::before, button::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            color: #ff007f;
+            opacity: 0;
+            padding: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        button::before {
+            transform: translate(-2px, 2px);
+            animation: glitch 0.3s infinite;
+        }
+        button::after {
+            transform: translate(2px, -2px);
+            animation: glitch 0.3s infinite reverse;
+        }
+        button:hover::before, button:hover::after {
+            opacity: 0.5;
+        }
+        @keyframes glitch {
+            0% { transform: translate(-2px, 2px); opacity: 0.5; }
+            50% { transform: translate(2px, -2px); opacity: 0.3; }
+            100% { transform: translate(-2px, 2px); opacity: 0.5; }
+        }
+        .output {
+            background-color: #1c2526;
+            padding: 0.8rem;
+            border-left: 4px solid #00ff00;
+            margin: 0.5rem 0;
+            font-size: clamp(0.9rem, 2vw, 1rem);
+            word-wrap: break-word;
+            min-height: 50px;
+        }
+        .csrf-box {
+            position: relative;
+            background-color: #1a2024;
+            background-image: linear-gradient(rgba(0, 255, 0, 0.05), rgba(0, 255, 0, 0.05)),
+                              url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAAXNSR0IArs4c6QAAAB5JREFUKFNjZICC/1+/fo3u7u7/D2g3NTU1N7e2/4MAdJoYel4AAAAASUVORK5CYII=');
+            border: 2px solid #ff007f;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            margin-bottom: 0.5rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: clamp(0.9rem, 2vw, 1rem);
+            overflow-x: auto;
+            min-height: 150px;
+            box-shadow: 0 0 8px rgba(255, 0, 127, 0.3);
+            transition: background 0.2s;
+            word-break: break-all;
+        }
+        .csrf-box:hover {
+            background-color: rgba(0, 255, 0, 0.05);
+        }
+        .warning {
+            color: #ff007f;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+            margin-bottom: 1rem;
+        }
+        @media (max-width: 768px) {
+            body {
+                padding: 0.8rem;
+            }
+            h1 {
+                font-size: clamp(1.5rem, 4.5vw, 1.8rem);
+            }
+            h3 {
+                font-size: clamp(1rem, 2.2vw, 1.2rem);
+            }
+            .container {
+                padding: 0.8rem;
+            }
+            textarea, input[type="text"], select {
+                height: 100px;
+                font-size: clamp(0.8rem, 1.8vw, 0.9rem);
+            }
+            button {
+                padding: 0.5rem 0.8rem;
+                font-size: clamp(0.7rem, 1.8vw, 0.8rem);
+                min-width: 80px;
+            }
+            .output, .csrf-box {
+                font-size: clamp(0.8rem, 1.8vw, 0.9rem);
+                padding: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>CSRF Token Analyzer & Attack Simulator</h1>
+    <div class="container">
+        <p class="warning">Warning: Use only with explicit permission (e.g., your own apps or bug bounty scope). Do not test live systems without authorization. This is a client-side tool for educational purposes. Use HTTPS or localhost (e.g., python -m http.server) for clipboard and download functionality.</p>
+        
+        <h3>Analyze CSRF Token</h3>
+        <input type="text" id="csrfToken" placeholder="Enter CSRF token (e.g., 6f9b2a8c...)">
+        <div class="button-group">
+            <button onclick="analyzeToken()" data-text="Analyze Token">Analyze Token</button>
+        </div>
+        <div class="output" id="analysisOutput">Analysis: Enter a token to analyze</div>
+        <div class="csrf-box" id="analysisResult"></div>
+        <div class="box-buttons">
+            <button onclick="copyAnalysis()" data-text="Copy">Copy</button>
+            <button onclick="clearAnalysis()" data-text="Clear">Clear</button>
+        </div>
+
+        <h3>Generate Test Tokens</h3>
+        <select id="tokenType">
+            <option value="random">Random</option>
+            <option value="uuid">UUID</option>
+            <option value="predictable">Predictable</option>
+        </select>
+        <input type="text" id="tokenCount" placeholder="Number of tokens (1-50)" type="number" min="1" max="50">
+        <div class="button-group">
+            <button onclick="generateTokens()" data-text="Generate Tokens">Generate Tokens</button>
+        </div>
+        <div class="csrf-box" id="tokenOutput"></div>
+        <div class="box-buttons">
+            <button onclick="copyTokens()" data-text="Copy">Copy</button>
+            <button onclick="clearTokens()" data-text="Clear">Clear</button>
+            <button onclick="saveTokens()" data-text="Save">Save</button>
+        </div>
+
+        <h3>Simulate CSRF Attack</h3>
+        <input type="text" id="targetUrl" placeholder="Target URL (e.g., https://target.com/update)">
+        <select id="httpMethod">
+            <option value="POST">POST</option>
+            <option value="GET">GET</option>
+        </select>
+        <textarea id="formParams" placeholder="Form parameters (e.g., user=admin&role=admin)"></textarea>
+        <input type="text" id="attackToken" placeholder="CSRF token (optional)">
+        <div class="button-group">
+            <button onclick="simulateAttack()" data-text="Simulate Attack">Simulate Attack</button>
+        </div>
+        <div class="csrf-box" id="attackOutput"></div>
+        <div class="box-buttons">
+            <button onclick="copyAttack()" data-text="Copy">Copy</button>
+            <button onclick="clearAttack()" data-text="Clear">Clear</button>
+            <button onclick="saveAttack()" data-text="Save">Save</button>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
+    <script>
+        const csrfTokenInput = document.getElementById('csrfToken');
+        const tokenTypeSelect = document.getElementById('tokenType');
+        const tokenCountInput = document.getElementById('tokenCount');
+        const targetUrlInput = document.getElementById('targetUrl');
+        const httpMethodSelect = document.getElementById('httpMethod');
+        const formParamsInput = document.getElementById('formParams');
+        const attackTokenInput = document.getElementById('attackToken');
+        const analysisOutput = document.getElementById('analysisOutput');
+        const analysisResult = document.getElementById('analysisResult');
+        const tokenOutput = document.getElementById('tokenOutput');
+        const attackOutput = document.getElementById('attackOutput');
+
+        function analyzeToken() {
+            const token = DOMPurify.sanitize(csrfTokenInput.value.trim());
+            if (!token) {
+                analysisOutput.textContent = 'Analysis: Enter a CSRF token';
+                analysisResult.textContent = '';
+                return;
+            }
+
+            const length = token.length;
+            const charSet = new Set(token).size;
+            const entropy = charSet / length;
+            const isUUID = token.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+            const isTimestamp = token.match(/^\d{10,13}$/);
+            const isBase64 = token.match(/^[A-Za-z0-9+/=]+$/);
+            const isSequential = token.match(/token_\d+/);
+
+            let analysis = [];
+            analysis.push(`Length: ${length} characters (${length < 16 ? 'Weak: Too short' : 'Good'})`);
+            analysis.push(`Entropy: ${entropy.toFixed(2)} (${entropy < 0.5 ? 'Low: Predictable' : 'High: Random'})`);
+            analysis.push(`Format: ${isUUID ? 'UUID' : isTimestamp ? 'Timestamp' : isBase64 ? 'Base64' : isSequential ? 'Sequential' : 'Unknown'}`);
+            analysis.push(`Predictability: ${isTimestamp || isSequential ? 'High: Avoid timestamp/sequential tokens' : 'Low'}`);
+            analysis.push(`Recommendation: ${length < 16 || entropy < 0.5 ? 'Use longer, random tokens' : 'Token appears strong'}`);
+
+            analysisResult.textContent = analysis.join('\n');
+            analysisOutput.textContent = 'Analysis: Token evaluated. Copy or clear results.';
+        }
+
+        function generateTokens() {
+            const tokenType = tokenTypeSelect.value;
+            let count = parseInt(DOMPurify.sanitize(tokenCountInput.value.trim())) || 10;
+            count = Math.min(Math.max(count, 1), 50);
+
+            let tokens = [];
+            for (let i = 0; i < count; i++) {
+                if (tokenType === 'random') {
+                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+                    let token = '';
+                    const length = Math.floor(Math.random() * 17) + 16; // 16-32 chars
+                    for (let j = 0; j < length; j++) {
+                        token += chars.charAt(Math.floor(Math.random() * chars.length));
+                    }
+                    tokens.push(token);
+                } else if (tokenType === 'uuid') {
+                    tokens.push(`xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx`.replace(/[xy]/g, c => {
+                        const r = Math.random() * 16 | 0;
+                        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+                    }));
+                } else if (tokenType === 'predictable') {
+                    tokens.push(`token_${Date.now()}_${i}`);
+                }
+            }
+
+            if (!tokens.length) {
+                analysisOutput.textContent = 'Analysis: No tokens generated';
+                tokenOutput.textContent = '';
+                return;
+            }
+
+            tokenOutput.textContent = tokens.join('\n');
+            analysisOutput.textContent = `Analysis: Generated ${tokens.length} ${tokenType} tokens. Copy, save, or clear.`;
+        }
+
+        function simulateAttack() {
+            const url = DOMPurify.sanitize(targetUrlInput.value.trim());
+            const method = httpMethodSelect.value;
+            const params = DOMPurify.sanitize(formParamsInput.value.trim());
+            const token = DOMPurify.sanitize(attackTokenInput.value.trim());
+
+            if (!url || !url.match(/^https?:\/\//)) {
+                analysisOutput.textContent = 'Analysis: Enter a valid URL (http:// or https://)';
+                attackOutput.textContent = '';
+                return;
+            }
+            if (!params) {
+                analysisOutput.textContent = 'Analysis: Enter form parameters (e.g., user=admin)';
+                attackOutput.textContent = '';
+                return;
+            }
+
+            let formHtml = method === 'POST' ?
+                `<form action="${url}" method="POST" id="csrfForm">\n` :
+                `<form action="${url}" method="GET" id="csrfForm">\n`;
+            
+            const paramPairs = params.split('&').filter(p => p);
+            for (const pair of paramPairs) {
+                const [key, value] = pair.split('=').map(p => p.trim());
+                if (key && value) {
+                    formHtml += `    <input type="hidden" name="${key}" value="${value}">\n`;
+                }
+            }
+            if (token) {
+                formHtml += `    <input type="hidden" name="csrf_token" value="${token}">\n`;
+            }
+            formHtml += `    <input type="submit" value="Submit">\n`;
+            formHtml += `</form>\n`;
+            formHtml += `<script>document.getElementById('csrfForm').submit();<\/script>\n`;
+
+            attackOutput.textContent = formHtml;
+            analysisOutput.textContent = 'Analysis: CSRF attack form generated. Copy, save, or clear. DO NOT execute without permission.';
+        }
+
+        function copyAnalysis() {
+            copyToClipboard(analysisResult, 'Analysis: Nothing to copy', 'Analysis: Copied analysis!');
+        }
+
+        function copyTokens() {
+            copyToClipboard(tokenOutput, 'Analysis: Nothing to copy', 'Analysis: Copied tokens!');
+        }
+
+        function copyAttack() {
+            copyToClipboard(attackOutput, 'Analysis: Nothing to copy', 'Analysis: Copied attack form!');
+        }
+
+        function copyToClipboard(element, emptyMsg, successMsg) {
+            const text = element.textContent.trim();
+            if (!text) {
+                analysisOutput.textContent = emptyMsg;
+                return;
+            }
+            if (!window.isSecureContext) {
+                analysisOutput.textContent = 'Analysis: Clipboard requires HTTPS or localhost. Manually select and copy.';
+                return;
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    analysisOutput.textContent = successMsg;
+                    setTimeout(() => analysisOutput.textContent = 'Analysis: Ready', 2000);
+                }).catch(err => {
+                    analysisOutput.textContent = `Analysis: Clipboard error: ${err.message || 'Permission denied'}. Try manual copy.`;
+                });
+                return;
+            }
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'absolute';
+                textarea.style.left = '-9999px';
+                document.body.appendChild(textarea);
+                textarea.select();
+                textarea.setSelectionRange(0, textarea.value.length);
+                const success = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                if (success) {
+                    analysisOutput.textContent = successMsg;
+                    setTimeout(() => analysisOutput.textContent = 'Analysis: Ready', 2000);
+                } else {
+                    throw new Error('Copy command failed');
+                }
+            } catch (err) {
+                analysisOutput.textContent = 'Analysis: Error copying to clipboard. Manually select and copy.';
+            }
+        }
+
+        function saveTokens() {
+            saveToFile(tokenOutput, 'Analysis: Nothing to save', 'Analysis: Tokens saved as text file!', 'csrf_tokens');
+        }
+
+        function saveAttack() {
+            saveToFile(attackOutput, 'Analysis: Nothing to save', 'Analysis: Attack form saved as text file!', 'csrf_attack');
+        }
+
+        function saveToFile(element, emptyMsg, successMsg, prefix) {
+            const text = element.textContent.trim();
+            if (!text) {
+                analysisOutput.textContent = emptyMsg;
+                return;
+            }
+            if (!window.isSecureContext) {
+                analysisOutput.textContent = 'Analysis: Save requires HTTPS or localhost';
+                return;
+            }
+            try {
+                const blob = new Blob([text], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${prefix}_${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                analysisOutput.textContent = successMsg;
+                setTimeout(() => analysisOutput.textContent = 'Analysis: Ready', 2000);
+            } catch (err) {
+                analysisOutput.textContent = 'Analysis: Error saving file';
+            }
+        }
+
+        function clearAnalysis() {
+            analysisResult.textContent = '';
+            analysisOutput.textContent = 'Analysis: Cleared analysis';
+        }
+
+        function clearTokens() {
+            tokenOutput.textContent = '';
+            analysisOutput.textContent = 'Analysis: Cleared tokens';
+        }
+
+        function clearAttack() {
+            attackOutput.textContent = '';
+            analysisOutput.textContent = 'Analysis: Cleared attack form';
+        }
+    </script>
+</body>
+</html>
