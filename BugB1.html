@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Hacking Checklist - Bug Hunters Methodology</title>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1, h2, h3 {
+            color: #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 1.8em;
+            border-bottom: 2px solid #ff007f;
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+        h3 {
+            font-size: 1.4em;
+            color: #00b7eb;
+        }
+        ul {
+            list-style: none;
+            padding-left: 20px;
+        }
+        li {
+            white-space: nowrap;
+            margin-bottom: 10px;
+        }
+        li::before {
+            content: "> ";
+            color: #ff007f;
+        }
+        .command {
+            background-color: #1c2526;
+            padding: 10px;
+            border-left: 4px solid #00ff00;
+            margin: 10px 0;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .section {
+            background-color: #161b22;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+        a {
+            color: #00b7eb;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        /* Glitch Button Styles */
+        .glitch-button {
+            display: block;
+            margin: 20px auto;
+            padding: 15px 30px;
+            background: none;
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.2em;
+            text-transform: uppercase;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        .glitch-button:hover {
+            box-shadow: 0 0 15px #00ff00, 0 0 30px #ff007f;
+            background: rgba(0, 255, 0, 0.1);
+        }
+        .glitch-button::before,
+        .glitch-button::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            color: #ff007f;
+            opacity: 0;
+        }
+        .glitch-button::before {
+            transform: translate(-2px, 2px);
+            animation: glitch 0.3s infinite;
+        }
+        .glitch-button::after {
+            transform: translate(2px, -2px);
+            animation: glitch 0.3s infinite reverse;
+        }
+        .glitch-button:hover::before,
+        .glitch-button:hover::after {
+            opacity: 0.5;
+        }
+        @keyframes glitch {
+            0% { transform: translate(-2px, 2px); opacity: 0.5; }
+            50% { transform: translate(2px, -2px); opacity: 0.3; }
+            100% { transform: translate(-2px, 2px); opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Application Hacking Checklist<br>Bug Hunters Methodology</h1>
+    
+    <div class="section">
+        <h2>Introduction and Overview</h2>
+        <ul>
+            <li>Focus on methodology for finding bugs in complex, enterprise-grade applications.</li>
+            <li>Emphasizes tools, techniques, mental approach, and strategic analysis for large targets.</li>
+            <li>Updates previous presentation with new tools and methods.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Getting Started: Resources and Learning Materials</h2>
+        <ul>
+            <li>Recommended books: Web Application Hacker’s Handbook, Real World Bug Hunting, Bug Bounty Bootcamp, Hacking APIs.</li>
+            <li>Interactive platforms: PentesterLab, Web Security Academy, Hack The Box, Vulhub.</li>
+            <li>OWASP Vulnerable Web Application Directory for up-to-date vulnerable apps.</li>
+            <li>Follow bug bounty hunters on Twitter for tips and community knowledge.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Mental Hurdles When Approaching Large Applications</h2>
+        <ul>
+            <li>Overcome doubts about client reputation (e.g., Tesla’s security).</li>
+            <li>Ignore pre-testing fallacy: Previous findings don’t mean no bugs remain.</li>
+            <li>Manage overwhelm from complex apps with many endpoints (e.g., Salesforce).</li>
+            <li>Don’t assume open-source code is secure due to community scrutiny.</li>
+            <li>Test authenticated sections, not just public areas, for valuable bugs.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Pre-Manual Testing and Automation Approach</h2>
+        <h3>Server and Network Recon</h3>
+        <ul>
+            <li>Scan open ports and services beyond web interfaces.</li>
+            <li>Check for default panels, misconfigurations, outdated software with CVEs.</li>
+        </ul>
+        <h3>Web Hosting Software</h3>
+        <ul>
+            <li>Use WhatRuns/Wappalyzer to fingerprint technologies.</li>
+            <li class="command">wappalyzer https://target.com</li>
+        </ul>
+        <h3>Application Stack</h3>
+        <ul>
+            <li>Identify frameworks, custom code, libraries, integrations.</li>
+            <li>Use Nuclei and Jail for vulnerability detection with custom CVE templates.</li>
+            <li class="command">nuclei -u https://target.com -t cves/</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Port Scanning Techniques</h2>
+        <ul>
+            <li>Use fast tools like Nabu and RustScan for port scanning.</li>
+            <li>Uncover hidden services/admin panels on non-standard ports.</li>
+            <li class="command">rustscan -a target.com --ports 1-65535</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Content Discovery</h2>
+        <ul>
+            <li>Use fuzzing tools: wfuzz, ffuf, gobuster, turbo intruder, ferro buster.</li>
+            <li class="command">ffuf -u https://target.com/FUZZ -w wordlist.txt</li>
+            <li>Choose wordlists based on backend tech (e.g., Microsoft IIS, APIs).</li>
+            <li>Find exposed config files with database strings or keys.</li>
+            <li>Build custom wordlists from source code, demo sites, Docker images.</li>
+            <li>Use GAO and WayMore for historical endpoint discovery.</li>
+            <li class="command">waymore -u https://target.com</li>
+            <li>Perform recursive fuzzing for nested endpoints.</li>
+            <li>Extract API endpoints from APKs using APKLeaks.</li>
+            <li class="command">apkleaks -f app.apk</li>
+            <li>Monitor apps via newsletters, affiliate programs, changedetection.io.</li>
+            <li class="command">changedetection.io setup for target.com</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Application Analysis: Six Key Questions</h2>
+        <ul>
+            <li>How does the app pass data? (REST, resource + parameter, web service)</li>
+            <li>How are users identified? (Cookies, UIDs, email, UUID, username)</li>
+            <li>Does it support multi-tenancy or user tiers? (Admin, regular users)</li>
+            <li>Unique threat model? (e.g., Twitch’s stream keys)</li>
+            <li>Prior security research? (HackerOne reports, Google searches)</li>
+            <li>Framework’s handling of common vulnerabilities?</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Spidering and Crawling</h2>
+        <ul>
+            <li>Use OWASP ZAP, Burp Suite for GUI crawling.</li>
+            <li>Use Sohat Crawler, GoSpider for CLI automation.</li>
+            <li class="command">gospider -s https://target.com --depth 2</li>
+            <li>Parse robots.txt and JavaScript for endpoints.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>JavaScript Parsing and Analysis</h2>
+        <ul>
+            <li>Extract endpoints from custom/external JS and inline scripts.</li>
+            <li>Use GAP (Burp extension) for inline/external JS parsing.</li>
+            <li class="command">linkfinder -i https://target.com/script.js</li>
+            <li>Use Retire.js for scanning JS libraries for vulnerabilities.</li>
+            <li class="command">retire --js https://target.com</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Parameter Analysis: Targeting Likely Vulnerable Inputs</h2>
+        <ul>
+            <li>Focus on parameters like id, user, account, number, email.</li>
+            <li>Use Hunt and GF patterns for parameter analysis.</li>
+            <li class="command">hunt -u https://target.com</li>
+            <li>Burp Bounty for real-time vulnerable parameter alerts.</li>
+            <li>Upcoming Sus Params project to consolidate datasets.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Heat Mapping: Prioritizing Testing Areas</h2>
+        <ul>
+            <li>Target upload functions for injection, XSS, XXE, SSRF.</li>
+            <li>Multi-part forms often contain vulnerabilities.</li>
+            <li>Filter Burp responses for XML/JSON content types.</li>
+            <li>APIs: Check for hidden/admin methods lacking authorization.</li>
+            <li>Account/Profile sections for stored XSS, SSTI.</li>
+            <li>Third-party integrations for payload smuggling.</li>
+            <li>URLs/redirect parameters for SSRF/redirection bugs.</li>
+            <li>Non-standard errors for injection/crash vectors.</li>
+            <li>Organize knowledge in Notion mind map/notes.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Conclusion and Future Work</h2>
+        <ul>
+            <li>Comprehensive framework for finding bugs in complex apps.</li>
+            <li>Focus on methodology over individual exploits.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Explore More</h2>
+        <ul>
+            <li>Comprehensive framework for finding bugs in complex apps.</li>
+                    <a href="https://imapurbo.github.io/BugB2.html" target="_blank">
+            <button class="glitch-button" data-text="bugs and tools">Explore More</button>
+        </a>
+        </ul>    
+    </div>
+</body>
+</html>
