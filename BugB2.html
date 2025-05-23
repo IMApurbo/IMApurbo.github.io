@@ -191,7 +191,7 @@
             <li>Persistent or DOM-based XSS in profiles.</li>
             <li>Impact: Session hijacking, data theft.</li>
             <li>Tools: Burp Bounty, XSStrike.</li>
-            <li class="command">xsstrike -u "https://target.com/profile?bio=<script>alert(1)</script>"</li>
+            <li class="command">xsstrike -u "https://target.com/profile?bio=&lt;script&gt;alert(1)&lt;/script&gt;"</li>
         </ul>
         <h4>Insecure Default Configuration</h4>
         <ul>
