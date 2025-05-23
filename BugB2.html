@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Bug Classes, Tools, and Workshops</title>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1, h2, h3, h4 {
+            color: #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 1.8em;
+            border-bottom: 2px solid #ff007f;
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+        h3 {
+            font-size: 1.4em;
+            color: #00b7eb;
+        }
+        h4 {
+            font-size: 1.2em;
+            color: #ff007f;
+        }
+        ul {
+            list-style: none;
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        li::before {
+            content: "> ";
+            color: #ff007f;
+        }
+        .command {
+            background-color: #1c2526;
+            padding: 10px;
+            border-left: 4px solid #00ff00;
+            margin: 10px 0;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .section {
+            background-color: #161b22;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+        a {
+            color: #00b7eb;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Comprehensive Bug Classes, Tools, and Workshops</h1>
+
+    <div class="section">
+        <h2>Overview of the Future 2.0 Talk</h2>
+        <ul>
+            <li>Expands Buck Hunters Methodology with an exhaustive list of vulnerabilities by severity.</li>
+            <li>Provides comprehensive tools for recon, fuzzing, and exploitation across heat-mapped areas.</li>
+            <li>Includes workshops targeting low-to-critical bugs in enterprise apps.</li>
+            <li>Bridges beginner-to-advanced skills for bug bounty hunters.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Vulnerability Classes by Severity</h2>
+        <h3>Critical Severity</h3>
+        <h4>Remote Code Execution (RCE)</h4>
+        <ul>
+            <li>Command injection or deserialization in admin panels/uploads.</li>
+            <li>Impact: Full server compromise.</li>
+            <li>Tools: Commix, Burp Suite.</li>
+            <li class="command">commix -u https://target.com/admin?cmd=whoami</li>
+        </ul>
+        <h4>SQL Injection (SQLi)</h4>
+        <ul>
+            <li>Target forms, APIs with parameters like id, search.</li>
+            <li>Impact: Database access, data theft, admin takeover.</li>
+            <li>Tools: sqlmap, Burp Suite.</li>
+            <li class="command">sqlmap -u https://target.com/search?query=1 --dbs</li>
+        </ul>
+        <h4>Command Injection</h4>
+        <ul>
+            <li>Inject commands in admin panels or API inputs.</li>
+            <li>Impact: Execute arbitrary system commands.</li>
+            <li>Tools: Commix, Burp Suite.</li>
+            <li class="command">commix -u https://target.com/admin?cmd=whoami</li>
+        </ul>
+        <h4>Authentication Bypass</h4>
+        <ul>
+            <li>Bypass login via weak auth checks or token manipulation.</li>
+            <li>Impact: Unauthorized access to accounts.</li>
+            <li>Tools: Burp Suite, jwt_tool.</li>
+            <li class="command">jwt_tool -t token -p</li>
+        </ul>
+        <h4>Insecure Deserialization</h4>
+        <ul>
+            <li>Untrusted data in APIs/forms leading to object injection.</li>
+            <li>Impact: Code execution, data manipulation.</li>
+            <li>Tools: ysoserial, Burp Suite.</li>
+            <li class="command">ysoserial -g ObjectPayload -o raw > payload.bin</li>
+        </ul>
+        <h4>Privilege Escalation</h4>
+        <ul>
+            <li>Escalate from user to admin via misconfigured roles.</li>
+            <li>Impact: Admin-level access.</li>
+            <li>Tools: Burp Suite, Postman.</li>
+            <li class="command">Use Burp Repeater to test role-based access</li>
+        </ul>
+        <h4>Buffer Overflow</h4>
+        <ul>
+            <li>Overflow input buffers in APIs or forms.</li>
+            <li>Impact: Code execution or crashes.</li>
+            <li>Tools: Burp Suite, FuzzDB.</li>
+            <li class="command">Use Burp Intruder with FuzzDB payloads</li>
+        </ul>
+        <h4>Path Traversal</h4>
+        <ul>
+            <li>Access restricted files via file parameters (e.g., ../../etc/passwd).</li>
+            <li>Impact: Sensitive file access.</li>
+            <li>Tools: dotdotpwn, Burp Suite.</li>
+            <li class="command">dotdotpwn -h https://target.com/file?path=../../etc/passwd</li>
+        </ul>
+        <h4>Broken Access Control</h4>
+        <ul>
+            <li>Unprotected APIs/admin endpoints.</li>
+            <li>Impact: Admin function/data access.</li>
+            <li>Tools: Postman, Arjun.</li>
+            <li class="command">arjun -u https://target.com/api/v1</li>
+        </ul>
+        <h4>Unrestricted File Upload</h4>
+        <ul>
+            <li>Upload executable files in misconfigured servers.</li>
+            <li>Impact: Server shelling, RCE.</li>
+            <li>Tools: Burp Suite, Nuclei.</li>
+            <li class="command">nuclei -u https://target.com/upload -t file-upload/</li>
+        </ul>
+        <h4>Use After Free</h4>
+        <ul>
+            <li>Exploit freed memory references in app logic.</li>
+            <li>Impact: Code execution or crashes.</li>
+            <li>Tools: Burp Suite, custom fuzzers.</li>
+            <li class="command">Use Burp Intruder with custom payloads</li>
+        </ul>
+        <h4>Stack Overflow / Heap Overflow</h4>
+        <ul>
+            <li>Overflow stack/heap in input handling.</li>
+            <li>Impact: Code execution or crashes.</li>
+            <li>Tools: Burp Suite, FuzzDB.</li>
+            <li class="command">Use Burp Intruder with FuzzDB payloads</li>
+        </ul>
+        <h4>Format String Vulnerabilities</h4>
+        <ul>
+            <li>Exploit format string inputs in APIs.</li>
+            <li>Impact: Memory corruption, code execution.</li>
+            <li>Tools: Burp Suite, custom fuzzers.</li>
+            <li class="command">Use Burp Intruder with format string payloads</li>
+        </ul>
+        <h4>Cross-Site Request Forgery (CSRF) – Critical Cases</h4>
+        <ul>
+            <li>CSRF in critical functions (e.g., admin actions).</li>
+            <li>Impact: Unauthorized critical actions.</li>
+            <li>Tools: Burp Bounty, wfuzz.</li>
+            <li class="command">wfuzz -u https://target.com/admin -d "action=FUZZ" -w csrf.txt</li>
+        </ul>
+        <h4>Cross-Site Scripting (XSS) – Stored/DOM</h4>
+        <ul>
+            <li>Persistent or DOM-based XSS in profiles.</li>
+            <li>Impact: Session hijacking, data theft.</li>
+            <li>Tools: Burp Bounty, XSStrike.</li>
+            <li class="command">xsstrike -u https://target.com/profile?bio=<script>alert(1)</script></li>
+        </ul>
+        <h4>Insecure Default Configuration</h4>
+        <ul>
+            <li>Default admin accounts or settings.</li>
+            <li>Impact: Unauthorized access.</li>
+            <li>Tools: Nuclei, Nmap.</li>
+            <li class="command">nuclei -u https://target.com -t misconfig/</li>
+        </ul>
+        <h4>Exposed Administrative Interfaces</h4>
+        <ul>
+            <li>Unprotected admin panels (e.g., /admin).</li>
+            <li>Impact: Full app control.</li>
+            <li>Tools: ffuf, Burp Suite.</li>
+            <li class="command">ffuf -u https://target.com/FUZZ -w admin.txt</li>
+        </ul>
+        <h4>Weak Cryptography</h4>
+        <ul>
+            <li>Hardcoded keys, weak algorithms (e.g., MD5, RC4).</li>
+            <li>Impact: Decryption of sensitive data.</li>
+            <li>Tools: MobSF, APKLeaks.</li>
+            <li class="command">apkleaks -f app.apk</li>
+        </ul>
+
+        <h3>High Severity</h3>
+        <h4>XML External Entity (XXE)</h4>
+        <ul>
+            <li>XML uploads/APIs with entity parsing.</li>
+            <li>Impact: File access, internal service interaction.</li>
+            <li>Tools: Burp Suite, Nuclei.</li>
+            <li class="command">curl -X POST https://target.com/xml -H "Content-Type: application/xml" -d '<?xml ...>'</li>
+        </ul>
+        <h4>Server-Side Request Forgery (SSRF)</h4>
+        <ul>
+            <li>Redirect URLs/APIs accessing internal services.</li>
+            <li>Impact: Internal network access.</li>
+            <li>Tools: Burp Suite, ffuf.</li>
+            <li class="command">curl -X GET https://target.com/redirect?url=http://169.254.169.254</li>
+        </ul>
+        <h4>Unvalidated Redirects and Forwards</h4>
+        <ul>
+            <li>Unvalidated redirect URLs.</li>
+            <li>Impact: Phishing or SSRF setup.</li>
+            <li>Tools: ffuf, Burp Suite.</li>
+            <li class="command">ffuf -u https://target.com/redirect?url=FUZZ -w urls.txt</li>
+        </ul>
+        <h4>Improper Session Handling</h4>
+        <ul>
+            <li>Weak session IDs or non-regenerated sessions.</li>
+            <li>Impact: Session hijacking.</li>
+            <li>Tools: Burp Suite (Sequencer).</li>
+            <li class="command">Use Burp Sequencer to analyze session tokens</li>
+        </ul>
+        <h4>Mass Assignment Vulnerabilities</h4>
+        <ul>
+            <li>APIs allowing unauthorized parameter updates.</li>
+            <li>Impact: Privilege escalation, data tampering.</li>
+            <li>Tools: Postman, Burp Suite.</li>
+            <li class="command">Use Burp Repeater to test parameter updates</li>
+        </ul>
+        <h4>Race Conditions</h4>
+        <ul>
+            <li>Concurrent requests bypassing checks (e.g., payments).</li>
+            <li>Impact: Financial loss, unauthorized actions.</li>
+            <li>Tools: Burp Suite (Turbo Intruder).</li>
+            <li class="command">Use Turbo Intruder for concurrent requests</li>
+        </ul>
+        <h4>Insecure Permissions on Files/Services</h4>
+        <ul>
+            <li>Misconfigured file or service permissions.</li>
+            <li>Impact: Unauthorized access.</li>
+            <li>Tools: Nuclei, Nmap.</li>
+            <li class="command">nmap -sV -p- target.com</li>
+        </ul>
+        <h4>Failure to Rotate Secrets or Keys</h4>
+        <ul>
+            <li>Static API keys or credentials.</li>
+            <li>Impact: Long-term unauthorized access.</li>
+            <li>Tools: APKLeaks, Burp Suite.</li>
+            <li class="command">apkleaks -f app.apk</li>
+        </ul>
+        <h4>Insecure CORS Configuration</h4>
+        <ul>
+            <li>Allowing unauthorized origins in CORS.</li>
+            <li>Impact: Unauthorized API access.</li>
+            <li>Tools: CORScanner, Burp Suite.</li>
+            <li class="command">corscanner -u https://target.com</li>
+        </ul>
+        <h4>Misconfigured Cloud Storage</h4>
+        <ul>
+            <li>Open S3 buckets or cloud storage.</li>
+            <li>Impact: Data exposure.</li>
+            <li>Tools: CloudSploit, Amass.</li>
+            <li class="command">amass enum -d target.com</li>
+        </ul>
+        <h4>Improper Certificate Validation</h4>
+        <ul>
+            <li>Weak SSL/TLS validation.</li>
+            <li>Impact: MITM attacks.</li>
+            <li>Tools: sslscan, Burp Suite.</li>
+            <li class="command">sslscan target.com</li>
+        </ul>
+        <h4>DNS Rebinding</h4>
+        <ul>
+            <li>Exploit DNS rebinding for internal access.</li>
+            <li>Impact: Bypassing network restrictions.</li>
+            <li>Tools: Burp Suite, custom scripts.</li>
+            <li class="command">Use custom DNS rebinding tool</li>
+        </ul>
+        <h4>HTTP Request Smuggling</h4>
+        <ul>
+            <li>Exploit HTTP request parsing mismatches.</li>
+            <li>Impact: Bypassing security controls.</li>
+            <li>Tools: Burp Suite, HTTP Smuggler.</li>
+            <li class="command">Use HTTP Smuggler Burp extension</li>
+        </ul>
+        <h4>Improper Input Validation</h4>
+        <ul>
+            <li>Weak input sanitization in forms/APIs.</li>
+            <li>Impact: Enables multiple attack vectors.</li>
+            <li>Tools: Burp Suite, FuzzDB.</li>
+            <li class="command">Use Burp Intruder with FuzzDB payloads</li>
+        </ul>
+
+        <h3>Medium Severity</h3>
+        <h4>Information Disclosure</h4>
+        <ul>
+            <li>Exposed data in errors, stack traces, logs.</li>
+            <li>Impact: Aids reconnaissance.</li>
+            <li>Tools: Burp Suite, WayMore.</li>
+            <li class="command">waymore -u https://target.com</li>
+        </ul>
+        <h4>Clickjacking</h4>
+        <ul>
+            <li>Missing X-Frame-Options allowing UI redressing.</li>
+            <li>Impact: Tricking users into actions.</li>
+            <li>Tools: Burp Suite, httpx.</li>
+            <li class="command">httpx -u https://target.com -headers</li>
+        </ul>
+        <h4>Directory Listing Enabled</h4>
+        <ul>
+            <li>Exposed directories with sensitive files.</li>
+            <li>Impact: File exposure.</li>
+            <li>Tools: gobuster, Feroxbuster.</li>
+            <li class="command">gobuster dir -u https://target.com -w dirlist.txt</li>
+        </ul>
+        <h4>Verbose Server Banners</h4>
+        <ul>
+            <li>Server version leaks in headers.</li>
+            <li>Impact: Aids targeted attacks.</li>
+            <li>Tools: httpx, Nmap.</li>
+            <li class="command">httpx -u https://target.com -headers</li>
+        </ul>
+        <h4>Outdated Software with Known Vulnerabilities</h4>
+        <ul>
+            <li>Vulnerable libraries or server software.</li>
+            <li>Impact: Known exploit execution.</li>
+            <li>Tools: Retire.js, Dependency-Check.</li>
+            <li class="command">retire --js https://target.com</li>
+        </ul>
+        <h4>Open Redirects</h4>
+        <ul>
+            <li>Unvalidated redirect URLs.</li>
+            <li>Impact: Phishing or SSRF setup.</li>
+            <li>Tools: ffuf, Burp Suite.</li>
+            <li class="command">ffuf -u https://target.com/redirect?url=FUZZ -w urls.txt</li>
+        </ul>
+        <h4>Insecure Cookie Flags</h4>
+        <ul>
+            <li>Missing HttpOnly, Secure, SameSite flags.</li>
+            <li>Impact: Session hijacking risk.</li>
+            <li>Tools: Burp Suite, httpx.</li>
+            <li class="command">httpx -u https://target.com -cookies</li>
+        </ul>
+        <h4>Sensitive Data in URLs or Logs</h4>
+        <ul>
+            <li>Tokens or PII in URLs/logs.</li>
+            <li>Impact: Data exposure.</li>
+            <li>Tools: Burp Suite, WayMore.</li>
+            <li class="command">waymore -u https://target.com</li>
+        </ul>
+        <h4>Improper Asset Management</h4>
+        <ul>
+            <li>Untracked subdomains or assets.</li>
+            <li>Impact: Hidden attack surfaces.</li>
+            <li>Tools: Amass, Subadub.</li>
+            <li class="command">amass enum -d target.com</li>
+        </ul>
+        <h4>Client-Side Validation Only</h4>
+        <ul>
+            <li>Validation bypass via direct requests.</li>
+            <li>Impact: Unauthorized actions.</li>
+            <li>Tools: Burp Suite, Postman.</li>
+            <li class="command">Use Burp Repeater to bypass validation</li>
+        </ul>
+        <h4>Lack of Rate Limiting</h4>
+        <ul>
+            <li>No limits on API/login requests.</li>
+            <li>Impact: Brute-forcing, DoS.</li>
+            <li>Tools: Burp Suite, Hydra.</li>
+            <li class="command">hydra -l user -P passlist.txt target.com http-post-form</li>
+        </ul>
+        <h4>Improper Use of JWT / Token Expiry</h4>
+        <ul>
+            <li>Non-expiring or weak JWTs.</li>
+            <li>Impact: Unauthorized access.</li>
+            <li>Tools: jwt_tool, Burp Suite.</li>
+            <li class="command">jwt_tool -t token -p</li>
+        </ul>
+        <h4>No CAPTCHA or Brute-force Protection</h4>
+        <ul>
+            <li>Missing CAPTCHA on login forms.</li>
+            <li>Impact: Account brute-forcing.</li>
+            <li>Tools: Burp Suite, Hydra.</li>
+            <li class="command">hydra -l user -P passlist.txt target.com http-post-form</li>
+        </ul>
+
+        <h3>Low Severity</h3>
+        <h4>Autocomplete Enabled on Sensitive Fields</h4>
+        <ul>
+            <li>Autocomplete on password fields.</li>
+            <li>Impact: Credential exposure on shared devices.</li>
+            <li>Tools: Burp Suite, httpx.</li>
+            <li class="command">httpx -u https://target.com -forms</li>
+        </ul>
+        <h4>Email Enumeration</h4>
+        <ul>
+            <li>APIs revealing valid emails.</li>
+            <li>Impact: Aids phishing campaigns.</li>
+            <li>Tools: Burp Suite, Postman.</li>
+            <li class="command">Use Burp Repeater to test email endpoints</li>
+        </ul>
+        <h4>Click Tracking Vulnerabilities</h4>
+        <ul>
+            <li>Trackable user actions in analytics.</li>
+            <li>Impact: Privacy leakage.</li>
+            <li>Tools: Burp Suite, FuzzDB.</li>
+            <li class="command">Use Burp Intruder with tracking payloads</li>
+        </ul>
+        <h4>Deprecated HTML Tags or Attributes</h4>
+        <ul>
+            <li>Outdated HTML increasing attack surface.</li>
+            <li>Impact: Enables legacy exploits.</li>
+            <li>Tools: Burp Suite, Wappalyzer.</li>
+            <li class="command">wappalyzer https://target.com</li>
+        </ul>
+        <h4>Security Headers Missing</h4>
+        <ul>
+            <li>Missing CSP, X-Content-Type-Options.</li>
+            <li>Impact: Enables XSS, MIME-type attacks.</li>
+            <li>Tools: httpx, Burp Suite.</li>
+            <li class="command">httpx -u https://target.com -headers</li>
+        </ul>
+        <h4>Insecure API Response Codes</h4>
+        <ul>
+            <li>Verbose API error codes.</li>
+            <li>Impact: Information leakage.</li>
+            <li>Tools: Postman, Burp Suite.</li>
+            <li class="command">Use Postman to test API responses</li>
+        </ul>
+        <h4>Missing SPF/DKIM/DMARC for Emails</h4>
+        <ul>
+            <li>Weak email authentication.</li>
+            <li>Impact: Email spoofing.</li>
+            <li>Tools: dmarcian, custom scripts.</li>
+            <li class="command">Use dmarcian to check SPF/DKIM</li>
+        </ul>
+        <h4>Potential Debug Information Leaked</h4>
+        <ul>
+            <li>Debug data in responses.</li>
+            <li>Impact: Aids reconnaissance.</li>
+            <li>Tools: Burp Suite, WayMore.</li>
+            <li class="command">waymore -u https://target.com</li>
+        </ul>
+        <h4>Exposure of Internal IPs</h4>
+        <ul>
+            <li>Internal IPs in headers or errors.</li>
+            <li>Impact: Network mapping aid.</li>
+            <li>Tools: Burp Suite, httpx.</li>
+            <li class="command">httpx -u https://target.com -headers</li>
+        </ul>
+        <h4>Autocomplete Password Fields</h4>
+        <ul>
+            <li>Autocomplete on password inputs.</li>
+            <li>Impact: Credential exposure.</li>
+            <li>Tools: Burp Suite, httpx.</li>
+            <li class="command">httpx -u https://target.com -forms</li>
+        </ul>
+        <h4>Mixed Content (HTTP over HTTPS)</h4>
+        <ul>
+            <li>HTTP resources on HTTPS pages.</li>
+            <li>Impact: MITM risk.</li>
+            <li>Tools: Burp Suite, httpx.</li>
+            <li class="command">httpx -u https://target.com -mixed-content</li>
+        </ul>
+
+        <h3>Special Cases</h3>
+        <h4>Zero-Day Vulnerabilities</h4>
+        <ul>
+            <li>Unknown vulnerabilities in apps.</li>
+            <li>Impact: Varies, potentially critical.</li>
+            <li>Tools: Custom fuzzers, Burp Suite.</li>
+            <li class="command">Use Burp Intruder with custom payloads</li>
+        </ul>
+        <h4>N-Day Vulnerabilities</h4>
+        <ul>
+            <li>Known but unpatched CVEs.</li>
+            <li>Impact: Known exploit execution.</li>
+            <li>Tools: Nuclei, Metasploit.</li>
+            <li class="command">nuclei -u https://target.com -t cves/</li>
+        </ul>
+        <h4>Social Engineering Vectors</h4>
+        <ul>
+            <li>Phishing via app weaknesses.</li>
+            <li>Impact: User credential theft.</li>
+            <li>Tools: Burp Suite, Postman.</li>
+            <li class="command">Use Burp Repeater to test phishing endpoints</li>
+        </ul>
+        <h4>Supply Chain Attacks</h4>
+        <ul>
+            <li>Vulnerable third-party libraries.</li>
+            <li>Impact: Compromise via dependencies.</li>
+            <li>Tools: Retire.js, Dependency-Check.</li>
+            <li class="command">dependency-check --scan target.com</li>
+        </ul>
+        <h4>Typosquatting and Dependency Confusion</h4>
+        <ul>
+            <li>Malicious packages mimicking legit ones.</li>
+            <li>Impact: Code execution via dependencies.</li>
+            <li>Tools: Dependency-Check, Amass.</li>
+            <li class="command">dependency-check --scan target.com</li>
+        </ul>
+        <h4>Man-in-the-Middle (MITM) Weaknesses</h4>
+        <ul>
+            <li>Weak TLS or certificate issues.</li>
+            <li>Impact: Data interception.</li>
+            <li>Tools: sslscan, Burp Suite.</li>
+            <li class="command">sslscan target.com</li>
+        </ul>
+        <h4>Side-channel Attacks</h4>
+        <ul>
+            <li>Spectre, Meltdown, or Rowhammer exploits.</li>
+            <li>Impact: Data leakage via hardware.</li>
+            <li>Tools: Custom scripts, manual analysis.</li>
+            <li class="command">Use custom side-channel test scripts</li>
+        </ul>
+        <h4>Logic Flaws / Business Logic Errors</h4>
+        <ul>
+            <li>Exploiting app logic (e.g., price manipulation).</li>
+            <li>Impact: Financial loss, unauthorized actions.</li>
+            <li>Tools: Burp Suite, Postman.</li>
+            <li class="command">Use Burp Repeater to manipulate requests</li>
+        </ul>
+        <h4>Physical Security Weaknesses</h4>
+        <ul>
+            <li>Physical access to servers or devices.</li>
+            <li>Impact: Direct system compromise.</li>
+            <li>Tools: Manual analysis, OSINT.</li>
+            <li class="command">Use OSINT for physical recon</li>
+        </ul>
+        <h4>Privilege Misconfigurations</h4>
+        <ul>
+            <li>Misconfigured IAM roles or sudo access.</li>
+            <li>Impact: Privilege escalation.</li>
+            <li>Tools: CloudSploit, Burp Suite.</li>
+            <li class="command">cloudsploit scan --target target.com</li>
+        </ul>
+        <h4>DLL Hijacking / Library Injection</h4>
+        <ul>
+            <li>Inject malicious DLLs via app flaws.</li>
+            <li>Impact: Code execution.</li>
+            <li>Tools: MobSF, custom scripts.</li>
+            <li class="command">mobsf -f app.exe</li>
+        </ul>
+        <h4>API Abuse / Rate Limit Evasion</h4>
+        <ul>
+            <li>Bypassing API rate limits.</li>
+            <li>Impact: DoS or data scraping.</li>
+            <li>Tools: Burp Suite, Postman.</li>
+            <li class="command">Use Burp Intruder for rate limit testing</li>
+        </ul>
+        <h4>Security Through Obscurity</h4>
+        <ul>
+            <li>Reliance on hidden endpoints.</li>
+            <li>Impact: False sense of security.</li>
+            <li>Tools: ffuf, WayMore.</li>
+            <li class="command">ffuf -u https://target.com/FUZZ -w hidden.txt</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Comprehensive Toolset</h2>
+        <h3>Reconnaissance and Fingerprinting</h3>
+        <ul>
+            <li>Subadub: Fast subdomain enumeration.</li>
+            <li class="command">subadub -d target.com</li>
+            <li>httpx: HTTP probing with tech detection.</li>
+            <li class="command">httpx -l subdomains.txt -status-code -tech-detect</li>
+            <li>Amass: Comprehensive asset discovery.</li>
+            <li class="command">amass enum -d target.com</li>
+            <li>WhatRuns/Wappalyzer: Tech stack fingerprinting.</li>
+            <li class="command">wappalyzer https://target.com</li>
+            <li>CloudSploit: Cloud misconfiguration scanning.</li>
+            <li class="command">cloudsploit scan --target target.com</li>
+        </ul>
+        <h3>Port Scanning</h3>
+        <ul>
+            <li>RustScan: High-speed port scanning.</li>
+            <li class="command">rustscan -a target.com --ports 1-65535</li>
+            <li>Nabu: Lightweight port scanner.</li>
+            <li class="command">nabu -t target.com</li>
+            <li>Nmap: Detailed scanning with scripts.</li>
+            <li class="command">nmap -sV -p- target.com</li>
+        </ul>
+        <h3>Fuzzing and Content Discovery</h3>
+        <ul>
+            <li>Feroxbuster: Recursive fuzzing.</li>
+            <li class="command">feroxbuster -u https://target.com -w wordlist.txt --depth 3</li>
+            <li>ffuf: Fast fuzzing for endpoints.</li>
+            <li class="command">ffuf -u https://target.com/FUZZ -w wordlist.txt</li>
+            <li>gobuster: Directory/file enumeration.</li>
+            <li class="command">gobuster dir -u https://target.com -w wordlist.txt</li>
+            <li>wfuzz: Parameter fuzzing.</li>
+            <li class="command">wfuzz -u https://target.com/FUZZ -w wordlist.txt</li>
+            <li>Turbo Intruder: Burp-based fuzzing.</li>
+            <li>Arjun: Parameter discovery.</li>
+            <li class="command">arjun -u https://target.com/api</li>
+            <li>WayMore: Historical endpoint discovery.</li>
+            <li class="command">waymore -u https://target.com</li>
+            <li>GAO: Archived URL extraction.</li>
+            <li class="command">gao -u https://target.com</li>
+            <li>FuzzDB: Payloads for fuzzing.</li>
+            <li class="command">Use FuzzDB payloads with Burp Intruder</li>
+        </ul>
+        <h3>Vulnerability Scanning</h3>
+        <ul>
+            <li>Nuclei 3.0: CVE and vuln detection.</li>
+            <li class="command">nuclei -u https://target.com -t cves/ -severity high</li>
+            <li>JAWS: JavaScript vuln scanning.</li>
+            <li class="command">jaws -u https://target.com --js</li>
+            <li>Burp Bounty: Real-time vuln alerts.</li>
+            <li class="command">Configure Burp Bounty with custom profiles</li>
+            <li>Jail: Custom vuln scanning.</li>
+            <li class="command">jail -u https://target.com</li>
+            <li>sqlmap: SQL injection testing.</li>
+            <li class="command">sqlmap -u https://target.com/search?query=1 --dbs</li>
+            <li>XSStrike: XSS detection.</li>
+            <li class="command">xsstrike -u https://target.com/search?q=test</li>
+            <li>dotdotpwn: Path traversal testing.</li>
+            <li class="command">dotdotpwn -h https://target.com/file?path=test</li>
+            <li>tplmap: SSTI detection.</li>
+            <li class="command">tplmap -u https://target.com/profile?bio=test</li>
+            <li>Commix: Command injection testing.</li>
+            <li class="command">commix -u https://target.com/admin?cmd=test</li>
+            <li>CORScanner: CORS misconfiguration testing.</li>
+            <li class="command">corscanner -u https://target.com</li>
+            <li>jwt_tool: JWT manipulation testing.</li>
+            <li class="command">jwt_tool -t token -p</li>
+            <li>ysoserial: Insecure deserialization payloads.</li>
+            <li class="command">ysoserial -g ObjectPayload -o raw > payload.bin</li>
+            <li>sslscan: SSL/TLS testing.</li>
+            <li class="command">sslscan target.com</li>
+            <li>Metasploit: Exploit known vulnerabilities.</li>
+            <li class="command">msfconsole -q -x "use exploit/multi/http; set RHOST target.com"</li>
+            <li>HTTP Smuggler: Request smuggling testing.</li>
+            <li class="command">Use HTTP Smuggler Burp extension</li>
+        </ul>
+        <h3>JavaScript Analysis</h3>
+        <ul>
+            <li>JS-Miner: Endpoint extraction from JS.</li>
+            <li class="command">js-miner -i https://target.com/script.js</li>
+            <li>DeobfuscateJS: JS deobfuscation.</li>
+            <li class="command">deobfuscatejs -f script.js</li>
+            <li>GAP: Inline/external JS parsing.</li>
+            <li>LinkFinder: Endpoint discovery.</li>
+            <li class="command">linkfinder -i https://target.com/script.js</li>
+            <li>Retire.js: Vulnerable JS libraries.</li>
+            <li class="command">retire --js https://target.com</li>
+        </ul>
+        <h3>Mobile and API Analysis</h3>
+        <ul>
+            <li>APKLeaks: API endpoint extraction.</li>
+            <li class="command">apkleaks -f app.apk</li>
+            <li>Postman: Manual API testing.</li>
+            <li class="command">Configure Postman with API collections</li>
+            <li>MobSF: Mobile app security analysis.</li>
+            <li class="command">mobsf -f app.apk</li>
+        </ul>
+        <h3>Monitoring and Automation</h3>
+        <ul>
+            <li>changedetection.io: App change monitoring.</li>
+            <li class="command">changedetection.io setup for target.com</li>
+            <li>Notify: Recon result notifications.</li>
+            <li class="command">notify -data output.txt -provider slack</li>
+            <li>ReconFTW: All-in-one recon automation.</li>
+            <li class="command">reconftw -d target.com --all</li>
+        </ul>
+        <h3>Additional Tools</h3>
+        <ul>
+            <li>Hydra: Brute-forcing credentials.</li>
+            <li class="command">hydra -l user -P passlist.txt target.com http-post-form</li>
+            <li>dmarcian: Email security checks.</li>
+            <li class="command">Use dmarcian to check SPF/DKIM</li>
+            <li>Dependency-Check: Dependency vuln scanning.</li>
+            <li class="command">dependency-check --scan target.com</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Workshops</h2>
+        <ul>
+            <li>Practical Bug Hunting Lab:
+                <ul>
+                    <li>Test low-to-critical vulns (CSRF, SQLi, RCE, XXE) in heat-mapped areas.</li>
+                    <li>Use OWASP Vulnerable Web Apps for practice.</li>
+                    <li>Configure Burp Suite, Nuclei, XSStrike, sqlmap, Commix, jwt_tool.</li>
+                </ul>
+            </li>
+            <li>API Hacking Workshop:
+                <ul>
+                    <li>Target APIs for broken access control, key leakage, OAuth, JWT flaws.</li>
+                    <li>Use Arjun, Postman, MobSF, APKLeaks, jwt_tool.</li>
+                    <li class="command">arjun -u https://target.com/api/v1</li>
+                </ul>
+            </li>
+            <li>Advanced JavaScript Analysis:
+                <ul>
+                    <li>Parse JS with JS-Miner, DeobfuscateJS, GAP for XSS, IDOR.</li>
+                    <li>Test account/profile sections for endpoint leaks.</li>
+                    <li class="command">js-miner -i https://target.com/app.js</li>
+                </ul>
+            </li>
+            <li>Automation Pipeline Building:
+                <ul>
+                    <li>Build pipelines with ReconFTW, httpx, Nuclei, Notify.</li>
+                    <li>Monitor with changedetection.io for new vulns.</li>
+                    <li class="command">reconftw -d target.com --all | notify -provider slack</li>
+                </ul>
+            </li>
+            <li>Reporting and Triage Workshop:
+                <ul>
+                    <li>Write reports for critical vulns (RCE, SQLi, XXE, privilege escalation).</li>
+                    <li>Practice triage on HackerOne/Bugcrowd.</li>
+                    <li>Mock submissions for XSS, IDOR, OAuth, JWT flaws.</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Integration with Buck Hunters Methodology and Heat Map Areas</h2>
+        <ul>
+            <li>Apply vulnerabilities to heat-mapped areas with appropriate tools:
+                <ul>
+                    <li>Upload Functions:
+                        <ul>
+                            <li>Vulns: Unrestricted File Upload, XSS, XXE, SSRF, Server Shelling, RCE, File Inclusion, Buffer Overflow.</li>
+                            <li>Tools: Burp Suite, Nuclei, Commix, dotdotpwn, FuzzDB.</li>
+                            <li class="command">nuclei -u https://target.com/upload -t file-upload/</li>
+                        </ul>
+                    </li>
+                    <li>Multi-Part Forms:
+                        <ul>
+                            <li>Vulns: SQLi, XSS, CSRF, SSTI, Business Logic Flaws, Mass Assignment, Race Conditions, Client-Side Validation Only.</li>
+                            <li>Tools: Arjun, Burp Bounty, sqlmap, XSStrike, tplmap, Turbo Intruder.</li>
+                            <li class="command">arjun -u https://target.com/form</li>
+                        </ul>
+                    </li>
+                    <li>Content Types (XML/JSON):
+                        <ul>
+                            <li>Vulns: XXE, JSON Injection, Information Disclosure, Insecure Deserialization, Improper Input Validation.</li>
+                            <li>Tools: Burp Suite, Nuclei, ysoserial.</li>
+                            <li class="command">nuclei -u https://target.com -t xxe/</li>
+                        </ul>
+                    </li>
+                    <li>APIs:
+                        <ul>
+                            <li>Vulns: Broken Access Control, API Key Leakage, IDOR, SQLi, JWT Manipulation, OAuth Misconfiguration, API Abuse, Insecure CORS, HTTP Request Smuggling.</li>
+                            <li>Tools: Postman, Arjun, APKLeaks, jwt_tool, CORScanner, HTTP Smuggler.</li>
+                            <li class="command">arjun -u https://target.com/api/v1</li>
+                        </ul>
+                    </li>
+                    <li>Account/Profile Sections:
+                        <ul>
+                            <li>Vulns: Stored XSS, SSTI, IDOR, Information Disclosure, Privilege Escalation, Authentication Bypass, Weak Cryptography, Session Handling.</li>
+                            <li>Tools: Burp Bounty, JS-Miner, Hunt, tplmap, jwt_tool.</li>
+                            <li class="command">hunt -u https://target.com/profile</li>
+                        </ul>
+                    </li>
+                    <li>Third-Party Integrations:
+                        <ul>
+                            <li>Vulns: Supply Chain Attacks, Outdated Libraries, Weak Cryptography, Insecure CORS, Misconfigured Cloud Storage.</li>
+                            <li>Tools: Retire.js, MobSF, Dependency-Check, CloudSploit.</li>
+                            <li class="command">retire --js https://target.com</li>
+                        </ul>
+                    </li>
+                    <li>URLs/Redirect Parameters:
+                        <ul>
+                            <li>Vulns: SSRF, Open Redirect, Path Traversal, File Inclusion, DNS Rebinding, HTTP Request Smuggling.</li>
+                            <li>Tools: Burp Suite, ffuf, dotdotpwn.</li>
+                            <li class="command">ffuf -u https://target.com/redirect?url=FUZZ -w urls.txt</li>
+                        </ul>
+                    </li>
+                    <li>Errors:
+                        <ul>
+                            <li>Vulns: SQLi, Path Traversal, Information Disclosure, Crash Vectors, Verbose Server Banners, Potential Debug Information.</li>
+                            <li>Tools: sqlmap, Burp Suite, Nuclei, WayMore.</li>
+                            <li class="command">sqlmap -u https://target.com/error?input=1</li>
+                        </ul>
+                    </li>
+                    <li>General System:
+                        <ul>
+                            <li>Vulns: Zero-Day, N-Day, Insecure Default Configuration, Exposed Admin Interfaces, Privilege Misconfigurations, Side-channel Attacks, DLL Hijacking, Security Through Obscurity.</li>
+                            <li>Tools: Nuclei, Metasploit, CloudSploit, MobSF, custom scripts.</li>
+                            <li class="command">nuclei -u https://target.com -t misconfig/</li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+            <li>Use tools across recon, enumeration, and exploitation for efficiency.</li>
+            <li>Workshops reinforce testing in heat-mapped areas with low-to-critical vulns.</li>
+            <li>Maintain mental resilience: Every app has exploitable bugs.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Conclusion</h2>
+        <ul>
+            <li>Future 2.0 talk enhances Buck Hunters Methodology with exhaustive vuln classes.</li>
+            <li>Comprehensive tools target all heat-mapped areas and vuln types.</li>
+            <li>Workshops provide hands-on skills for real-world bug discovery.</li>
+            <li>Encourages community engagement via Twitter, HackerOne, and tool updates.</li>
+        </ul>
+    </div>
+</body>
+</html>
