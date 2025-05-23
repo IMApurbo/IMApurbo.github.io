@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64 Encoder/Decoder</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0 auto;
+            padding: clamp(1rem, 3vw, 1.5rem);
+            line-height: 1.6;
+            max-width: 800px;
+        }
+        h1 {
+            color: #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+            text-align: center;
+            font-size: clamp(1.8rem, 5vw, 2.2rem);
+            margin-bottom: clamp(1rem, 3vw, 1.5rem);
+        }
+        .container {
+            background-color: #161b22;
+            padding: clamp(1rem, 3vw, 1.5rem);
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            background-color: #1c2526;
+            color: #c9d1d9;
+            border: 2px solid #00ff00;
+            padding: 0.8rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: clamp(0.9rem, 2vw, 1rem);
+            resize: vertical;
+            margin-bottom: 1rem;
+        }
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: clamp(0.6rem, 2vw, 0.8rem) clamp(1rem, 3vw, 1.5rem);
+            background: none;
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: clamp(0.9rem, 2.2vw, 1rem);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            min-width: 120px;
+        }
+        button:hover {
+            background: rgba(0, 255, 0, 0.1);
+            box-shadow: 0 0 15px #00ff00;
+        }
+        #output {
+            background-color: #1c2526;
+            padding: 0.8rem;
+            border-left: 4px solid #00ff00;
+            margin-top: 1rem;
+            font-size: clamp(0.9rem, 2vw, 1rem);
+            word-wrap: break-word;
+            min-height: 50px;
+        }
+        @media (max-width: 768px) {
+            body {
+                padding: 0.8rem;
+            }
+            h1 {
+                font-size: clamp(1.5rem, 4.5vw, 1.8rem);
+            }
+            .container {
+                padding: 0.8rem;
+            }
+            textarea {
+                height: 100px;
+                font-size: clamp(0.8rem, 1.8vw, 0.9rem);
+            }
+            button {
+                padding: 0.5rem 1rem;
+                font-size: clamp(0.8rem, 2vw, 0.9rem);
+                min-width: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Base64 Encoder/Decoder</h1>
+    <div class="container">
+        <textarea id="input" placeholder="Enter text or Base64 string..."></textarea>
+        <div class="button-group">
+            <button onclick="encode()">Encode</button>
+            <button onclick="decode()">Decode</button>
+            <button onclick="copyOutput()">Copy</button>
+        </div>
+        <div id="output"></div>
+    </div>
+    <script>
+        const input = document.getElementById('input');
+        const output = document.getElementById('output');
+
+        function encode() {
+            try {
+                const text = input.value;
+                const encoded = btoa(text);
+                output.textContent = encoded;
+            } catch (e) {
+                output.textContent = 'Error: Invalid input for encoding';
+            }
+        }
+
+        function decode() {
+            try {
+                const text = input.value;
+                const decoded = atob(text);
+                output.textContent = decoded;
+            } catch (e) {
+                output.textContent = 'Error: Invalid Base64 string';
+            }
+        }
+
+        function copyOutput() {
+            const text = output.textContent;
+            if (text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    output.textContent = 'Copied to clipboard!';
+                    setTimeout(() => {
+                        output.textContent = text;
+                    }, 2000);
+                }).catch(() => {
+                    output.textContent = 'Error: Failed to copy';
+                });
+            }
+        }
+    </script>
+</body>
+</html>
