@@ -5,13 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Application Hacking Checklist - Bug Hunters Methodology</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             background-color: #0d1117;
             color: #c9d1d9;
             font-family: 'Courier New', Courier, monospace;
-            margin: 0;
-            padding: 20px;
+            margin: 0 auto;
+            padding: clamp(1rem, 3vw, 1.5rem);
             line-height: 1.6;
+            max-width: 1200px;
         }
         h1, h2, h3 {
             color: #00ff00;
@@ -19,26 +23,25 @@
         }
         h1 {
             text-align: center;
-            font-size: 2.5em;
-            margin-bottom: 20px;
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            margin-bottom: clamp(1rem, 3vw, 1.5rem);
         }
         h2 {
-            font-size: 1.8em;
+            font-size: clamp(1.4rem, 3.5vw, 1.8rem);
             border-bottom: 2px solid #ff007f;
-            padding-bottom: 5px;
-            margin-top: 30px;
+            padding-bottom: 0.3rem;
+            margin-top: clamp(1.5rem, 4vw, 2rem);
         }
         h3 {
-            font-size: 1.4em;
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
             color: #00b7eb;
         }
         ul {
             list-style: none;
-            padding-left: 20px;
+            padding-left: clamp(1rem, 2.5vw, 1.5rem);
         }
         li {
-            white-space: nowrap;
-            margin-bottom: 10px;
+            margin-bottom: 0.6rem;
         }
         li::before {
             content: "> ";
@@ -46,18 +49,18 @@
         }
         .command {
             background-color: #1c2526;
-            padding: 10px;
+            padding: clamp(0.5rem, 2vw, 0.8rem);
             border-left: 4px solid #00ff00;
-            margin: 10px 0;
-            font-size: 0.9em;
+            margin: clamp(0.5rem, 2vw, 0.8rem) 0;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
             white-space: pre-wrap;
             word-wrap: break-word;
         }
         .section {
             background-color: #161b22;
-            padding: 20px;
+            padding: clamp(1rem, 3vw, 1.5rem);
             border-radius: 5px;
-            margin-bottom: 20px;
+            margin-bottom: clamp(1rem, 3vw, 1.5rem);
             box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
         }
         a {
@@ -70,19 +73,20 @@
         /* Glitch Button Styles */
         .glitch-button {
             display: block;
-            margin: 20px auto;
-            padding: 15px 30px;
+            margin: clamp(1rem, 3vw, 1.5rem) auto;
+            padding: clamp(0.8rem, 2.5vw, 1rem) clamp(1.5rem, 4vw, 2rem);
             background: none;
             border: 2px solid #00ff00;
             color: #00ff00;
             font-family: 'Courier New', Courier, monospace;
-            font-size: 1.2em;
+            font-size: clamp(1rem, 2.5vw, 1.2rem);
             text-transform: uppercase;
             text-align: center;
             cursor: pointer;
             position: relative;
             overflow: hidden;
             transition: all 0.3s;
+            min-width: 200px;
         }
         .glitch-button:hover {
             box-shadow: 0 0 15px #00ff00, 0 0 30px #ff007f;
@@ -98,6 +102,10 @@
             height: 100%;
             color: #ff007f;
             opacity: 0;
+            padding: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .glitch-button::before {
             transform: translate(-2px, 2px);
@@ -115,6 +123,52 @@
             0% { transform: translate(-2px, 2px); opacity: 0.5; }
             50% { transform: translate(2px, -2px); opacity: 0.3; }
             100% { transform: translate(-2px, 2px); opacity: 0.5; }
+        }
+        @media (max-width: 768px) {
+            body {
+                padding: 0.8rem;
+            }
+            h1 {
+                font-size: clamp(1.5rem, 4.5vw, 2rem);
+            }
+            h2 {
+                font-size: clamp(1.2rem, 3vw, 1.5rem);
+            }
+            h3 {
+                font-size: clamp(1rem, 2.2vw, 1.2rem);
+            }
+            ul {
+                padding-left: 0.8rem;
+            }
+            li {
+                white-space: normal;
+            }
+            .section {
+                padding: 0.8rem;
+            }
+            .command {
+                padding: 0.5rem;
+                font-size: clamp(0.7rem, 1.8vw, 0.85rem);
+            }
+            .glitch-button {
+                padding: 0.6rem 1rem;
+                font-size: clamp(0.9rem, 2.2vw, 1rem);
+                min-width: 150px;
+            }
+        }
+        @media (max-width: 1024px) {
+            body {
+                padding: 1rem;
+            }
+            h1 {
+                font-size: clamp(1.6rem, 4.8vw, 2.2rem);
+            }
+            h2 {
+                font-size: clamp(1.3rem, 3.2vw, 1.6rem);
+            }
+            .section {
+                padding: 1rem;
+            }
         }
     </style>
 </head>
@@ -269,9 +323,9 @@
         <h2>Explore More</h2>
         <ul>
             <li>Comprehensive framework for finding bugs in complex apps.</li>
-                    <a href="https://imapurbo.github.io/BugB2.html" target="_blank">
-            <button class="glitch-button" data-text="bugs and tools">Explore More</button>
-        </a>
+            <a href="https://imapurbo.github.io/BugB2.html" target="_blank">
+                <button class="glitch-button" data-text="bugs and tools">Explore More</button>
+            </a>
         </ul>    
     </div>
 </body>
