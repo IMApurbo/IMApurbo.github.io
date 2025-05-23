@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Decoder and Analyzer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0 auto;
+            padding: clamp(1rem, 3vw, 1.5rem);
+            line-height: 1.6;
+            max-width: 900px;
+        }
+        h1 {
+            color: #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+            text-align: center;
+            font-size: clamp(1.8rem, 5vw, 2.2rem);
+            margin-bottom: clamp(1rem, 3vw, 1.5rem);
+        }
+        h3 {
+            color: #00ff00;
+            text-shadow: 0 0 3px #00ff00;
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+            margin: 0.5rem 0;
+        }
+        .container {
+            background-color: #161b22;
+            padding: clamp(1rem, 3vw, 1.5rem);
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+        textarea, input[type="text"] {
+            width: 100%;
+            background-color: #1c2526;
+            color: #c9d1d9;
+            border: 2px solid #00ff00;
+            padding: 0.8rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: clamp(0.9rem, 2vw, 1rem);
+            margin-bottom: 1rem;
+            resize: vertical;
+        }
+        textarea {
+            height: 120px;
+        }
+        .button-group, .box-buttons {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 0.5rem 0;
+        }
+        button {
+            padding: clamp(0.6rem, 2vw, 0.8rem) clamp(1rem, 3vw, 1.2rem);
+            background: none;
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 100px;
+            position: relative;
+        }
+        button:hover {
+            background: rgba(0, 255, 0, 0.1);
+            box-shadow: 0 0 15px #00ff00;
+        }
+        button::before, button::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            color: #ff007f;
+            opacity: 0;
+            padding: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        button::before {
+            transform: translate(-2px, 2px);
+            animation: glitch 0.3s infinite;
+        }
+        button::after {
+            transform: translate(2px, -2px);
+            animation: glitch 0.3s infinite reverse;
+        }
+        button:hover::before, button:hover::after {
+            opacity: 0.5;
+        }
+        @keyframes glitch {
+            0% { transform: translate(-2px, 2px); opacity: 0.5; }
+            50% { transform: translate(2px, -2px); opacity: 0.3; }
+            100% { transform: translate(-2px, 2px); opacity: 0.5; }
+        }
+        .output {
+            background-color: #1c2526;
+            padding: 0.8rem;
+            border-left: 4px solid #00ff00;
+            margin: 0.5rem 0;
+            font-size: clamp(0.9rem, 2vw, 1rem);
+            word-wrap: break-word;
+            min-height: 50px;
+        }
+        .code-block, .jwt-box {
+            position: relative;
+            background-color: #1a2024;
+            background-image: linear-gradient(rgba(0, 255, 0, 0.05), rgba(0, 255, 0, 0.05)),
+                              url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAAXNSR0IArs4c6QAAAB5JREFUKFNjZICC/1+/fo3u7u7/D2g3NTU1N7e2/4MAdJoYel4AAAAASUVORK5CYII=');
+            border: 2px solid #ff007f;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            margin-bottom: 0.5rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: clamp(0.9rem, 2vw, 1rem);
+            overflow-x: auto;
+            min-height: 100px;
+            box-shadow: 0 0 8px rgba(255, 0, 127, 0.3);
+            transition: background 0.2s;
+        }
+        .code-block:hover {
+            background-color: rgba(0, 255, 0, 0.05);
+        }
+        .code-block[contenteditable]:focus {
+            outline: 2px solid #00ff00;
+            box-shadow: 0 0 12px rgba(0, 255, 0, 0.5);
+        }
+        .jwt-box {
+            word-break: break-all;
+        }
+        .warning {
+            color: #ff007f;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+            margin-bottom: 1rem;
+        }
+        @media (max-width: 768px) {
+            body {
+                padding: 0.8rem;
+            }
+            h1 {
+                font-size: clamp(1.5rem, 4.5vw, 1.8rem);
+            }
+            h3 {
+                font-size: clamp(1rem, 2.2vw, 1.2rem);
+            }
+            .container {
+                padding: 0.8rem;
+            }
+            textarea, input[type="text"] {
+                height: 100px;
+                font-size: clamp(0.8rem, 1.8vw, 0.9rem);
+            }
+            button {
+                padding: 0.5rem 0.8rem;
+                font-size: clamp(0.7rem, 1.8vw, 0.8rem);
+                min-width: 80px;
+            }
+            .output, .code-block, .jwt-box {
+                font-size: clamp(0.8rem, 1.8vw, 0.9rem);
+                padding: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>JWT Decoder and Analyzer</h1>
+    <div class="container">
+        <p class="warning">Warning: Do not input sensitive JWTs. This is a client-side tool for educational purposes. Only HS256/HS384/HS512 or 'none' algorithms are supported for regeneration. Use HTTPS or localhost (e.g., python -m http.server) for clipboard functionality.</p>
+        <textarea id="jwtInput" placeholder="Enter JWT (e.g., eyJhbGciOiJI..."></textarea>
+        <input type="text" id="secretInput" placeholder="Enter secret for HMAC signing (optional)">
+        <div class="button-group">
+            <button onclick="decodeJWT()" data-text="Decode JWT">Decode JWT</button>
+            <button onclick="regenerateJWT()" data-text="Regenerate JWT">Regenerate JWT</button>
+        </div>
+        <div class="output" id="analysis">Analysis: Enter a JWT and click Decode JWT</div>
+        <h3>Header</h3>
+        <div class="code-block" id="headerOutput" contenteditable="true" oninput="enableRegenerate()"></div>
+        <div class="box-buttons">
+            <button onclick="copyOutput('header')" data-text="Copy">Copy</button>
+            <button onclick="clearOutput('header')" data-text="Clear">Clear</button>
+            <button onclick="formatOutput('header')" data-text="Format">Format</button>
+        </div>
+        <h3>Payload</h3>
+        <div class="code-block" id="payloadOutput" contenteditable="true" oninput="enableRegenerate()"></div>
+        <div class="box-buttons">
+            <button onclick="copyOutput('payload')" data-text="Copy">Copy</button>
+            <button onclick="clearOutput('payload')" data-text="Clear">Clear</button>
+            <button onclick="formatOutput('payload')" data-text="Format">Format</button>
+        </div>
+        <h3>Regenerated JWT</h3>
+        <div class="jwt-box" id="regeneratedOutput"></div>
+        <div class="box-buttons">
+            <button onclick="copyOutput('regenerated')" data-text="Copy">Copy</button>
+            <button onclick="clearOutput('regenerated')" data-text="Clear">Clear</button>
+            <button onclick="formatOutput('regenerated')" data-text="Format">Format</button>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
+    <script>
+        const jwtInput = document.getElementById('jwtInput');
+        const secretInput = document.getElementById('secretInput');
+        const analysisOutput = document.getElementById('analysis');
+        const headerOutput = document.getElementById('headerOutput');
+        const payloadOutput = document.getElementById('payloadOutput');
+        const regeneratedOutput = document.getElementById('regeneratedOutput');
+
+        function copyOutput(type) {
+            let text = '';
+            if (type === 'header') {
+                text = headerOutput.textContent.trim();
+            } else if (type === 'payload') {
+                text = payloadOutput.textContent.trim();
+            } else if (type === 'regenerated') {
+                text = regeneratedOutput.textContent.trim();
+            }
+            if (text && text !== '{}' && text !== '') {
+                // Check secure context
+                if (!window.isSecureContext) {
+                    analysisOutput.textContent = 'Analysis: Clipboard requires HTTPS or localhost';
+                    console.error('Clipboard API unavailable: Non-secure context');
+                    return;
+                }
+
+                // Modern Clipboard API
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        analysisOutput.textContent = 'Analysis: Copied to clipboard!';
+                        setTimeout(() => {
+                            analysisOutput.textContent = 'Analysis: Ready';
+                        }, 2000);
+                    }).catch((err) => {
+                        console.error('Clipboard API error:', err);
+                        analysisOutput.textContent = `Analysis: Clipboard error: ${err.message || 'Permission denied'}`;
+                    });
+                    return;
+                }
+
+                // Fallback to legacy clipboard
+                try {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.focus();
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    analysisOutput.textContent = 'Analysis: Copied to clipboard!';
+                    setTimeout(() => {
+                        analysisOutput.textContent = 'Analysis: Ready';
+                    }, 2000);
+                } catch (err) {
+                    console.error('Legacy clipboard error:', err);
+                    analysisOutput.textContent = 'Analysis: Error copying to clipboard';
+                }
+            } else {
+                analysisOutput.textContent = 'Analysis: Nothing to copy';
+            }
+        }
+
+        function decodeJWT() {
+            const jwt = DOMPurify.sanitize(jwtInput.value.trim());
+            if (!jwt) {
+                analysisOutput.textContent = 'Analysis: Please enter a JWT';
+                headerOutput.textContent = '{}';
+                payloadOutput.textContent = '{}';
+                regeneratedOutput.textContent = '';
+                return;
+            }
+
+            try {
+                const [headerB64, payloadB64] = jwt.split('.').slice(0, 2);
+                if (!headerB64 || !payloadB64) {
+                    throw new Error('Invalid JWT format');
+                }
+
+                // Decode header and payload
+                const header = JSON.parse(atob(headerB64));
+                const payload = JSON.parse(atob(payloadB64));
+
+                // Display JSON
+                headerOutput.textContent = JSON.stringify(header, null, 2);
+                payloadOutput.textContent = JSON.stringify(payload, null, 2);
+                regeneratedOutput.textContent = '';
+
+                // Analyze for vulnerabilities
+                let analysis = [];
+                if (header.alg === 'none') {
+                    analysis.push('Vulnerability: "alg: none" detected. Server may accept unsigned tokens.');
+                }
+                if (['HS256', 'HS384', 'HS512'].includes(header.alg)) {
+                    analysis.push('Note: HMAC-based algorithm. Provide a secret to regenerate with signature.');
+                }
+                if (!payload.exp) {
+                    analysis.push('Warning: No "exp" claim. Token may not expire, increasing risk if stolen.');
+                }
+                if (!payload.iat) {
+                    analysis.push('Note: No "iat" claim. Token issuance time not specified.');
+                }
+
+                analysisOutput.textContent = analysis.length > 0 
+                    ? `Analysis: ${analysis.join(' ')}`
+                    : 'Analysis: No obvious vulnerabilities detected';
+            } catch (e) {
+                analysisOutput.textContent = `Analysis: Error: ${e.message}`;
+                headerOutput.textContent = '{}';
+                payloadOutput.textContent = '{}';
+                regeneratedOutput.textContent = '';
+            }
+        }
+
+        async function regenerateJWT() {
+            try {
+                // Extract JSON from editable fields
+                const headerText = headerOutput.textContent.trim();
+                const payloadText = payloadOutput.textContent.trim();
+                const secret = DOMPurify.sanitize(secretInput.value.trim());
+
+                // Validate JSON
+                let header, payload;
+                try {
+                    header = JSON.parse(headerText);
+                    payload = JSON.parse(payloadText);
+                } catch (e) {
+                    analysisOutput.textContent = 'Analysis: Error: Invalid JSON in header or payload';
+                    return;
+                }
+
+                // Validate algorithm
+                const alg = header.alg || 'none';
+                if (!['none', 'HS256', 'HS384', 'HS512'].includes(alg)) {
+                    analysisOutput.textContent = 'Analysis: Error: Only "none", HS256, HS384, HS512 supported for regeneration';
+                    return;
+                }
+                if (alg !== 'none' && !secret) {
+                    analysisOutput.textContent = 'Analysis: Error: Secret required for HMAC algorithms';
+                    return;
+                }
+
+                // Encode header and payload
+                const headerB64 = btoa(JSON.stringify(header)).replace(/=+$/, '');
+                const payloadB64 = btoa(JSON.stringify(payload)).replace(/=+$/, '');
+
+                // Generate signature
+                let signatureB64 = '';
+                if (alg !== 'none') {
+                    const data = `${headerB64}.${payloadB64}`;
+                    const msgBuffer = new TextEncoder().encode(data);
+                    const keyBuffer = new TextEncoder().encode(secret);
+                    const cryptoAlg = alg.replace('HS', 'SHA-'); // HS256 -> SHA-256
+                    const key = await crypto.subtle.importKey(
+                        'raw',
+                        keyBuffer,
+                        { name: 'HMAC', hash: cryptoAlg },
+                        false,
+                        ['sign']
+                    );
+                    const signature = await crypto.subtle.sign('HMAC', key, msgBuffer);
+                    signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature))).replace(/=+$/, '');
+                }
+
+                // Combine into JWT
+                const newJWT = `${headerB64}.${payloadB64}${alg !== 'none' ? '.' + signatureB64 : ''}`;
+                regeneratedOutput.textContent = newJWT;
+                analysisOutput.textContent = 'Analysis: JWT regenerated successfully';
+            } catch (e) {
+                analysisOutput.textContent = `Analysis: Error regenerating JWT: ${e.message}`;
+                regeneratedOutput.textContent = '';
+            }
+        }
+
+        function clearOutput(type) {
+            if (type === 'header') {
+                headerOutput.textContent = '{}';
+            } else if (type === 'payload') {
+                payloadOutput.textContent = '{}';
+            } else if (type === 'regenerated') {
+                regeneratedOutput.textContent = '';
+            }
+            analysisOutput.textContent = 'Analysis: Cleared content';
+        }
+
+        function formatOutput(type) {
+            if (type === 'header' || type === 'payload') {
+                const element = type === 'header' ? headerOutput : payloadOutput;
+                const text = element.textContent.trim();
+                try {
+                    const json = JSON.parse(text);
+                    element.textContent = JSON.stringify(json, null, 2);
+                    analysisOutput.textContent = `Analysis: Formatted ${type} JSON`;
+                } catch (e) {
+                    analysisOutput.textContent = `Analysis: Error: Invalid JSON in ${type}`;
+                }
+            } else if (type === 'regenerated') {
+                const text = regeneratedOutput.textContent.trim();
+                if (text) {
+                    regeneratedOutput.textContent = text; // Re-display for consistency
+                    analysisOutput.textContent = 'Analysis: JWT formatting unchanged';
+                } else {
+                    analysisOutput.textContent = 'Analysis: No JWT to format';
+                }
+            }
+        }
+
+        function enableRegenerate() {
+            analysisOutput.textContent = 'Analysis: Edit header or payload and click Regenerate JWT';
+        }
+    </script>
+</body>
+</html>
