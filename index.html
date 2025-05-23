@@ -14,7 +14,7 @@
         body {
             background: #0a0a0a;
             color: #00ff00;
-            overflow: hidden;
+            overflow-x: hidden;
         }
         .crt {
             position: relative;
@@ -30,12 +30,15 @@
             height: 100%;
         }
         .sidebar {
-            width: 250px;
+            width: 20%;
+            min-width: 200px;
+            max-width: 250px;
             background: rgba(0, 10, 0, 0.5);
-            padding: 20px;
+            padding: 1.5rem;
             overflow-y: auto;
             border-right: 2px solid #00ff00;
             position: relative;
+            transition: transform 0.3s ease-in-out;
         }
         .sidebar::-webkit-scrollbar {
             width: 8px;
@@ -47,14 +50,14 @@
         .sidebar button {
             display: block;
             width: 100%;
-            padding: 10px;
-            margin: 10px 0;
+            padding: 0.8rem;
+            margin: 0.6rem 0;
             background: rgba(10, 10, 10, 0.8);
             color: #00ff00;
             border: 1px solid #00ff00;
             cursor: pointer;
             text-align: left;
-            font-size: 16px;
+            font-size: clamp(0.9rem, 2vw, 1rem);
             transition: all 0.3s;
             position: relative;
             transform: translateY(100vh);
@@ -70,7 +73,7 @@
             top: 0;
             left: 0;
             width: 100%;
-            padding: 10px;
+            padding: 0.8rem;
             text-align: left;
         }
         .sidebar button.glitching::before {
@@ -103,11 +106,11 @@
         }
         .main {
             flex: 1;
-            padding: 40px;
+            padding: clamp(1.5rem, 5vw, 2.5rem);
             position: relative;
         }
         .header {
-            font-size: 48px;
+            font-size: clamp(1.8rem, 5vw, 3rem);
             text-align: center;
             position: relative;
             color: #00ff00;
@@ -139,11 +142,11 @@
             80% { clip-path: inset(40% 0 50% 0); }
         }
         .terminal {
-            margin-top: 20px;
-            font-size: 18px;
+            margin-top: 1.2rem;
+            font-size: clamp(0.9rem, 2.5vw, 1.1rem);
             line-height: 1.5;
             white-space: pre-wrap;
-            min-height: 200px;
+            min-height: 12rem;
             text-shadow: 0 0 5px #00ff00;
             position: relative;
         }
@@ -215,6 +218,64 @@
             width: 0;
             height: 0;
         }
+        .hamburger {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            background: none;
+            border: none;
+            color: #00ff00;
+            font-size: 1.8rem;
+            cursor: pointer;
+            z-index: 1000;
+            text-shadow: 0 0 5px #00ff00;
+        }
+        .hamburger:hover {
+            text-shadow: 0 0 10px #00ff00;
+        }
+        @media (max-width: 768px) {
+            .crt {
+                border: 5px solid #111;
+            }
+            .container {
+                flex-direction: column;
+            }
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                max-width: none;
+                height: 100%;
+                transform: translateX(-100%);
+                z-index: 999;
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .main {
+                padding: 1rem;
+            }
+            .hamburger {
+                display: block;
+            }
+            .terminal {
+                min-height: 8rem;
+            }
+        }
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 25%;
+                min-width: 150px;
+            }
+            .header {
+                font-size: clamp(1.5rem, 4vw, 2.5rem);
+            }
+            .terminal {
+                font-size: clamp(0.8rem, 2vw, 1rem);
+            }
+        }
     </style>
 </head>
 <body>
@@ -229,6 +290,7 @@
             <feDisplacementMap in="SourceGraphic" in2="SourceGraphic" scale="10" xChannelSelector="R" yChannelSelector="G"/>
         </filter>
     </svg>
+    <button class="hamburger" aria-label="Toggle Sidebar" aria-expanded="false">&#9776;</button>
     <div class="crt">
         <div class="scanline"></div>
         <div class="container">
@@ -242,15 +304,21 @@
         </div>
     </div>
     <script>
-        // Matrix Rain Effect
+        // Matrix Rain Effect with Resize Handling
         const canvas = document.getElementById('matrix');
         const ctx = canvas.getContext('2d');
-        canvas.height = window.innerHeight;
-        canvas.width = window.innerWidth;
+        
+        function resizeCanvas() {
+            canvas.height = window.innerHeight;
+            canvas.width = window.innerWidth;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
         const chars = '01ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         const fontSize = 14;
-        const columns = canvas.width / fontSize;
-        const drops = Array(Math.floor(columns)).fill(1);
+        let columns = Math.floor(canvas.width / fontSize);
+        let drops = Array(columns).fill(1);
 
         function draw() {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
@@ -267,6 +335,12 @@
             }
         }
         setInterval(draw, 33);
+
+        // Update columns on resize
+        window.addEventListener('resize', () => {
+            columns = Math.floor(canvas.width / fontSize);
+            drops = Array(columns).fill(1);
+        });
 
         // Dynamic button creation with animation and initial glitch
         const sidebar = document.getElementById('sidebar');
@@ -290,11 +364,18 @@
             sidebar.appendChild(button);
             setTimeout(() => {
                 button.classList.add('animate-in');
-                // Remove glitching class after animation completes
                 setTimeout(() => {
                     button.classList.remove('glitching');
                 }, 500);
             }, index * 200);
+        });
+
+        // Hamburger Menu Toggle
+        const hamburger = document.querySelector('.hamburger');
+        hamburger.addEventListener('click', () => {
+            const isOpen = sidebar.classList.toggle('active');
+            hamburger.setAttribute('aria-expanded', isOpen);
+            hamburger.textContent = isOpen ? '✖' : '☰';
         });
 
         // Terminal with access denied, message, ASCII skull, and enhanced typer effect
@@ -324,7 +405,6 @@
 
         function updateTerminal() {
             if (phase === 0) {
-                // Access denied phase
                 if (deniedCount < maxDenied) {
                     displayText = `Access Denied${'.'.repeat(deniedCount + 1)}\n`;
                     deniedCount++;
@@ -343,10 +423,8 @@
                     setTimeout(updateTerminal, 500);
                 }
             } else if (phase == 1) {
-                // Enhanced typer with scramble and glitch effect
                 if (charIndex < finalText.length) {
                     if (scrambleCount < scrambleMax) {
-                        // Display random character
                         let tempText = displayText + scrambleChars.charAt(Math.floor(Math.random() * scrambleChars.length));
                         terminal.textContent = tempText;
                         terminal.setAttribute('data-text', tempText);
@@ -355,7 +433,6 @@
                         scrambleCount++;
                         setTimeout(updateTerminal, 30);
                     } else {
-                        // Append correct character
                         displayText += finalText.charAt(charIndex);
                         terminal.textContent = displayText;
                         terminal.setAttribute('data-text', displayText);
@@ -366,7 +443,6 @@
                 } else {
                     terminal.classList.remove('typing');
                     terminal.classList.remove('glitching');
-                    // Reset for infinite loop
                     setTimeout(() => {
                         phase = 0;
                         displayText = '';
