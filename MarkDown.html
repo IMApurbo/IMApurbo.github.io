@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Editor with Live Preview</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.2/marked.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #0a0f0b;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .editor, .preview {
+            flex: 1;
+            padding: 20px;
+            overflow: auto;
+            border: 1px solid #00ff00;
+        }
+
+        .editor {
+            background-color: #1a2b1e;
+            resize: horizontal;
+            min-width: 20%;
+            max-width: 80%;
+        }
+
+        .preview {
+            background-color: #112211;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+            border: none;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            resize: none;
+            outline: none;
+        }
+
+        .preview-content {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .preview-content h1,
+        .preview-content h2,
+        .preview-content h3 {
+            border-bottom: 1px solid #00ff00;
+            padding-bottom: 5px;
+        }
+
+        .preview-content a {
+            color: #00cc00;
+            text-decoration: underline;
+        }
+
+        .preview-content code {
+            background-color: #2a3b2a;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        .preview-content pre {
+            background-color: #2a3b2a;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        .splitter {
+            width: 5px;
+            background-color: #00ff00;
+            cursor: col-resize;
+            transition: background-color 0.3s;
+        }
+
+        .splitter:hover {
+            background-color: #00cc00;
+        }
+
+        @media (max-width: 600px) {
+            .editor {
+                min-width: 30%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="editor">
+            <textarea id="markdown-input" placeholder="Type your Markdown here..."></textarea>
+        </div>
+        <div class="splitter" id="splitter"></div>
+        <div class="preview">
+            <div id="preview-content" class="preview-content"></div>
+        </div>
+    </div>
+
+    <script>
+        // Fullscreen on load
+        document.documentElement.requestFullscreen().catch(err => {
+            console.log(`Error attempting to enable fullscreen: ${err.message}`);
+        });
+
+        // Markdown rendering
+        const input = document.getElementById('markdown-input');
+        const preview = document.getElementById('preview-content');
+
+        input.addEventListener('input', () => {
+            preview.innerHTML = marked.parse(input.value);
+        });
+
+        // Resizable splitter
+        const splitter = document.getElementById('splitter');
+        const editor = document.querySelector('.editor');
+        let isDragging = false;
+
+        splitter.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            document.body.style.cursor = 'col-resize';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const container = document.querySelector('.container');
+                const containerRect = container.getBoundingClientRect();
+                const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+                if (newWidth >= 20 && newWidth <= 80) {
+                    editor.style.flex = `0 0 ${newWidth}%`;
+                }
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            document.body.style.cursor = 'default';
+        });
+
+        // Initialize with sample Markdown
+        input.value = `# Welcome to the Markdown Editor\n\n` +
+                      `## Features\n` +
+                      `- Live preview\n` +
+                      `- Resizable panels\n` +
+                      `- Green hacker theme\n\n` +
+                      `Type your Markdown here and see the result in real-time!`;
+        preview.innerHTML = marked.parse(input.value);
+    </script>
+</body>
+</html>
