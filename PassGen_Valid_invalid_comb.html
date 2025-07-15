@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mix Payload Generator</title>
+  <style>
+    body {
+      background-color: #0d0d0d;
+      color: #00ff00;
+      font-family: 'Courier New', Courier, monospace;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      overflow-y: auto;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      box-sizing: border-box;
+    }
+
+    .terminal {
+      background-color: #1a1a1a;
+      border: 2px solid #00ff00;
+      border-radius: 10px;
+      padding: 20px;
+      width: 80%;
+      max-width: 800px;
+      box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+      animation: flicker 0.1s infinite alternate;
+      display: flex;
+      flex-direction: column;
+    }
+
+    @keyframes flicker {
+      0% { box-shadow: 0 0 20px rgba(0, 255, 0, 0.5); }
+      100% { box-shadow: 0 0 25px rgba(0, 255, 0, 0.7); }
+    }
+
+    h1 {
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    input[type="text"],
+    input[type="file"],
+    input[type="number"] {
+      background-color: #2a2a2a;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      padding: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      background-color: #00ff00;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-family: 'Courier New', Courier, monospace;
+      text-transform: uppercase;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #00cc00;
+    }
+
+    button:disabled {
+      background-color: #006600;
+      cursor: not-allowed;
+    }
+
+    #output {
+      margin-top: 20px;
+      background-color: #2a2a2a;
+      padding: 10px;
+      height: 150px;
+      overflow-y: auto;
+      border: 1px solid #00ff00;
+      white-space: pre-wrap;
+    }
+
+    #downloadButtons {
+      display: none;
+    }
+
+    .blink {
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    @media (max-width: 600px) {
+      .terminal {
+        width: 100%;
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="terminal">
+    <h1>Hacker Payload Generator</h1>
+
+    <div class="input-group">
+      <label for="targetUsername">Target Username (e.g., carlos):</label>
+      <input type="text" id="targetUsername" placeholder="Enter target username" />
+    </div>
+
+    <div class="input-group">
+      <label for="validUsername">Valid Username (e.g., wiener):</label>
+      <input type="text" id="validUsername" placeholder="Enter your valid username" />
+    </div>
+
+    <div class="input-group">
+      <label for="validPassword">Valid Password (e.g., peter):</label>
+      <input type="text" id="validPassword" placeholder="Enter your valid password" />
+    </div>
+
+    <div class="input-group">
+      <label for="maxAttempts">Maximum Success Attempts (e.g., 3):</label>
+      <input type="number" id="maxAttempts" min="1" placeholder="Enter max attempts" />
+    </div>
+
+    <div class="input-group">
+      <label for="passwordFile">Password List File:</label>
+      <input type="file" id="passwordFile" accept=".txt" />
+    </div>
+
+    <div class="button-group">
+      <button onclick="generatePayloads()">Generate Payloads</button>
+    </div>
+
+    <div id="output">Awaiting input... <span class="blink">_</span></div>
+
+    <div class="button-group" id="downloadButtons">
+      <button id="downloadUsernames" onclick="downloadUsernames()" disabled>Download Username List</button>
+      <button id="downloadPasswords" onclick="downloadPasswords()" disabled>Download Password List</button>
+    </div>
+  </div>
+
+  <script>
+    let usernamesContent = '';
+    let passwordsContent = '';
+
+    async function generatePayloads() {
+      const targetUsername = document.getElementById('targetUsername').value.trim();
+      const validUsername = document.getElementById('validUsername').value.trim();
+      const validPassword = document.getElementById('validPassword').value.trim();
+      const maxAttempts = parseInt(document.getElementById('maxAttempts').value);
+      const passwordFile = document.getElementById('passwordFile').files[0];
+      const output = document.getElementById('output');
+
+      if (!targetUsername || !validUsername || !validPassword) {
+        output.innerHTML = 'Error: All username and password fields must be filled.<br>Awaiting input... <span class="blink">_</span>';
+        return;
+      }
+
+      if (isNaN(maxAttempts) || maxAttempts < 1) {
+        output.innerHTML = 'Error: Maximum attempts must be a positive number.<br>Awaiting input... <span class="blink">_</span>';
+        return;
+      }
+
+      if (!passwordFile) {
+        output.innerHTML = 'Error: A password file must be selected.<br>Awaiting input... <span class="blink">_</span>';
+        return;
+      }
+
+      let passwords = [];
+      try {
+        passwords = await readPasswordFile(passwordFile);
+      } catch (error) {
+        output.innerHTML = `Error: ${error.message}<br>Awaiting input... <span class="blink">_</span>`;
+        return;
+      }
+
+      if (passwords.length === 0) {
+        output.innerHTML = 'Error: Password file is empty.<br>Awaiting input... <span class="blink">_</span>';
+        return;
+      }
+
+      output.innerHTML = 'Generating payload files...<br>';
+
+      const usernames = [];
+      const passwordPayload = [];
+
+      for (let i = 0; i < passwords.length; i += maxAttempts) {
+        const chunk = passwords.slice(i, i + maxAttempts);
+        usernames.push(...Array(chunk.length).fill(targetUsername));
+        usernames.push(validUsername);
+
+        passwordPayload.push(...chunk);
+        passwordPayload.push(validPassword);
+      }
+
+      usernamesContent = usernames.join('\n');
+      passwordsContent = passwordPayload.join('\n');
+
+      document.getElementById('downloadUsernames').disabled = false;
+      document.getElementById('downloadPasswords').disabled = false;
+      document.getElementById('downloadButtons').style.display = 'flex';
+
+      output.innerHTML += 'Payloads generated successfully. Use the buttons below to download the files.<br><span class="blink">_</span>';
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function readPasswordFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const passwords = e.target.result.split('\n').map(p => p.trim()).filter(Boolean);
+          resolve(passwords);
+        };
+        reader.onerror = () => reject(new Error('Failed to read password file'));
+        reader.readAsText(file);
+      });
+    }
+
+    function downloadUsernames() {
+      if (usernamesContent) {
+        downloadFile('usernames.txt', usernamesContent, 'Usernames file downloaded.');
+      }
+    }
+
+    function downloadPasswords() {
+      if (passwordsContent) {
+        downloadFile('passwords.txt', passwordsContent, 'Passwords file downloaded.');
+      }
+    }
+
+    function downloadFile(filename, content, successMessage) {
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      const output = document.getElementById('output');
+      output.innerHTML += `${successMessage}<br><span class="blink">_</span>`;
+      output.scrollTop = output.scrollHeight;
+    }
+  </script>
+</body>
+</html>
