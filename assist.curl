@@ -26,16 +26,456 @@ type C:\Users\apurbo\Desktop\notes.txt | clip
 ipconfig | clip
 ```
 
----
+---------------------------------------------------------------------------
+# C++ Cheatsheet (with `<bits/stdc++.h>` for Competitive Programming)
 
-### For binary files (like `.exe` or `.jpg`):
+## Notes on `<bits/stdc++.h>`
+- **Purpose**: Includes most C++ Standard Library headers (e.g., `<iostream>`, `<vector>`, `<string>`, `<map>`, `<set>`, `<algorithm>`, etc.) in one line.
+- **Usage**: Ideal for competitive programming to save time writing includes, but non-standard and not guaranteed to work on all compilers (e.g., MSVC).
+- **Include**: 
+  ```cpp
+  #include <bits/stdc++.h>
+  using namespace std;
+  ```
+- **Caution**: Increases compilation time; avoid in production code or non-GCC environments.
 
-`type` may not handle them properly since it’s for text. In that case, use `powershell`:
+## Basic Syntax
+- **Comments**: 
+  - Single-line: `// Comment`
+  - Multi-line: `/* Comment */`
+- **Main Function**:
+  ```cpp
+  #include <bits/stdc++.h>
+  using namespace std;
+  int main() {
+      return 0;
+  }
+  ```
 
-```cmd
-powershell Get-Content -Path "file.bin" -Raw | Set-Clipboard
+## Variables and Data Types
+- **Primitive Types**:
+  - `int`: Integer (e.g., `int x = 5;`)
+  - `double`: Floating-point (e.g., `double y = 3.14;`)
+  - `char`: Single character (e.g., `char c = 'A';`)
+  - `bool`: Boolean (e.g., `bool flag = true;`)
+  - `string`: String (e.g., `string s = "Hello";`)
+- **Constants**: `const int MAX = 100;`
+- **Type Modifiers**: `short`, `long`, `unsigned`, `signed`
+
+## Input/Output
+- **Basic Output**: `cout << "Hello" << endl;`
+- **Basic Input**: `int x; cin >> x;`
+- **Fast I/O for Competitive Programming**:
+  ```cpp
+  ios_base::sync_with_stdio(false); // Disable sync with C I/O
+  cin.tie(nullptr); // Untie cin from cout
+  ```
+
+### Competitive Programming Input Techniques
+- **Single Line, Space-Separated Integers**:
+  ```cpp
+  string line;
+  getline(cin, line);
+  stringstream ss(line);
+  int num;
+  vector<int> nums;
+  while (ss >> num) {
+      nums.push_back(num);
+  }
+  // Example input: "1 2 3 4" -> nums = {1, 2, 3, 4}
+  ```
+- **Splitting Words in a Line**:
+  ```cpp
+  string line;
+  getline(cin, line);
+  stringstream ss(line);
+  string word;
+  vector<string> words;
+  while (ss >> word) {
+      words.push_back(word);
+  }
+  // Example input: "hello world code" -> words = {"hello", "world", "code"}
+  ```
+- **Reading Until EOF**:
+  ```cpp
+  int x;
+  while (cin >> x) { // Reads until EOF (Ctrl+D on Linux/Mac, Ctrl+Z on Windows)
+      // Process x
+  }
+  // Example input: "1 2 3\n4 5\n^Z"
+  ```
+- **Reading Fixed Number of Inputs**:
+  ```cpp
+  int n;
+  cin >> n;
+  vector<int> arr(n);
+  for (int i = 0; i < n; i++) {
+      cin >> arr[i];
+  }
+  // Example input: "5\n1 2 3 4 5" -> arr = {1, 2, 3, 4, 5}
+  ```
+- **Reading Line with Mixed Types**:
+  ```cpp
+  string line;
+  getline(cin, line);
+  stringstream ss(line);
+  int a; string b; double c;
+  ss >> a >> b >> c;
+  // Example input: "42 hello 3.14" -> a=42, b="hello", c=3.14
+  ```
+- **Reading Matrix (2D Array)**:
+  ```cpp
+  int n, m; // Rows, columns
+  cin >> n >> m;
+  vector<vector<int>> matrix(n, vector<int>(m));
+  for (int i = 0; i < n; i++) {
+      for (int j = 0; j < m; j++) {
+          cin >> matrix[i][j];
+      }
+  }
+  // Example input: "2 3\n1 2 3\n4 5 6" -> matrix = {{1,2,3}, {4,5,6}}
+  ```
+- **Reading String with Spaces**:
+  ```cpp
+  string full_name;
+  getline(cin, full_name);
+  // Example input: "John Doe" -> full_name = "John Doe"
+  ```
+
+## Operators
+- **Arithmetic**: `+`, `-`, `*`, `/`, `%`, `++`, `--`
+- **Comparison**: `==`, `!=`, `<`, `>`, `<=`, `>=`
+- **Logical**: `&&`, `||`, `!`
+- **Assignment**: `=`, `+=`, `-=`, `*=`, `/=`, `%=`
+- **Bitwise**: `&`, `|`, `^`, `~`, `<<`, `>>`
+
+## Control Structures
+- **If-Else**:
+  ```cpp
+  if (condition) {
+      // code
+  } else if (condition2) {
+      // code
+  } else {
+      // code
+  }
+  ```
+- **Switch**:
+  ```cpp
+  switch (variable) {
+      case value1: 
+          // code
+          break;
+      default:
+          // code
+  }
+  ```
+- **Loops**:
+  - For: 
+    ```cpp
+    for (int i = 0; i < n; i++) { /* code */ }
+    ```
+  - While: 
+    ```cpp
+    while (condition) { /* code */ }
+    ```
+  - Do-While: 
+    ```cpp
+    do { /* code */ } while (condition);
+    ```
+
+## Functions
+- **Declaration/Definition**:
+  ```cpp
+  return_type function_name(parameters) {
+      // code
+      return value;
+  }
+  ```
+- **Example**:
+  ```cpp
+  int add(int a, int b) {
+      return a + b;
+  }
+  ```
+- **Function Overloading**:
+  ```cpp
+  int add(int a, int b);
+  double add(double a, double b);
+  ```
+
+## Arrays
+- **Declaration**: `int arr[5] = {1, 2, 3, 4, 5};`
+- **Access**: `arr[0]` (first element)
+- **Size**: `sizeof(arr) / sizeof(arr[0])`
+
+## Strings
+- **Declaration**: `string str = "Hello";`
+- **Common Methods**: 
+  - `str.length()`
+  - `str.substr(pos, len)`
+  - `str.find("substr")`
+  - `str += "world";`
+
+## Pointers
+- **Declaration**: `int* ptr = &variable;`
+- **Dereference**: `*ptr`
+- **Null Pointer**: `int* ptr = nullptr;`
+
+## References
+- **Declaration**: `int& ref = variable;`
+- **Usage**: Modifies original variable (alias)
+
+## Classes and Objects
+- **Class Definition**:
+  ```cpp
+  class MyClass {
+  public:
+      int x;
+      void display() {
+          cout << x << endl;
+      }
+  };
+  ```
+- **Object Creation**: `MyClass obj; obj.x = 10; obj.display();`
+- **Constructors**:
+  ```cpp
+  MyClass(int val) : x(val) {}
+  ```
+
+## Inheritance
+- **Syntax**:
+  ```cpp
+  class Derived : public Base {
+      // code
+  };
+  ```
+
+## Standard Template Library (STL)
+### Vector
+- **Description**: Dynamic array that can resize automatically.
+- **Syntax and Example**:
+  ```cpp
+  vector<int> vec = {1, 2, 3};
+  vec.push_back(4);
+  vec.pop_back();
+  vec[0] = 10;
+  for (auto x : vec) {
+      cout << x << " "; // Prints: 10 2 3
+  }
+  ```
+
+### Array
+- **Description**: Fixed-size array with bounds checking.
+- **Syntax and Example**:
+  ```cpp
+  array<int, 3> arr = {1, 2, 3};
+  arr[1] = 20;
+  for (int x : arr) {
+      cout << x << " "; // Prints: 1 20 3
+  }
+  cout << arr.size() << endl; // Prints: 3
+  ```
+
+### Stack
+- **Description**: LIFO (Last In, First Out) data structure.
+- **Syntax and Example**:
+  ```cpp
+  stack<int> s;
+  s.push(1);
+  s.push(2);
+  cout << s.top() << endl; // Prints: 2
+  s.pop();
+  cout << s.top() << endl; // Prints: 1
+  ```
+
+### Queue
+- **Description**: FIFO (First In, First Out) data structure.
+- **Syntax and Example**:
+  ```cpp
+  queue<int> q;
+  q.push(1);
+  q.push(2);
+  cout << q.front() << endl; // Prints: 1
+  q.pop();
+  cout << q.front() << endl; // Prints: 2
+  ```
+
+### Deque
+- **Description**: Double-ended queue, allows insertion/deletion at both ends.
+- **Syntax and Example**:
+  ```cpp
+  deque<int> dq;
+  dq.push_back(1);
+  dq.push_front(2);
+  cout << dq.front() << endl; // Prints: 2
+  cout << dq.back() << endl;  // Prints: 1
+  dq.pop_front();
+  ```
+
+### Map
+- **Description**: Associative container storing key-value pairs, sorted by keys.
+- **Syntax and Example**:
+  ```cpp
+  map<string, int> m;
+  m["apple"] = 5;
+  m["banana"] = 10;
+  cout << m["apple"] << endl; // Prints: 5
+  for (auto& pair : m) {
+      cout << pair.first << ": " << pair.second << endl;
+  }
+  ```
+
+### Set
+- **Description**: Stores unique elements in sorted order.
+- **Syntax and Example**:
+  ```cpp
+  set<int> s;
+  s.insert(3);
+  s.insert(1);
+  s.insert(3); // Duplicate, ignored
+  for (int x : s) {
+      cout << x << " "; // Prints: 1 3
+  }
+  ```
+
+### Unordered Map
+- **Description**: Key-value pairs with no sorting, faster lookup.
+- **Syntax and Example**:
+  ```cpp
+  unordered_map<string, int> um;
+  um["key1"] = 100;
+  um["key2"] = 200;
+  cout << um["key1"] << endl; // Prints: 100
+  ```
+
+### Unordered Set
+- **Description**: Stores unique elements, no sorting.
+- **Syntax and Example**:
+  ```cpp
+  unordered_set<int> us;
+  us.insert(5);
+  us.insert(2);
+  for (int x : us) {
+      cout << x << " "; // Prints: 5 2 (order not guaranteed)
+  }
+  ```
+
+### Priority Queue
+- **Description**: Heap-based queue where highest/lowest priority element is at front.
+- **Syntax and Example**:
+  ```cpp
+  // Max heap (default)
+  priority_queue<int> pq;
+  pq.push(3);
+  pq.push(1);
+  cout << pq.top() << endl; // Prints: 3
+  pq.pop();
+  // Min heap
+  priority_queue<int, vector<int>, greater<int>> min_pq;
+  min_pq.push(3);
+  min_pq.push(1);
+  cout << min_pq.top() << endl; // Prints: 1
+  ```
+
+## Error Handling
+- **Try-Catch**:
+  ```cpp
+  try {
+      throw "Error!";
+  } catch (const char* msg) {
+      cerr << msg << endl;
+  }
+  ```
+
+## File Handling
+- **Write**:
+  ```cpp
+  ofstream file("example.txt");
+  file << "Hello, file!";
+  file.close();
+  ```
+- **Read**:
+  ```cpp
+  ifstream file("example.txt");
+  string line;
+  while (getline(file, line)) {
+      cout << line << endl;
+  }
+  file.close();
+  ```
+
+## Memory Management
+- **Dynamic Allocation**:
+  ```cpp
+  int* ptr = new int(5);
+  delete ptr;
+  ```
+- **Smart Pointers** (C++11+):
+  ```cpp
+  unique_ptr<int> uptr = make_unique<int>(10);
+  shared_ptr<int> sptr = make_shared<int>(20);
+  ```
+
+## C++11+ Features
+- **Auto**: `auto x = 5;`
+- **Range-based For Loop**:
+  ```cpp
+  for (int x : vector) { /* code */ }
+  ```
+- **Lambda Expressions**:
+  ```cpp
+  auto func = [](int x) { return x * x; };
+  ```
+- **nullptr**: Replaces `NULL`
+
+## Common Algorithms (via `<algorithm>`)
+- **Sort**:
+  ```cpp
+  vector<int> vec = {4, 2, 3, 1};
+  sort(vec.begin(), vec.end()); // Ascending: {1, 2, 3, 4}
+  sort(vec.rbegin(), vec.rend()); // Descending: {4, 3, 2, 1}
+  ```
+- **Find**:
+  ```cpp
+  auto it = find(vec.begin(), vec.end(), 3);
+  if (it != vec.end()) cout << "Found: " << *it << endl;
+  ```
+- **Binary Search**:
+  ```cpp
+  sort(vec.begin(), vec.end());
+  bool found = binary_search(vec.begin(), vec.end(), 3); // true if found
+  ```
+
+## Compilation
+- Compile: `g++ file.cpp -o output`
+- Run: `./output` (Linux/Mac) or `output.exe` (Windows)
+
+## Competitive Programming Template
+Here’s a complete template using `<bits/stdc++.h>` for quick setup:
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
+    
+    int t; // Number of test cases
+    cin >> t;
+    while (t--) {
+        int n;
+        cin >> n;
+        vector<int> arr(n);
+        for (int i = 0; i < n; i++) {
+            cin >> arr[i];
+        }
+        // Process input
+        for (int x : arr) {
+            cout << x << " ";
+        }
+        cout << endl;
+    }
+    return 0;
+}
 ```
-
----
-
-Do you want me to also show you how to **paste the clipboard content back into a file** from CMD?
