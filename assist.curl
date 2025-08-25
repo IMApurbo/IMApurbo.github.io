@@ -1,3 +1,41 @@
 curl -X POST "https://api.groq.com/openai/v1/chat/completions" -H "Authorization: Bearer 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" -H "Content-Type: application/json" -d "{\"messages\":[{\"role\":\"user\",\"content\":\"Explain the importance of fast language models\"}],\"model\":\"Llama-3.3-70B-Versatile\"}" -o response.json
 
 curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent" -H "Content-Type: application/json" -H "X-goog-api-key: AIzaSyCAsIYrG5JM5tYb6JoORx-o02-cHThZJNM" -X POST -d "{\"contents\":[{\"parts\":[{\"text\":\"what ai can do\"}]}]}"
+
+
+Copy a file directly to clipboard
+```cmd
+type filename.txt | clip
+```
+
+✅ This will copy the entire content of `filename.txt` into the clipboard.
+
+---
+
+### Examples
+
+* Copy a text file:
+
+```cmd
+type C:\Users\apurbo\Desktop\notes.txt | clip
+```
+
+* Copy the output of another command:
+
+```cmd
+ipconfig | clip
+```
+
+---
+
+### For binary files (like `.exe` or `.jpg`):
+
+`type` may not handle them properly since it’s for text. In that case, use `powershell`:
+
+```cmd
+powershell Get-Content -Path "file.bin" -Raw | Set-Clipboard
+```
+
+---
+
+Do you want me to also show you how to **paste the clipboard content back into a file** from CMD?
