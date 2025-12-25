@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google-site-verification" content="S_PY37oLhp0SBWmDyPStK_CDh90xfnNs3aVYB3zkfUo" />
+    <title>AKM Korishee Apurbo - Portfolio</title>
+    <style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Courier New', Courier, monospace;
+}
+body {
+    background: #000;
+    color: #00ff00;
+    overflow-x: hidden;
+    min-height: 100vh;
+    position: relative;
+}
+/* Animated Background */
+.bg-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background: linear-gradient(45deg, #000 0%, #001a00 50%, #000 100%);
+    overflow: hidden;
+}
+.grid-line {
+    position: absolute;
+    background: rgba(0, 255, 0, 0.1);
+    animation: gridMove 8s linear infinite;
+}
+.grid-line.horizontal {
+    width: 100%;
+    height: 1px;
+}
+.grid-line.vertical {
+    width: 1px;
+    height: 100%;
+}
+@keyframes gridMove {
+    0% { opacity: 0; }
+    50% { opacity: 0.3; }
+    100% { opacity: 0; }
+}
+.particle {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: #00ff00;
+    border-radius: 50%;
+    animation: float 6s infinite;
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0) translateX(0); opacity: 0; }
+    50% { opacity: 1; }
+}
+/* Scanline Effect */
+.scanline {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: rgba(0, 255, 0, 0.3);
+    animation: scan 4s linear infinite;
+    pointer-events: none;
+    z-index: 999;
+}
+@keyframes scan {
+    0% { transform: translateY(-10px); }
+    100% { transform: translateY(100vh); }
+}
+/* Container Layout */
+.container {
+    display: flex;
+    min-height: 100vh;
+    position: relative;
+    z-index: 10;
+}
+/* Sidebar */
+.sidebar {
+    width: 280px;
+    background: rgba(0, 20, 0, 0.9);
+    padding: 2rem 1.5rem;
+    overflow-y: auto;
+    border-right: 2px solid #00ff00;
+    backdrop-filter: blur(10px);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    z-index: 100;
+}
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+.sidebar::-webkit-scrollbar-thumb {
+    background: #00ff00;
+    border-radius: 3px;
+}
+.sidebar-title {
+    color: #00ff00;
+    font-size: 1.2rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    text-shadow: 0 0 10px #00ff00;
+}
+.tool-btn {
+    width: 100%;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    background: rgba(20, 20, 20, 0.8);
+    color: #00ff00;
+    border: 2px solid #00ff00;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.95rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+    transform: translateX(-20px);
+    animation: slideIn 0.5s forwards;
+}
+@keyframes slideIn {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+.tool-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(0, 255, 0, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease-out, height 0.6s ease-out;
+}
+.tool-btn:hover::before {
+    width: 400px;
+    height: 400px;
+}
+.tool-btn:hover {
+    background: #00ff00;
+    color: #000;
+    box-shadow: 0 0 25px rgba(0, 255, 0, 0.8), 0 5px 15px rgba(0, 255, 0, 0.4);
+    transform: translateY(-3px) translateX(5px);
+    border-color: #00ff00;
+}
+.tool-btn:active {
+    transform: translateY(-1px) scale(0.98);
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+}
+/* Main Content */
+.main {
+    flex: 1;
+    margin-left: 280px;
+    padding: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+.header-container {
+    text-align: center;
+    perspective: 1000px;
+}
+.header {
+    font-size: clamp(2.5rem, 8vw, 5rem);
+    font-weight: bold;
+    color: #00ff00;
+    text-shadow: 0 0 20px #00ff00, 0 0 40px #00ff00, 0 0 60px #00ff00;
+    letter-spacing: 4px;
+    transform-style: preserve-3d;
+    transition: transform 0.1s ease-out;
+    user-select: none;
+    line-height: 1.2;
+}
+.subtitle {
+    margin-top: 1rem;
+    font-size: 1.2rem;
+    color: #00ff00;
+    opacity: 0.7;
+    text-shadow: 0 0 10px #00ff00;
+}
+/* Terminal Icon */
+.terminal-icon {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 60px;
+    height: 60px;
+    background: rgba(0, 255, 0, 0.2);
+    border: 2px solid #00ff00;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1000;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+}
+.terminal-icon:hover {
+    background: rgba(0, 255, 0, 0.5);
+    box-shadow: 0 0 35px rgba(0, 255, 0, 0.9), 0 5px 20px rgba(0, 255, 0, 0.4);
+    transform: scale(1.15) rotate(5deg);
+    border-color: #39ff14;
+}
+.terminal-icon:active {
+    transform: scale(1.05) rotate(2deg);
+}
+.terminal-icon svg {
+    width: 30px;
+    height: 30px;
+    fill: #00ff00;
+    transition: all 0.3s;
+    filter: drop-shadow(0 0 3px rgba(0, 255, 0, 0.5));
+}
+.terminal-icon:hover svg {
+    fill: #000;
+    filter: none;
+}
+/* Terminal Window - macOS Style */
+.terminal-window {
+    position: fixed;
+    width: 800px;
+    max-width: 90vw;
+    height: 550px;
+    max-height: 85vh;
+    background: rgba(18, 18, 18, 0.98);
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 255, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    z-index: 2000;
+    left: 50%;
+    top: 50%;
+    opacity: 0;
+    pointer-events: none;
+    transform-origin: bottom right;
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    resize: both;
+    overflow: hidden;
+    min-width: 400px;
+    min-height: 300px;
+}
+/* macOS-style animations */
+.terminal-window.opening {
+    transform: translate(20%, 20%) scale(0.1);
+    opacity: 0;
+}
+.terminal-window.active {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    pointer-events: all;
+}
+.terminal-window.closing, .terminal-window.minimized {
+    transform: translate(20%, 20%) scale(0.1);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.55, 0.055, 0.675, 0.19);
+}
+.terminal-window.maximized {
+    width: 100vw !important;
+    height: 100vh !important;
+    left: 0 !important;
+    top: 0 !important;
+    transform: none !important;
+    border-radius: 0;
+    max-width: none;
+    max-height: none;
+}
+.terminal-header {
+    background: rgba(30, 30, 30, 0.95);
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+    border-radius: 12px 12px 0 0;
+    cursor: move;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    flex-shrink: 0;
+}
+.terminal-window.maximized .terminal-header {
+    border-radius: 0;
+}
+.terminal-title {
+    color: #00ff00;
+    font-size: 0.85rem;
+    text-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
+    flex: 1;
+    text-align: center;
+    margin-left: 60px;
+}
+.terminal-controls {
+    display: flex;
+    gap: 0.5rem;
+    position: absolute;
+    left: 1rem;
+}
+.terminal-btn {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid rgba(0, 0, 0, 0.4);
+    position: relative;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.terminal-btn:hover {
+    filter: brightness(1.3);
+    transform: scale(1.15);
+}
+.terminal-btn:active {
+    transform: scale(1.05);
+    filter: brightness(0.9);
+}
+.btn-close { background: linear-gradient(135deg, #ff6057, #ff5f56); }
+.btn-minimize { background: linear-gradient(135deg, #ffbd2e, #ffbb29); }
+.btn-maximize { background: linear-gradient(135deg, #28ca42, #27c93f); }
+.terminal-body {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: 14px;
+    color: #d4d4d4;
+    background: rgba(10, 10, 10, 0.95);
+    border-radius: 0 0 12px 12px;
+}
+.terminal-body::-webkit-scrollbar {
+    width: 10px;
+}
+.terminal-body::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+}
+.terminal-body::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 0, 0.4);
+    border-radius: 5px;
+}
+.terminal-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 255, 0, 0.6);
+}
+.output-line {
+    margin: 0.4rem 0;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+.command-line { color: #00ff00; text-shadow: 0 0 5px rgba(0, 255, 0, 0.3); }
+.error { color: #ff6b6b; }
+.success { color: #51cf66; }
+.info { color: #74c0fc; }
+.input-line {
+    display: flex;
+    align-items: center;
+    margin-top: 0.8rem;
+    color: #d4d4d4;
+}
+.prompt {
+    color: #51cf66;
+    margin-right: 0.5rem;
+    font-weight: bold;
+    flex-shrink: 0;
+    text-shadow: 0 0 5px rgba(81, 207, 102, 0.3);
+}
+.command-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #d4d4d4;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            font-size: 14px;
+            padding: 0;
+            margin: 0;
+            caret-color: #00ff00; /* Makes the native caret bright green */
+        }
+
+        /* Glowing green caret effect */
+        .command-input::selection {
+            background: rgba(0, 255, 0, 0.3);
+        }
+
+        /* Optional: stronger glow on focus */
+        .command-input:focus {
+            box-shadow: none;
+        }
+.cursor-blink {
+    display: inline-block;
+    width: 8px;
+    height: 1em;
+    background: #00ff00;
+    animation: blink 1s infinite;
+    vertical-align: text-top;
+    margin-left: 2px;
+    box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+}
+@keyframes blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+}
+/* Hamburger Menu */
+.hamburger {
+    display: none;
+    position: fixed;
+    top: 1.5rem;
+    left: 1.5rem;
+    background: none;
+    border: none;
+    color: #00ff00;
+    font-size: 2rem;
+    cursor: pointer;
+    z-index: 200;
+    text-shadow: 0 0 10px #00ff00;
+    transition: transform 0.3s;
+}
+.hamburger:hover {
+    transform: scale(1.1);
+}
+/* Responsive */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    .sidebar.active {
+        transform: translateX(0);
+    }
+    .main {
+        margin-left: 0;
+        padding: 2rem 1rem;
+    }
+    .hamburger {
+        display: block;
+    }
+    .terminal-icon {
+        width: 50px;
+        height: 50px;
+        bottom: 1.5rem;
+        right: 1.5rem;
+    }
+    .terminal-icon svg {
+        width: 25px;
+        height: 25px;
+    }
+    .header {
+        font-size: clamp(2rem, 10vw, 3rem);
+    }
+}
+/* Ripple Effect */
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(0, 255, 0, 0.6);
+    transform: scale(0);
+    animation: ripple 0.6s ease-out;
+    pointer-events: none;
+}
+@keyframes ripple {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation" id="bgAnimation"></div>
+    <div class="scanline"></div>
+    <!-- Hamburger Menu -->
+    <button class="hamburger" id="hamburger">☰</button>
+    <!-- Terminal Icon -->
+    <div class="terminal-icon" id="terminalIcon" title="Open Terminal">
+        <svg viewBox="0 0 24 24">
+            <path d="M20,19V7H4V19H20M20,3A2,2 0 0,1 22,5V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V5C2,3.89 2.9,3 4,3H20M13,17V15H18V17H13M9.58,13L5.57,9H8.4L11.7,12.3C12.09,12.69 12.09,13.33 11.7,13.72L8.42,17H5.59L9.58,13Z"/>
+        </svg>
+    </div>
+    <!-- Terminal Window -->
+    <div class="terminal-window" id="terminalWindow">
+        <div class="terminal-header" id="terminalHeader">
+            <div class="terminal-controls">
+                <div class="terminal-btn btn-close" id="closeTerminal" title="Close"></div>
+                <div class="terminal-btn btn-minimize" id="minimizeTerminal" title="Minimize"></div>
+                <div class="terminal-btn btn-maximize" id="maximizeTerminal" title="Maximize"></div>
+            </div>
+            <div class="terminal-title">guest@IMApurbo — zsh — 80×24</div>
+        </div>
+        <div class="terminal-body" id="terminalBody">
+            <div class="output-line info">Last login: Thu Dec 25 on ttys001</div>
+            <div class="output-line info">Welcome to IMOS Terminal v2.0</div>
+            <div class="output-line" style="margin-bottom: 1rem;">Type 'help' for available commands</div>
+            <div class="input-line">
+                <span class="prompt">guest@IMApurbo:~$</span>
+                <input type="text" class="command-input" id="commandInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+            </div>
+        </div>
+    </div>
+    <!-- Main Container -->
+    <div class="container">
+        <aside class="sidebar" id="sidebar">
+            <h2 class="sidebar-title">TOOLS</h2>
+            <!-- Buttons generated by JS -->
+        </aside>
+        <main class="main">
+            <div class="header-container">
+                <h1 class="header" id="mainHeader">IMApurbo</h1>
+                <p class="subtitle">Tools Hub</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Tools Data
+        const tools = [
+            { name: 'BangLang PlayGround', url: 'https://imapurbo.github.io/BanLang.html' },
+            { name: 'Image Editor', url: 'https://imapurbo.github.io/inpaint.html' },
+            { name: 'Image Generator', url: 'https://imapurbo.github.io/imagegen.html' },
+            { name: 'CTF Checklist', url: 'https://imapurbo.github.io/CtF-checklist.html' },
+            { name: 'Bug Bounty Checklist', url: 'https://imapurbo.github.io/BugB1.html' },
+            { name: 'Base64 Encoder/Decoder', url: 'https://imapurbo.github.io/Base64.html' },
+            { name: 'JWT Analyzer', url: 'https://imapurbo.github.io/JWT.html' },
+            { name: 'CSRF Analyzer', url: 'https://imapurbo.github.io/CSRF.html' },
+            { name: 'Reverse Shell Generator', url: 'https://imapurbo.github.io/ReverseShell.html' },
+            { name: 'Markdown Editor', url: 'https://imapurbo.github.io/MarkDown.html' },
+            { name: 'Password Mixer', url: 'https://imapurbo.github.io/PassGen_Valid_invalid_comb.html' }
+        ];
+
+        // Generate Background
+        const bgAnimation = document.getElementById('bgAnimation');
+        for (let i = 0; i < 5; i++) {
+            const hLine = document.createElement('div');
+            hLine.className = 'grid-line horizontal';
+            hLine.style.top = `${Math.random() * 100}%`;
+            hLine.style.animationDelay = `${Math.random() * 2}s`;
+            bgAnimation.appendChild(hLine);
+
+            const vLine = document.createElement('div');
+            vLine.className = 'grid-line vertical';
+            vLine.style.left = `${Math.random() * 100}%`;
+            vLine.style.animationDelay = `${Math.random() * 2}s`;
+            bgAnimation.appendChild(vLine);
+        }
+        for (let i = 0; i < 20; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = `${Math.random() * 100}%`;
+            particle.style.top = `${Math.random() * 100}%`;
+            particle.style.animationDelay = `${Math.random() * 6}s`;
+            particle.style.animationDuration = `${4 + Math.random() * 4}s`;
+            bgAnimation.appendChild(particle);
+        }
+
+        // Generate Sidebar Buttons
+        const sidebar = document.getElementById('sidebar');
+        tools.forEach((tool, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'tool-btn';
+            btn.textContent = tool.name;
+            btn.style.animationDelay = `${i * 0.1}s`;
+            btn.addEventListener('click', (e) => {
+                createRipple(e, btn);
+                setTimeout(() => window.open(tool.url, '_blank'), 200);
+            });
+            sidebar.appendChild(btn);
+        });
+
+        // Ripple Effect
+        function createRipple(e, element) {
+            const ripple = document.createElement('span');
+            ripple.className = 'ripple';
+            const rect = element.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            ripple.style.width = ripple.style.height = `${size}px`;
+            ripple.style.left = `${e.clientX - rect.left - size / 2}px`;
+            ripple.style.top = `${e.clientY - rect.top - size / 2}px`;
+            element.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+        }
+
+        // Hamburger Menu
+        const hamburger = document.getElementById('hamburger');
+        hamburger.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
+            hamburger.textContent = sidebar.classList.contains('active') ? '✖' : '☰';
+        });
+
+        // 3D Header Effect
+        const header = document.getElementById('mainHeader');
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 20;
+            const y = (e.clientY / window.innerHeight - 0.5) * 20;
+            header.style.transform = `perspective(1000px) rotateY(${x}deg) rotateX(${-y}deg)`;
+        });
+
+        // Terminal Elements
+        const terminalIcon = document.getElementById('terminalIcon');
+        const terminalWindow = document.getElementById('terminalWindow');
+        const terminalBody = document.getElementById('terminalBody');
+        const commandInput = document.getElementById('commandInput');
+        const cursorBlink = document.getElementById('cursorBlink');
+        const terminalHeader = document.getElementById('terminalHeader');
+        const closeBtn = document.getElementById('closeTerminal');
+        const minimizeBtn = document.getElementById('minimizeTerminal');
+        const maximizeBtn = document.getElementById('maximizeTerminal');
+
+        let currentCommand = '';
+        let commandHistory = [];
+        let historyIndex = -1;
+        let isMaximized = false;
+        let isDragging = false;
+        let dragStartX, dragStartY, initialX, initialY;
+        let previousState = { width: '800px', height: '550px', left: '50%', top: '50%' };
+
+        // Terminal open/close
+        terminalIcon.addEventListener('click', () => {
+            if (terminalWindow.classList.contains('active')) {
+                closeTerminal();
+            } else {
+                openTerminal();
+            }
+        });
+
+        function openTerminal() {
+            terminalWindow.classList.add('opening');
+            terminalWindow.style.display = 'flex';
+            setTimeout(() => {
+                terminalWindow.classList.remove('opening');
+                terminalWindow.classList.add('active');
+                commandInput.focus(); // Triggers keyboard on Android
+            }, 50);
+        }
+
+        function closeTerminal() {
+            terminalWindow.classList.remove('active');
+            terminalWindow.classList.add('closing');
+            setTimeout(() => {
+                terminalWindow.classList.remove('closing');
+                terminalWindow.style.display = 'none';
+                if (isMaximized) {
+                    isMaximized = false;
+                    terminalWindow.classList.remove('maximized');
+                }
+            }, 400);
+        }
+
+        function minimizeTerminal() {
+            terminalWindow.classList.remove('active');
+            terminalWindow.classList.add('minimized');
+            setTimeout(() => {
+                terminalWindow.classList.remove('minimized');
+                terminalWindow.style.display = 'none';
+            }, 400);
+        }
+
+        function toggleMaximize() {
+            if (!isMaximized) {
+                previousState = {
+                    width: terminalWindow.style.width || '800px',
+                    height: terminalWindow.style.height || '550px',
+                    left: terminalWindow.style.left || '50%',
+                    top: terminalWindow.style.top || '50%'
+                };
+                terminalWindow.classList.add('maximized');
+                isMaximized = true;
+            } else {
+                terminalWindow.classList.remove('maximized');
+                terminalWindow.style.width = previousState.width;
+                terminalWindow.style.height = previousState.height;
+                terminalWindow.style.left = previousState.left;
+                terminalWindow.style.top = previousState.top;
+                isMaximized = false;
+            }
+        }
+
+        closeBtn.addEventListener('click', closeTerminal);
+        minimizeBtn.addEventListener('click', minimizeTerminal);
+        maximizeBtn.addEventListener('click', toggleMaximize);
+        terminalHeader.addEventListener('dblclick', (e) => {
+            if (e.target === terminalHeader || e.target.classList.contains('terminal-title')) {
+                toggleMaximize();
+            }
+        });
+
+        // Draggable
+        terminalHeader.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('terminal-btn') || isMaximized) return;
+            isDragging = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            const rect = terminalWindow.getBoundingClientRect();
+            initialX = rect.left;
+            initialY = rect.top;
+            terminalWindow.style.transition = 'none';
+            document.body.style.cursor = 'grabbing';
+            terminalHeader.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const deltaX = e.clientX - dragStartX;
+            const deltaY = e.clientY - dragStartY;
+            terminalWindow.style.left = (initialX + deltaX) + 'px';
+            terminalWindow.style.top = (initialY + deltaY) + 'px';
+            terminalWindow.style.transform = 'none';
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                terminalWindow.style.transition = '';
+                document.body.style.cursor = '';
+                terminalHeader.style.cursor = 'move';
+            }
+        });
+
+        // Terminal Commands
+        const commands = {
+            help: () => `Available Commands:
+  help    Show this message
+  ls      List all tools
+  open [name] Open a specific tool
+  clear   Clear terminal screen
+  about   About me
+  whoami  Show current user
+  date    Display current date/time
+  neofetch System information
+  exit    Close terminal`,
+
+            ls: () => {
+                let output = 'Available Tools:\n';
+                tools.forEach((t, i) => output += ` ${String(i + 1).padStart(2, ' ')}. ${t.name}\n`);
+                return output;
+            },
+
+            open: (arg) => {
+                if (!arg) return 'Usage: open [tool name or number]';
+                const num = parseInt(arg);
+                let tool;
+                if (!isNaN(num) && num > 0 && num <= tools.length) {
+                    tool = tools[num - 1];
+                } else {
+                    tool = tools.find(t => t.name.toLowerCase().includes(arg.toLowerCase()));
+                }
+                if (tool) {
+                    window.open(tool.url, '_blank');
+                    return `✓ Opening ${tool.name}...`;
+                }
+                return '✗ Tool not found. Use "ls" to see available tools.';
+            },
+
+            clear: () => {
+                const lines = terminalBody.querySelectorAll('.output-line, .command-line');
+                lines.forEach(line => line.remove());
+                return '';
+            },
+
+            about: () => `
+╔════════════════════════════════════╗
+║ AKM Korishee Apurbo                ║
+║ Cybersecurity Enthusiast           ║
+║ Tool Developer & Researcher        ║
+╚════════════════════════════════════╝`,
+
+            whoami: () => 'guest',
+            date: () => new Date().toString(),
+            neofetch: () => `
+                  ██████ OS: IMOS
+              ████████████ User: guest@IMApurbo
+            ██████████████ Shell: zsh
+          ████████████████ Terminal: IMTerminal v2.0
+        ██████████████████ CPU: Cyber Intel Core
+      ██ ████████████ ██ Memory: Unlimited
+    ████ ████████████ ████ Uptime: Forever
+  ██████████ ██████████
+██████████ ██████████`,
+            exit: () => {
+                closeTerminal();
+                return 'Connection closed.';
+            }
+        };
+
+        function addOutput(text, className = '') {
+            if (!text) return;
+            const lines = text.split('\n');
+            lines.forEach(line => {
+                const lineEl = document.createElement('div');
+                lineEl.className = `output-line ${className}`;
+                lineEl.textContent = line;
+                terminalBody.insertBefore(lineEl, terminalBody.querySelector('.input-line'));
+            });
+            terminalBody.scrollTop = terminalBody.scrollHeight;
+        }
+
+        function executeCommand() {
+            const cmd = currentCommand.trim();
+            if (!cmd) return;
+
+            addOutput(`guest@IMApurbo:~$ ${cmd}`, 'command-line');
+            commandHistory.push(cmd);
+            historyIndex = commandHistory.length;
+
+            const [command, ...args] = cmd.split(' ');
+            const func = commands[command.toLowerCase()];
+            const output = func ? func(args.join(' ')) : `zsh: command not found: ${command}`;
+
+            if (output && command.toLowerCase() !== 'exit') {
+                addOutput(output, func ? 'info' : 'error');
+            }
+
+            currentCommand = '';
+            commandInput.value = '';
+            commandInput.focus();
+        }
+
+        // Input handling
+        commandInput.addEventListener('input', (e) => {
+            currentCommand = e.target.value;
+        });
+
+        commandInput.addEventListener('keydown', (e) => {
+            if (!terminalWindow.classList.contains('active')) return;
+
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                executeCommand();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    currentCommand = commandHistory[historyIndex];
+                    commandInput.value = currentCommand;
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    currentCommand = commandHistory[historyIndex];
+                    commandInput.value = currentCommand;
+                } else if (historyIndex === commandHistory.length - 1) {
+                    historyIndex++;
+                    currentCommand = '';
+                    commandInput.value = '';
+                }
+            }
+        });
+
+        // Focus on terminal body click (important for mobile)
+        terminalBody.addEventListener('click', () => {
+            commandInput.focus();
+        });
+
+        // Show/hide blinking cursor on focus
+        commandInput.addEventListener('focus', () => cursorBlink.style.display = 'inline-block');
+        commandInput.addEventListener('blur', () => cursorBlink.style.display = 'none');
+    </script>
+</body>
+</html>
