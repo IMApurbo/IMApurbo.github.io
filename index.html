@@ -947,7 +947,7 @@ body {
         function executeCommand() {
             if (!currentCommand.trim()) return;
             
-            addOutput(`guest@apurbo:~$ ${currentCommand}`, 'command-line');
+            addOutput(`guest@IMApurbo:~$ ${currentCommand}`, 'command-line');
             commandHistory.push(currentCommand);
             historyIndex = commandHistory.length;
             
