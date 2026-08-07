@@ -17,6 +17,9 @@
     --bubble-out:#005c4b;
     --bubble-in:#202c33;
     --danger:#f15c6d;
+    --read-tick:#53bdeb;
+    --online:#3ddc84;
+    --admin-accent:#f2b134;
     --radius:10px;
   }
   *{box-sizing:border-box;}
@@ -29,7 +32,7 @@
     overflow:hidden;
   }
   button{font-family:inherit;cursor:pointer;}
-  input{font-family:inherit;}
+  input,textarea{font-family:inherit;}
 
   /* ---------- Auth screen ---------- */
   #auth-screen{
@@ -46,13 +49,9 @@
     border:1px solid var(--line);
     border-radius:16px;
     padding:32px 28px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
   }
-  .brand{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    margin-bottom:6px;
-  }
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
   .brand-mark{
     width:34px;height:34px;border-radius:10px;
     background:linear-gradient(135deg,var(--accent),#00c9a7);
@@ -62,74 +61,40 @@
   .brand-name{font-size:20px;font-weight:600;letter-spacing:.2px;}
   .auth-sub{color:var(--text-dim);font-size:13px;margin:0 0 24px;line-height:1.5;}
   .tabs{display:flex;background:var(--panel-2);border-radius:10px;padding:3px;margin-bottom:20px;}
-  .tab{
-    flex:1;text-align:center;padding:8px 0;border:none;background:transparent;
-    color:var(--text-dim);border-radius:8px;font-size:13px;font-weight:600;
-    transition:.15s;
-  }
+  .tab{flex:1;text-align:center;padding:8px 0;border:none;background:transparent;color:var(--text-dim);border-radius:8px;font-size:13px;font-weight:600;transition:.15s;}
   .tab.active{background:var(--accent);color:#04211b;}
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:6px;}
-  .field input{
-    width:100%;padding:11px 12px;border-radius:8px;
-    border:1px solid var(--line);background:var(--bg);color:var(--text);
-    font-size:14px;outline:none;
-  }
+  .field input{width:100%;padding:11px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:14px;outline:none;}
   .field input:focus{border-color:var(--accent);}
-  .primary-btn{
-    width:100%;padding:12px;border:none;border-radius:8px;
-    background:var(--accent);color:#04211b;font-weight:700;font-size:14px;
-    margin-top:6px;
-  }
+  .primary-btn{width:100%;padding:12px;border:none;border-radius:8px;background:var(--accent);color:#04211b;font-weight:700;font-size:14px;margin-top:6px;transition:.15s;}
+  .primary-btn:hover{filter:brightness(1.08);}
   .primary-btn:disabled{opacity:.5;cursor:not-allowed;}
   .auth-msg{font-size:12.5px;margin-top:12px;line-height:1.5;min-height:16px;}
   .auth-msg.error{color:var(--danger);}
   .auth-msg.ok{color:var(--accent);}
   .fine-print{font-size:11px;color:var(--text-dim);margin-top:18px;line-height:1.6;border-top:1px solid var(--line);padding-top:14px;}
 
-  /* ---------- App screen ---------- */
+  /* ---------- App shell ---------- */
   #app-screen{height:100%;display:none;}
-  .layout{
-    height:100%;display:grid;
-    grid-template-columns:340px 1fr;
-  }
-  .sidebar{
-    background:var(--panel);
-    border-right:1px solid var(--line);
-    display:flex;flex-direction:column;
-    min-width:0;
-  }
-  .sidebar-header{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:14px 16px;border-bottom:1px solid var(--line);
-  }
+  .banner{font-size:11px;color:var(--text-dim);text-align:center;padding:6px 10px;background:var(--panel-2);border-bottom:1px solid var(--line);}
+  .layout{height:calc(100% - 25px);display:grid;grid-template-columns:340px 1fr;}
+
+  .sidebar{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0;}
+  .sidebar-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);}
   .me{display:flex;align-items:center;gap:10px;min-width:0;}
-  .avatar{
-    width:38px;height:38px;border-radius:50%;
-    background:var(--panel-2);color:var(--accent);
-    display:flex;align-items:center;justify-content:center;
-    font-weight:700;font-size:14px;flex-shrink:0;
-  }
+  .avatar{width:38px;height:38px;border-radius:50%;background:var(--panel-2);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;position:relative;}
+  .presence-dot{position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#55606a;border:2px solid var(--panel);}
+  .presence-dot.online{background:var(--online);}
+  .chat-item .presence-dot{border-color:var(--panel);}
   .me-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .icon-btn{
-    width:34px;height:34px;border-radius:50%;border:none;background:transparent;
-    color:var(--text-dim);font-size:16px;display:flex;align-items:center;justify-content:center;
-  }
+  .icon-btn{width:34px;height:34px;border-radius:50%;border:none;background:transparent;color:var(--text-dim);font-size:16px;display:flex;align-items:center;justify-content:center;transition:.15s;}
   .icon-btn:hover{background:var(--panel-2);color:var(--text);}
   .new-chat-row{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;gap:8px;}
-  .new-chat-row input{
-    flex:1;padding:9px 12px;border-radius:20px;border:1px solid var(--line);
-    background:var(--panel-2);color:var(--text);font-size:13px;outline:none;
-  }
-  .new-chat-row button{
-    padding:0 16px;border:none;border-radius:20px;background:var(--accent);
-    color:#04211b;font-weight:700;font-size:13px;
-  }
+  .new-chat-row input{flex:1;padding:9px 12px;border-radius:20px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);font-size:13px;outline:none;}
+  .new-chat-row button{padding:0 16px;border:none;border-radius:20px;background:var(--accent);color:#04211b;font-weight:700;font-size:13px;}
   .chat-list{flex:1;overflow-y:auto;}
-  .chat-item{
-    display:flex;align-items:center;gap:12px;padding:12px 16px;
-    border-bottom:1px solid var(--line);
-  }
+  .chat-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);cursor:pointer;}
   .chat-item:hover{background:var(--panel-2);}
   .chat-item.active{background:var(--panel-2);}
   .chat-item-body{min-width:0;flex:1;}
@@ -139,45 +104,47 @@
   .chat-item-preview{font-size:12.5px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
   .empty-list{padding:30px 20px;color:var(--text-dim);font-size:13px;text-align:center;line-height:1.6;}
 
-  .chat-panel{display:flex;flex-direction:column;min-width:0;background:
-    radial-gradient(circle at 20% 10%, rgba(0,168,132,.05), transparent 40%), var(--bg);}
-  .chat-panel-empty{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    height:100%;color:var(--text-dim);gap:10px;padding:20px;text-align:center;
-  }
-  .chat-header{
-    display:flex;align-items:center;gap:12px;padding:12px 18px;
-    border-bottom:1px solid var(--line);background:var(--panel);
-  }
+  .chat-panel{display:flex;flex-direction:column;min-width:0;background:radial-gradient(circle at 20% 10%, rgba(0,168,132,.05), transparent 40%), var(--bg);}
+  .chat-panel-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-dim);gap:10px;padding:20px;text-align:center;}
+  .chat-header{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--panel);}
+  .peer-info{min-width:0;}
+  .peer-status{font-size:11.5px;color:var(--text-dim);height:14px;}
   .back-btn{display:none;}
   .messages{flex:1;overflow-y:auto;padding:18px 6%;display:flex;flex-direction:column;gap:6px;}
   .bubble-row{display:flex;}
   .bubble-row.out{justify-content:flex-end;}
-  .bubble{
-    max-width:65%;padding:8px 10px 6px;border-radius:8px;font-size:14px;line-height:1.4;
-    position:relative;
-  }
+  .bubble{max-width:65%;padding:8px 10px 6px;border-radius:8px;font-size:14px;line-height:1.4;position:relative;box-shadow:0 1px 2px rgba(0,0,0,.2);}
   .bubble.out{background:var(--bubble-out);border-top-right-radius:2px;}
   .bubble.in{background:var(--bubble-in);border-top-left-radius:2px;}
-  .bubble-time{display:block;text-align:right;font-size:10px;color:var(--text-dim);margin-top:3px;}
-  .composer{
-    display:flex;align-items:center;gap:10px;padding:12px 16px;
-    background:var(--panel);border-top:1px solid var(--line);
-  }
-  .composer input{
-    flex:1;padding:11px 16px;border-radius:22px;border:1px solid var(--line);
-    background:var(--panel-2);color:var(--text);font-size:14px;outline:none;
-  }
-  .send-btn{
-    width:40px;height:40px;border-radius:50%;border:none;background:var(--accent);
-    color:#04211b;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  }
+  .bubble-time{display:flex;justify-content:flex-end;align-items:center;gap:3px;font-size:10px;color:var(--text-dim);margin-top:3px;}
+  .tick{font-size:12px;line-height:1;}
+  .tick.read{color:var(--read-tick);}
+  .composer{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--panel);border-top:1px solid var(--line);}
+  .composer input{flex:1;padding:11px 16px;border-radius:22px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);font-size:14px;outline:none;}
+  .send-btn{width:40px;height:40px;border-radius:50%;border:none;background:var(--accent);color:#04211b;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .send-btn:disabled{opacity:.4;}
 
-  .banner{
-    font-size:11px;color:var(--text-dim);text-align:center;padding:6px 10px;
-    background:var(--panel-2);border-bottom:1px solid var(--line);
-  }
+  /* ---------- Admin ---------- */
+  #admin-screen{height:100%;overflow-y:auto;display:none;}
+  .admin-wrap{padding:28px 24px 60px;max-width:980px;margin:0 auto;}
+  .admin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .admin-title{font-size:19px;font-weight:700;display:flex;align-items:center;gap:8px;color:var(--admin-accent);}
+  .admin-stats{display:flex;gap:14px;margin-bottom:24px;}
+  .stat-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 22px;flex:1;}
+  .stat-num{font-size:26px;font-weight:700;color:var(--admin-accent);}
+  .stat-label{font-size:12px;color:var(--text-dim);margin-top:2px;}
+  .admin-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+  .admin-col{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;}
+  .admin-col-title{padding:12px 14px;font-size:13px;font-weight:700;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
+  .admin-list{max-height:320px;overflow-y:auto;}
+  .admin-list-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px;}
+  .admin-list-item:last-child{border-bottom:none;}
+  .mini-btn{border:none;background:var(--panel-2);color:var(--text);font-size:11.5px;padding:6px 10px;border-radius:6px;font-weight:600;flex-shrink:0;}
+  .mini-btn:hover{filter:brightness(1.2);}
+  .mini-btn.danger{background:rgba(241,92,109,.15);color:var(--danger);}
+  .admin-broadcast{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;}
+  .broadcast-row{display:flex;gap:10px;margin-top:10px;}
+  .broadcast-row input{flex:1;padding:11px 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:14px;outline:none;}
 
   @media (max-width:760px){
     .layout{grid-template-columns:1fr;}
@@ -186,6 +153,7 @@
     .chat-panel{display:none;}
     .layout.chat-open .chat-panel{display:flex;}
     .back-btn{display:flex;}
+    .admin-cols{grid-template-columns:1fr;}
   }
 
   ::-webkit-scrollbar{width:8px;}
@@ -208,7 +176,6 @@
       <button class="tab" id="tab-signup">Create account</button>
     </div>
 
-    <!-- LOGIN FORM -->
     <div id="login-form">
       <div class="field">
         <label>Username</label>
@@ -222,7 +189,6 @@
       <div class="auth-msg" id="login-msg"></div>
     </div>
 
-    <!-- SIGNUP FORM -->
     <div id="signup-form" style="display:none;">
       <div class="field">
         <label>Choose a username</label>
@@ -237,14 +203,15 @@
     </div>
 
     <div class="fine-print">
-      No email, no verification. Your username &amp; password are saved only in this browser's local storage — logging in from a different device won't work for the same account, since the password never leaves this device.
+      No email, no verification. Your username &amp; password are saved only in this browser's local storage — logging in from a different device won't work for the same account.
     </div>
   </div>
 </div>
 
 <!-- ================= APP SCREEN ================= -->
 <div id="app-screen">
-  <div class="banner">Relay is in test mode — fine for trying this out, not for private conversations.</div>
+  <div class="banner" id="banner">Relay is in test mode — fine for trying this out, not for private conversations.</div>
+
   <div class="layout" id="layout">
     <div class="sidebar">
       <div class="sidebar-header">
@@ -270,8 +237,11 @@
       <div id="chat-active" style="display:none;height:100%;flex-direction:column;">
         <div class="chat-header">
           <button class="icon-btn back-btn" id="back-btn">←</button>
-          <div class="avatar" id="peer-avatar">?</div>
-          <div style="font-weight:600;font-size:15px;" id="peer-name">—</div>
+          <div class="avatar" id="peer-avatar">?<span class="presence-dot" id="peer-dot"></span></div>
+          <div class="peer-info">
+            <div style="font-weight:600;font-size:15px;" id="peer-name">—</div>
+            <div class="peer-status" id="peer-status"></div>
+          </div>
         </div>
         <div class="messages" id="messages"></div>
         <div class="composer">
@@ -281,12 +251,43 @@
       </div>
     </div>
   </div>
+
+  <!-- ================= ADMIN SCREEN ================= -->
+  <div id="admin-screen">
+    <div class="admin-wrap">
+      <div class="admin-header">
+        <div class="admin-title">🛡️ Admin dashboard</div>
+        <button class="icon-btn" id="admin-logout-btn" title="Log out">⏻</button>
+      </div>
+      <div class="admin-stats">
+        <div class="stat-card"><div class="stat-num" id="stat-users">0</div><div class="stat-label">Registered users</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-pending">0</div><div class="stat-label">Messages currently in transit</div></div>
+      </div>
+      <div class="admin-cols">
+        <div class="admin-col">
+          <div class="admin-col-title"><span>Users</span></div>
+          <div class="admin-list" id="admin-users-list"></div>
+        </div>
+        <div class="admin-col">
+          <div class="admin-col-title"><span>In-transit messages</span><button class="mini-btn" id="clear-all-pending">Clear all</button></div>
+          <div class="admin-list" id="admin-pending-list"></div>
+        </div>
+      </div>
+      <div class="admin-broadcast">
+        <div class="admin-col-title" style="padding:0;border:none;">Broadcast an announcement to every user</div>
+        <div class="broadcast-row">
+          <input id="broadcast-input" placeholder="Announcement text…" />
+          <button class="primary-btn" id="broadcast-btn" style="width:auto;padding:0 20px;">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
 import {
-  getDatabase, ref, get, set, remove, onChildAdded, push
+  getDatabase, ref, get, set, remove, onChildAdded, onValue, push, onDisconnect
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -302,27 +303,27 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+const ADMIN_USER = "admin";
+const ADMIN_PASS = "IMApurbo";
+const RESERVED = new Set([ADMIN_USER]);
+
 /* ---------------- local storage helpers ---------------- */
-const ACCOUNTS_KEY = "loop_accounts";          // { username: password }  -- device-only
-const SESSION_KEY  = "loop_current_user";      // username string
-const chatsKey     = (u) => `loop_chats_${u}`; // { contactUsername: [ {from,text,ts} ] }
-const contactsKey  = (u) => `loop_contacts_${u}`; // [ usernames ] in most-recent-first order
+const ACCOUNTS_KEY = "loop_accounts";
+const SESSION_KEY  = "loop_current_user";
+const chatsKey     = (u) => `loop_chats_${u}`;
+const contactsKey  = (u) => `loop_contacts_${u}`;
 
 function readJSON(key, fallback){
   try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
   catch(e){ return fallback; }
 }
 function writeJSON(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
-
 function getAccounts(){ return readJSON(ACCOUNTS_KEY, {}); }
 function saveAccounts(a){ writeJSON(ACCOUNTS_KEY, a); }
-
 function getChats(u){ return readJSON(chatsKey(u), {}); }
 function saveChats(u, chats){ writeJSON(chatsKey(u), chats); }
-
 function getContacts(u){ return readJSON(contactsKey(u), []); }
 function saveContacts(u, list){ writeJSON(contactsKey(u), list); }
-
 function bumpContact(u, contact){
   let list = getContacts(u).filter(c => c !== contact);
   list.unshift(contact);
@@ -333,6 +334,9 @@ function bumpContact(u, contact){
 let currentUser = null;
 let activeChat = null;
 let listenerAttached = false;
+let presenceData = {};
+let typingUnsub = null;
+let peerIsTyping = false;
 
 /* ---------------- DOM refs ---------------- */
 const $ = (id) => document.getElementById(id);
@@ -363,6 +367,11 @@ $("signup-btn").onclick = async () => {
   if(!/^[a-z0-9_]{3,20}$/.test(uname)){
     msg.className = "auth-msg error";
     msg.textContent = "Username: 3-20 chars, letters/numbers/underscore only.";
+    return;
+  }
+  if(RESERVED.has(uname)){
+    msg.className = "auth-msg error";
+    msg.textContent = "That username is reserved.";
     return;
   }
   if(pass.length < 4){
@@ -403,12 +412,23 @@ $("signup-btn").onclick = async () => {
 };
 
 /* ---------------- login ---------------- */
-$("login-btn").onclick = () => {
+$("login-btn").onclick = async () => {
   const uname = $("login-username").value.trim().toLowerCase();
   const pass = $("login-password").value;
   const msg = $("login-msg");
-  const accounts = getAccounts();
 
+  if(uname === ADMIN_USER){
+    if(pass === ADMIN_PASS){
+      msg.className = ""; msg.textContent = "";
+      login(ADMIN_USER);
+    }else{
+      msg.className = "auth-msg error";
+      msg.textContent = "Wrong password.";
+    }
+    return;
+  }
+
+  const accounts = getAccounts();
   if(!accounts[uname]){
     msg.className = "auth-msg error";
     msg.textContent = "No account with that username on this device.";
@@ -419,8 +439,18 @@ $("login-btn").onclick = () => {
     msg.textContent = "Wrong password.";
     return;
   }
-  msg.className = "";
-  msg.textContent = "";
+
+  msg.className = ""; msg.textContent = "Checking account status…";
+  try{
+    const bannedSnap = await get(ref(db, `bannedUsers/${uname}`));
+    if(bannedSnap.exists() && bannedSnap.val() === true){
+      msg.className = "auth-msg error";
+      msg.textContent = "This account was removed by an admin.";
+      return;
+    }
+  }catch(e){ /* offline — allow local login to proceed */ }
+
+  msg.className = ""; msg.textContent = "";
   login(uname);
 };
 
@@ -430,48 +460,186 @@ function login(uname){
   enterApp();
 }
 
-$("logout-btn").onclick = () => {
+function doLogout(){
   currentUser = null;
   activeChat = null;
   listenerAttached = false;
+  if(typingUnsub){ typingUnsub(); typingUnsub = null; }
   localStorage.removeItem(SESSION_KEY);
   appScreen.style.display = "none";
+  $("layout").style.display = "none";
+  $("admin-screen").style.display = "none";
   authScreen.style.display = "flex";
   $("login-username").value = "";
   $("login-password").value = "";
-};
+}
+$("logout-btn").onclick = doLogout;
+$("admin-logout-btn").onclick = doLogout;
 
 /* ---------------- enter app ---------------- */
 function enterApp(){
   authScreen.style.display = "none";
   appScreen.style.display = "block";
+
+  if(currentUser === ADMIN_USER){
+    $("layout").style.display = "none";
+    $("admin-screen").style.display = "block";
+    attachIncomingListener(); // keeps admin's own mailbox from piling up
+    startAdminDashboard();
+    return;
+  }
+
+  $("admin-screen").style.display = "none";
+  $("layout").style.display = "grid";
   $("my-name").textContent = currentUser;
   $("my-avatar").textContent = currentUser[0].toUpperCase();
   renderChatList();
   attachIncomingListener();
+  attachReceiptListener();
+  attachReadReceiptListener();
+  attachPresenceListener();
+  setupPresence();
+  attachBanWatcher();
 }
 
-/* ---------------- incoming messages (the "relay") ---------------- */
+/* ---------------- presence ---------------- */
+function setupPresence(){
+  const myRef = ref(db, `presence/${currentUser}`);
+  onValue(ref(db, ".info/connected"), (snap) => {
+    if(snap.val() === true){
+      onDisconnect(myRef).set({ online: false }).then(() => {
+        set(myRef, { online: true });
+      });
+    }
+  });
+}
+function attachPresenceListener(){
+  onValue(ref(db, "presence"), (snap) => {
+    presenceData = snap.val() || {};
+    renderChatList();
+    updatePeerHeaderUI();
+  });
+}
+function isOnline(u){ return !!(presenceData[u] && presenceData[u].online); }
+
+/* ---------------- ban watcher ---------------- */
+function attachBanWatcher(){
+  onValue(ref(db, `bannedUsers/${currentUser}`), (snap) => {
+    if(snap.val() === true){
+      alert("Your account was removed by an admin.");
+      doLogout();
+    }
+  });
+}
+
+/* ---------------- incoming messages (the relay) ---------------- */
 function attachIncomingListener(){
   if(listenerAttached) return;
   listenerAttached = true;
-  const mailboxRef = ref(db, `mailbox/${currentUser}`);
-  onChildAdded(mailboxRef, (snapshot) => {
+  onChildAdded(ref(db, `mailbox/${currentUser}`), (snapshot) => {
     const msg = snapshot.val();
     const key = snapshot.key;
     if(!msg || !msg.from) return;
 
     const chats = getChats(currentUser);
     if(!chats[msg.from]) chats[msg.from] = [];
-    chats[msg.from].push({ from: msg.from, text: msg.text, ts: msg.ts });
+    chats[msg.from].push({ id: msg.id, from: msg.from, text: msg.text, ts: msg.ts });
     saveChats(currentUser, chats);
     bumpContact(currentUser, msg.from);
 
-    // message has reached this device — wipe it from the relay
     remove(ref(db, `mailbox/${currentUser}/${key}`));
+    if(msg.id){
+      set(ref(db, `receipts/${msg.from}/${msg.id}`), { status: "delivered" });
+    }
 
+    if(currentUser !== ADMIN_USER){
+      renderChatList();
+      if(activeChat === msg.from){
+        renderMessages();
+        sendReadReceipt(msg.from);
+      }
+    }
+  });
+}
+
+/* ---------------- delivery receipts (sender side) ---------------- */
+function attachReceiptListener(){
+  onChildAdded(ref(db, `receipts/${currentUser}`), (snap) => {
+    const messageId = snap.key;
+    const receipt = snap.val();
+    if(receipt && receipt.status){
+      updateMessageStatus(messageId, receipt.status);
+    }
+    remove(ref(db, `receipts/${currentUser}/${messageId}`));
+  });
+}
+
+/* ---------------- read receipts ---------------- */
+function sendReadReceipt(contact){
+  if(!currentUser || !contact) return;
+  set(ref(db, `readReceipts/${contact}/${currentUser}`), { readUpTo: Date.now() });
+}
+function attachReadReceiptListener(){
+  onValue(ref(db, `readReceipts/${currentUser}`), (snap) => {
+    const data = snap.val();
+    if(!data) return;
+    let changed = false;
+    const chats = getChats(currentUser);
+    for(const reader in data){
+      const readUpTo = data[reader].readUpTo || 0;
+      const arr = chats[reader];
+      if(arr){
+        arr.forEach((m) => {
+          if(m.from === currentUser && m.ts <= readUpTo && m.status !== "read"){
+            m.status = "read";
+            changed = true;
+          }
+        });
+      }
+      remove(ref(db, `readReceipts/${currentUser}/${reader}`));
+    }
+    if(changed){
+      saveChats(currentUser, chats);
+      renderChatList();
+      if(activeChat) renderMessages();
+    }
+  });
+}
+function updateMessageStatus(id, status){
+  const order = { sent: 0, delivered: 1, read: 2 };
+  const chats = getChats(currentUser);
+  let changed = false;
+  for(const contact in chats){
+    for(const m of chats[contact]){
+      if(m.id === id && m.from === currentUser && (order[status] ?? 0) > (order[m.status] ?? 0)){
+        m.status = status;
+        changed = true;
+      }
+    }
+  }
+  if(changed){
+    saveChats(currentUser, chats);
     renderChatList();
-    if(activeChat === msg.from) renderMessages();
+    if(activeChat) renderMessages();
+  }
+}
+
+/* ---------------- typing indicator ---------------- */
+let typingTimeout;
+$("msg-input").addEventListener("input", () => {
+  if(!activeChat) return;
+  set(ref(db, `typing/${activeChat}/${currentUser}`), true);
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    set(ref(db, `typing/${activeChat}/${currentUser}`), false);
+  }, 1500);
+});
+function attachTypingListener(contact){
+  if(typingUnsub){ typingUnsub(); typingUnsub = null; }
+  peerIsTyping = false;
+  typingUnsub = onValue(ref(db, `typing/${currentUser}/${contact}`), (snap) => {
+    peerIsTyping = !!snap.val();
+    updatePeerHeaderUI();
   });
 }
 
@@ -486,7 +654,7 @@ async function startNewChat(){
   if(uname === currentUser){ alert("That's you."); return; }
 
   const snap = await get(ref(db, `usernames/${uname}`));
-  if(!snap.exists()){
+  if(!snap.exists() && uname !== ADMIN_USER){
     alert(`No user named "${uname}" exists.`);
     return;
   }
@@ -517,7 +685,7 @@ function renderChatList(){
     const item = document.createElement("div");
     item.className = "chat-item" + (activeChat === contact ? " active" : "");
     item.innerHTML = `
-      <div class="avatar">${contact[0].toUpperCase()}</div>
+      <div class="avatar">${contact[0].toUpperCase()}<span class="presence-dot ${isOnline(contact) ? "online" : ""}"></span></div>
       <div class="chat-item-body">
         <div class="chat-item-top">
           <div class="chat-item-name">${escapeHtml(contact)}</div>
@@ -537,15 +705,29 @@ function openChat(contact){
   $("chat-panel-empty").style.display = "none";
   $("chat-active").style.display = "flex";
   $("peer-name").textContent = contact;
-  $("peer-avatar").textContent = contact[0].toUpperCase();
+  $("peer-avatar").firstChild.textContent = contact[0].toUpperCase();
   $("layout").classList.add("chat-open");
   renderMessages();
   renderChatList();
+  attachTypingListener(contact);
+  updatePeerHeaderUI();
+  sendReadReceipt(contact);
 }
 
-$("back-btn").onclick = () => {
-  $("layout").classList.remove("chat-open");
-};
+$("back-btn").onclick = () => { $("layout").classList.remove("chat-open"); };
+
+function updatePeerHeaderUI(){
+  if(!activeChat) return;
+  $("peer-dot").className = "presence-dot" + (isOnline(activeChat) ? " online" : "");
+  const statusEl = $("peer-status");
+  if(peerIsTyping){
+    statusEl.textContent = "typing…";
+    statusEl.style.color = "var(--accent)";
+  }else{
+    statusEl.textContent = isOnline(activeChat) ? "online" : "";
+    statusEl.style.color = "var(--text-dim)";
+  }
+}
 
 function renderMessages(){
   const box = $("messages");
@@ -559,12 +741,17 @@ function renderMessages(){
     row.innerHTML = `
       <div class="bubble ${out ? "out" : "in"}">
         ${escapeHtml(m.text)}
-        <span class="bubble-time">${formatTime(m.ts)}</span>
+        <span class="bubble-time">${formatTime(m.ts)}${out ? statusTick(m.status || "sent") : ""}</span>
       </div>
     `;
     box.appendChild(row);
   });
   box.scrollTop = box.scrollHeight;
+}
+function statusTick(status){
+  if(status === "read") return `<span class="tick read">✓✓</span>`;
+  if(status === "delivered") return `<span class="tick">✓✓</span>`;
+  return `<span class="tick">✓</span>`;
 }
 
 /* ---------------- sending ---------------- */
@@ -576,31 +763,109 @@ async function sendMessage(){
   const text = input.value.trim();
   if(!text || !activeChat) return;
   input.value = "";
+  clearTimeout(typingTimeout);
+  set(ref(db, `typing/${activeChat}/${currentUser}`), false);
 
   const ts = Date.now();
+  const id = `${currentUser}_${ts}_${Math.random().toString(36).slice(2, 8)}`;
 
-  // save locally right away (this is the sender's own permanent copy)
   const chats = getChats(currentUser);
   if(!chats[activeChat]) chats[activeChat] = [];
-  chats[activeChat].push({ from: currentUser, text, ts });
+  chats[activeChat].push({ id, from: currentUser, text, ts, status: "sent" });
   saveChats(currentUser, chats);
   bumpContact(currentUser, activeChat);
   renderMessages();
   renderChatList();
 
-  // drop it in the recipient's mailbox on the relay — cleared once their device fetches it
   try{
-    await push(ref(db, `mailbox/${activeChat}`), { from: currentUser, text, ts });
+    await push(ref(db, `mailbox/${activeChat}`), { id, from: currentUser, text, ts });
   }catch(e){
     console.error("Send failed", e);
   }
 }
 
+/* ================= ADMIN DASHBOARD ================= */
+function startAdminDashboard(){
+  onValue(ref(db, "usernames"), (snap) => {
+    const data = snap.val() || {};
+    const users = Object.keys(data).filter((u) => u !== ADMIN_USER);
+    $("stat-users").textContent = users.length;
+    renderAdminUsers(users);
+  });
+  onValue(ref(db, "mailbox"), (snap) => {
+    const data = snap.val() || {};
+    const items = [];
+    for(const recipient in data){
+      for(const key in data[recipient]){
+        items.push({ recipient, key, ...data[recipient][key] });
+      }
+    }
+    $("stat-pending").textContent = items.length;
+    renderAdminPending(items);
+  });
+}
+
+function renderAdminUsers(users){
+  const box = $("admin-users-list");
+  if(users.length === 0){ box.innerHTML = `<div class="empty-list">No users yet.</div>`; return; }
+  box.innerHTML = "";
+  users.forEach((u) => {
+    const row = document.createElement("div");
+    row.className = "admin-list-item";
+    row.innerHTML = `<span>${escapeHtml(u)}</span><button class="mini-btn danger">Delete</button>`;
+    row.querySelector("button").onclick = () => deleteUser(u);
+    box.appendChild(row);
+  });
+}
+
+async function deleteUser(u){
+  if(!confirm(`Delete user "${u}"? This frees the username and logs them out on their device. It can't reach into their local chat history.`)) return;
+  await remove(ref(db, `usernames/${u}`));
+  await set(ref(db, `bannedUsers/${u}`), true);
+  await remove(ref(db, `mailbox/${u}`));
+  await remove(ref(db, `presence/${u}`));
+}
+
+function renderAdminPending(items){
+  const box = $("admin-pending-list");
+  if(items.length === 0){ box.innerHTML = `<div class="empty-list">Nothing in transit.</div>`; return; }
+  box.innerHTML = "";
+  items.forEach((it) => {
+    const row = document.createElement("div");
+    row.className = "admin-list-item";
+    row.innerHTML = `<span><b>${escapeHtml(it.from || "?")}</b> → <b>${escapeHtml(it.recipient)}</b>: ${escapeHtml(it.text || "")}</span><button class="mini-btn danger">Delete</button>`;
+    row.querySelector("button").onclick = () => remove(ref(db, `mailbox/${it.recipient}/${it.key}`));
+    box.appendChild(row);
+  });
+}
+
+$("clear-all-pending").onclick = async () => {
+  if(!confirm("Clear every message currently in transit across all users?")) return;
+  await remove(ref(db, "mailbox"));
+};
+
+$("broadcast-btn").onclick = async () => {
+  const input = $("broadcast-input");
+  const text = input.value.trim();
+  if(!text) return;
+  const snap = await get(ref(db, "usernames"));
+  const data = snap.val() || {};
+  const users = Object.keys(data).filter((u) => u !== ADMIN_USER);
+  const ts = Date.now();
+  for(const u of users){
+    await push(ref(db, `mailbox/${u}`), {
+      id: `admin_${ts}_${Math.random().toString(36).slice(2, 7)}`,
+      from: ADMIN_USER, text, ts
+    });
+  }
+  input.value = "";
+  alert(`Sent to ${users.length} user(s).`);
+};
+
 /* ---------------- utils ---------------- */
 function formatTime(ts){
   if(!ts) return "";
-  const d = new Date(ts);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 function escapeHtml(str){
   const div = document.createElement("div");
@@ -608,9 +873,9 @@ function escapeHtml(str){
   return div.innerHTML;
 }
 
-/* ---------------- boot: resume session if present ---------------- */
+/* ---------------- boot ---------------- */
 const savedUser = localStorage.getItem(SESSION_KEY);
-if(savedUser && getAccounts()[savedUser] !== undefined){
+if(savedUser && (savedUser === ADMIN_USER || getAccounts()[savedUser] !== undefined)){
   login(savedUser);
 }
 </script>
