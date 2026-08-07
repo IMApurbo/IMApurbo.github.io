@@ -552,6 +552,77 @@ body {
         font-size: clamp(2rem, 10vw, 3rem);
     }
 }
+/* Custom Mouse-Follow Cursor */
+body.has-fine-pointer {
+    cursor: none;
+}
+.cursor-dot {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 6px;
+    margin: -3px 0 0 -3px;
+    border-radius: 50%;
+    background: #00ff00;
+    box-shadow: 0 0 8px rgba(0, 255, 0, 0.9), 0 0 16px rgba(0, 255, 0, 0.6);
+    pointer-events: none;
+    z-index: 9999;
+    will-change: transform;
+    transition: width 0.2s ease, height 0.2s ease, margin 0.2s ease, background 0.2s ease;
+}
+.cursor-ring {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 34px;
+    height: 34px;
+    margin: -17px 0 0 -17px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 255, 0, 0.6);
+    box-shadow: 0 0 12px rgba(0, 255, 0, 0.25) inset;
+    pointer-events: none;
+    z-index: 9998;
+    will-change: transform;
+    transition: width 0.25s cubic-bezier(0.4,0,0.2,1), height 0.25s cubic-bezier(0.4,0,0.2,1), margin 0.25s cubic-bezier(0.4,0,0.2,1), border-color 0.25s ease, opacity 0.25s ease;
+}
+.cursor-ring.hovering {
+    width: 54px;
+    height: 54px;
+    margin: -27px 0 0 -27px;
+    border-color: rgba(0, 255, 0, 1);
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.5) inset;
+}
+.cursor-dot.hovering {
+    width: 10px;
+    height: 10px;
+    margin: -5px 0 0 -5px;
+    background: #39ff14;
+}
+.cursor-ring.clicking {
+    width: 24px;
+    height: 24px;
+    margin: -12px 0 0 -12px;
+    border-color: #39ff14;
+}
+.cursor-trail {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 4px;
+    margin: -2px 0 0 -2px;
+    border-radius: 50%;
+    background: rgba(0, 255, 0, 0.5);
+    pointer-events: none;
+    z-index: 9997;
+    will-change: transform, opacity;
+}
+@media (hover: none), (pointer: coarse) {
+    body.has-fine-pointer { cursor: auto; }
+    .cursor-dot, .cursor-ring, .cursor-trail { display: none; }
+}
+
 /* Ripple Effect */
 .ripple {
     position: absolute;
@@ -573,6 +644,9 @@ body {
     <!-- Animated Background -->
     <div class="bg-animation" id="bgAnimation"></div>
     <div class="scanline"></div>
+    <!-- Custom Mouse-Follow Cursor -->
+    <div class="cursor-ring" id="cursorRing"></div>
+    <div class="cursor-dot" id="cursorDot"></div>
     <!-- Hamburger Menu -->
     <button class="hamburger" id="hamburger">☰</button>
     <!-- Loop App Badge -->
@@ -668,6 +742,78 @@ body {
             particle.style.animationDuration = `${4 + Math.random() * 4}s`;
             bgAnimation.appendChild(particle);
         }
+
+        // Custom Mouse-Follow Cursor (smooth lag / trailing transition)
+        (function initCursor() {
+            const isFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+            if (!isFinePointer) return;
+            document.body.classList.add('has-fine-pointer');
+
+            const dot = document.getElementById('cursorDot');
+            const ring = document.getElementById('cursorRing');
+
+            let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
+            let dotX = mouseX, dotY = mouseY;
+            let ringX = mouseX, ringY = mouseY;
+
+            window.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
+
+            // Trail particles spawned occasionally as the mouse moves
+            let lastTrailTime = 0;
+            function spawnTrail(x, y) {
+                const now = performance.now();
+                if (now - lastTrailTime < 45) return;
+                lastTrailTime = now;
+                const trail = document.createElement('div');
+                trail.className = 'cursor-trail';
+                trail.style.transform = `translate(${x}px, ${y}px)`;
+                document.body.appendChild(trail);
+                requestAnimationFrame(() => {
+                    trail.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                    trail.style.opacity = '0';
+                    trail.style.transform = `translate(${x}px, ${y}px) scale(0.2)`;
+                });
+                setTimeout(() => trail.remove(), 650);
+            }
+
+            function animateCursor() {
+                // Dot follows quickly, ring lags behind for a smooth trailing feel
+                dotX += (mouseX - dotX) * 0.35;
+                dotY += (mouseY - dotY) * 0.35;
+                ringX += (mouseX - ringX) * 0.14;
+                ringY += (mouseY - ringY) * 0.14;
+
+                dot.style.transform = `translate(${dotX}px, ${dotY}px)`;
+                ring.style.transform = `translate(${ringX}px, ${ringY}px)`;
+
+                if (Math.abs(mouseX - dotX) > 1 || Math.abs(mouseY - dotY) > 1) {
+                    spawnTrail(dotX, dotY);
+                }
+
+                requestAnimationFrame(animateCursor);
+            }
+            requestAnimationFrame(animateCursor);
+
+            // Hover state on interactive elements
+            const hoverSelector = 'a, button, .folder-icon, .tool-btn, .terminal-icon, .loop-badge, .terminal-btn, input, [onclick]';
+            document.addEventListener('mouseover', (e) => {
+                if (e.target.closest(hoverSelector)) {
+                    dot.classList.add('hovering');
+                    ring.classList.add('hovering');
+                }
+            });
+            document.addEventListener('mouseout', (e) => {
+                if (e.target.closest(hoverSelector)) {
+                    dot.classList.remove('hovering');
+                    ring.classList.remove('hovering');
+                }
+            });
+            document.addEventListener('mousedown', () => ring.classList.add('clicking'));
+            document.addEventListener('mouseup', () => ring.classList.remove('clicking'));
+        })();
 
         // Generate Sidebar Folder Icons (Linux desktop-style)
         const toolsGrid = document.getElementById('toolsGrid');
