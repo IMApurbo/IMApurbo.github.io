@@ -1962,6 +1962,7 @@ $("attach-menu-document").onclick = () => {
 /* ---------------- attachments: photo / video / document, multi-select ---------------- */
 const MAX_DOCUMENT_BYTES = 5 * 1024 * 1024; // 5MB
 const MAX_VIDEO_BYTES = 20 * 1024 * 1024; // 20MB
+const PROFILE_PHOTO_MAX_BYTES = 500 * 1024; // 500KB
 
 function readFileAsDataURL(file){
   return new Promise((resolve, reject) => {
@@ -1987,6 +1988,48 @@ function compressImageFile(file){
     };
     img.src = dataUrl;
   }));
+}
+
+function dataUrlByteSize(dataUrl){
+  const base64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
+  const padding = base64.endsWith("==") ? 2 : (base64.endsWith("=") ? 1 : 0);
+  return Math.floor((base64.length * 3) / 4) - padding;
+}
+function loadImageElement(dataUrl){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+// Leaves the image untouched if it's already under maxBytes; otherwise steps quality
+// down first (gentler), then dimensions, re-checking after each step so it stops at
+// the first size/quality combination that fits instead of always applying a fixed compression.
+async function compressImageToBudget(file, maxBytes){
+  const original = await readFileAsDataURL(file);
+  if(file.size <= maxBytes) return original;
+
+  const img = await loadImageElement(original);
+  let w = img.width, h = img.height;
+  let quality = 0.92;
+  let result = original;
+
+  for(let i = 0; i < 12; i++){
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+    result = canvas.toDataURL("image/jpeg", quality);
+    if(dataUrlByteSize(result) <= maxBytes) return result;
+    if(quality > 0.5){
+      quality -= 0.08;
+    }else{
+      w = Math.round(w * 0.85);
+      h = Math.round(h * 0.85);
+      quality = 0.8;
+    }
+  }
+  return result;
 }
 
 $("image-input").addEventListener("change", async (e) => {
@@ -2419,7 +2462,7 @@ $("profile-photo-input").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   e.target.value = "";
   if(!file) return;
-  pendingProfilePhoto = await compressImageFile(file);
+  pendingProfilePhoto = await compressImageToBudget(file, PROFILE_PHOTO_MAX_BYTES);
   renderProfileAvatarPreview();
 });
 $("profile-photo-remove").onclick = () => {
