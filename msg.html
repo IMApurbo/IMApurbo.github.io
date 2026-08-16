@@ -284,7 +284,6 @@
   .recording-bar.open{display:flex;}
   .recording-dot{width:10px;height:10px;border-radius:50%;background:var(--danger);animation:recording-pulse 1s infinite;flex-shrink:0;}
   @keyframes recording-pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
-  .attachment-chip audio{width:120px;height:32px;}
 
   /* ---------------- in-chat search ---------------- */
   .chat-search-bar{display:none;align-items:center;gap:8px;padding:9px 14px;background:var(--panel);border-bottom:1px solid var(--line);flex-shrink:0;}
@@ -1631,7 +1630,7 @@ function renderMessages(){
     }else{
       const imgHtml = m.image ? `<img class="bubble-img" src="${m.image}" />` : "";
       const videoHtml = m.video ? `<video class="bubble-video" src="${m.video}" controls></video>` : "";
-      const voiceHtml = m.voice ? `<div class="bubble-voice">🎤<audio src="${m.voice}" controls></audio><span style="font-size:11px;color:var(--text-dim);">${formatDuration(m.voiceDuration || 0)}</span></div>` : "";
+      const voiceHtml = m.voice ? `<div class="bubble-voice">🎤<audio src="${m.voice}" controls></audio></div>` : "";
       const docHtml = m.document ? `
         <a class="bubble-doc" href="${m.document.data}" download="${escapeHtml(m.document.name)}">
           <div class="bubble-doc-icon">📄</div>
@@ -2083,7 +2082,7 @@ function renderAttachmentPreview(){
     let mediaHtml;
     if(att.kind === "image") mediaHtml = `<img src="${att.data}" />`;
     else if(att.kind === "video") mediaHtml = `<video src="${att.data}" muted></video>`;
-    else if(att.kind === "voice") mediaHtml = `<audio src="${att.data}" controls></audio>`;
+    else if(att.kind === "voice") mediaHtml = `<div class="attachment-chip-icon">🎤</div>`;
     else mediaHtml = `<div class="attachment-chip-icon">📄</div>`;
     const label = att.kind === "voice" ? `Voice · ${formatDuration(att.duration || 0)}` : (att.name || "");
     chip.innerHTML = `${mediaHtml}<div class="attachment-chip-name">${escapeHtml(label)}</div><button class="attachment-chip-remove" type="button">×</button>`;
@@ -2291,7 +2290,16 @@ async function sendMessage(){
     renderMessages();
     renderChatList();
     try{
-      await relayToChat(activeChat, { id, from: currentUser, text: msg.text, image: msg.image, document: msg.document, video: msg.video, voice: msg.voice, voiceDuration: msg.voiceDuration, ts, replyTo: msg.replyTo, expiresAt });
+      await relayToChat(activeChat, {
+        id, from: currentUser,
+        text: msg.text || "",
+        image: msg.image || null,
+        document: msg.document || null,
+        video: msg.video || null,
+        voice: msg.voice || null,
+        voiceDuration: msg.voiceDuration || null,
+        ts, replyTo: msg.replyTo || null, expiresAt
+      });
     }catch(e){
       console.error("Send failed", e);
     }
@@ -2560,7 +2568,16 @@ async function sendForward(targetChatKey, m){
   renderChatList();
 
   try{
-    await relayToChat(targetChatKey, { id, from: currentUser, text: payload.text, image: payload.image, video: payload.video, voice: payload.voice, voiceDuration: payload.voiceDuration, document: payload.document, ts, replyTo: null, forwarded: true, expiresAt });
+    await relayToChat(targetChatKey, {
+      id, from: currentUser,
+      text: payload.text || "",
+      image: payload.image || null,
+      video: payload.video || null,
+      voice: payload.voice || null,
+      voiceDuration: payload.voiceDuration || null,
+      document: payload.document || null,
+      ts, replyTo: null, forwarded: true, expiresAt
+    });
   }catch(e){
     console.error("Forward failed", e);
   }
