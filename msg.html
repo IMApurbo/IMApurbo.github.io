@@ -61,6 +61,10 @@
   .me{display:flex;align-items:center;gap:10px;min-width:0;flex:1;}
   .header-actions{display:flex;align-items:center;gap:4px;flex-shrink:0;}
   .avatar{width:38px;height:38px;border-radius:50%;background:var(--panel-2);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;position:relative;}
+  .avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;}
+  .profile-avatar-wrap{position:relative;display:inline-block;}
+  .avatar-edit-btn{position:absolute;bottom:-2px;right:-2px;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#04211b;border:2px solid var(--panel);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+  .avatar-edit-btn svg{width:14px;height:14px;}
   .presence-dot{position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#55606a;border:2px solid var(--panel);}
   .presence-dot.online{background:var(--online);}
   .me-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -649,8 +653,15 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
-      <div style="display:flex;justify-content:center;margin-bottom:18px;">
-        <div class="avatar" id="profile-avatar" style="width:72px;height:72px;font-size:28px;">?</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:18px;">
+        <div class="profile-avatar-wrap">
+          <div class="avatar" id="profile-avatar" style="width:72px;height:72px;font-size:28px;">?</div>
+          <button class="avatar-edit-btn" id="profile-photo-btn" type="button" title="Change photo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </button>
+          <input type="file" id="profile-photo-input" accept="image/*" style="display:none;" />
+        </div>
+        <span class="mini-btn" id="profile-photo-remove" style="display:none;">Remove photo</span>
       </div>
       <div class="field">
         <label>Name</label>
@@ -769,6 +780,11 @@ function getDisplayName(chatKey){
 function getProfileName(username){
   const entry = usernameDirectory[username];
   return (entry && entry.displayName) || username;
+}
+function avatarContent(username){
+  const entry = usernameDirectory[username];
+  if(entry && entry.photo) return `<img src="${entry.photo}" alt="" />`;
+  return escapeHtml(getProfileName(username)[0].toUpperCase());
 }
 
 /* ---------------- mute ---------------- */
@@ -1045,7 +1061,7 @@ function enterApp(){
   $("admin-screen").style.display = "none";
   $("layout").style.display = "grid";
   $("my-name").textContent = currentUser;
-  $("my-avatar").textContent = currentUser[0].toUpperCase();
+  $("my-avatar").innerHTML = avatarContent(currentUser);
   renderChatList();
   attachIncomingListener();
   attachReceiptListener();
@@ -1067,6 +1083,7 @@ function attachUsernameDirectoryListener(){
   usernameDirectoryUnsub = onValue(ref(db, "usernames"), (snap) => {
     usernameDirectory = snap.val() || {};
     $("my-name").textContent = getProfileName(currentUser);
+    $("my-avatar").innerHTML = avatarContent(currentUser);
     renderChatList();
     if(activeChat) updatePeerHeaderUI();
   });
@@ -1405,7 +1422,7 @@ function renderMentionSuggest(matches, fragmentLen){
   matches.forEach((u) => {
     const item = document.createElement("div");
     item.className = "mention-suggest-item";
-    item.innerHTML = `<div class="avatar" style="width:26px;height:26px;font-size:12px;">${escapeHtml(getProfileName(u)[0].toUpperCase())}</div><span>${escapeHtml(getProfileName(u))} <span style="color:var(--text-dim);">@${escapeHtml(u)}</span></span>`;
+    item.innerHTML = `<div class="avatar" style="width:26px;height:26px;font-size:12px;">${avatarContent(u)}</div><span>${escapeHtml(getProfileName(u))} <span style="color:var(--text-dim);">@${escapeHtml(u)}</span></span>`;
     item.onmousedown = (e) => { e.preventDefault(); insertMention(u, fragmentLen); };
     box.appendChild(item);
   });
@@ -1494,7 +1511,7 @@ function renderChatList(){
     const item = document.createElement("div");
     item.className = "chat-item" + (activeChat === contact ? " active" : "");
     item.innerHTML = `
-      <div class="avatar ${group ? "group-icon-avatar" : ""}">${group ? "👥" : name[0].toUpperCase()}${!group ? `<span class="presence-dot ${isOnline(contact) ? "online" : ""}"></span>` : ""}</div>
+      <div class="avatar ${group ? "group-icon-avatar" : ""}">${group ? "👥" : avatarContent(contact)}${!group ? `<span class="presence-dot ${isOnline(contact) ? "online" : ""}"></span>` : ""}</div>
       <div class="chat-item-body">
         <div class="chat-item-top">
           <div class="chat-item-name">${escapeHtml(name)}</div>
@@ -1523,7 +1540,11 @@ function openChat(contact){
   $("chat-active").style.display = "flex";
   $("peer-name").textContent = getDisplayName(contact);
   $("peer-avatar").classList.toggle("group-icon-avatar", group);
-  $("peer-avatar").firstChild.textContent = group ? "👥" : getDisplayName(contact)[0].toUpperCase();
+  {
+    const dot = $("peer-dot");
+    $("peer-avatar").innerHTML = group ? "👥" : avatarContent(contact);
+    $("peer-avatar").appendChild(dot);
+  }
   $("peer-dot").style.display = group ? "none" : "";
   $("layout").classList.add("chat-open");
   clearReply();
@@ -2367,21 +2388,44 @@ function updateComposerBlockedState(){
 }
 
 /* ================= PROFILE MODAL ================= */
+let pendingProfilePhoto; // undefined = unchanged, null = removed, string = new photo
+function renderProfileAvatarPreview(){
+  const el = $("profile-avatar");
+  const existingPhoto = usernameDirectory[currentUser] && usernameDirectory[currentUser].photo;
+  const photo = pendingProfilePhoto !== undefined ? pendingProfilePhoto : existingPhoto;
+  if(photo){
+    el.innerHTML = `<img src="${photo}" alt="" />`;
+  }else{
+    const typed = $("profile-displayname").value.trim();
+    el.innerHTML = escapeHtml((typed || currentUser)[0].toUpperCase());
+  }
+  $("profile-photo-remove").style.display = photo ? "inline-block" : "none";
+}
 $("me-profile-btn").onclick = () => {
   $("profile-msg").textContent = "";
   $("profile-msg").className = "auth-msg";
+  pendingProfilePhoto = undefined;
   const name = getProfileName(currentUser);
-  $("profile-avatar").textContent = name[0].toUpperCase();
   $("profile-displayname").value = name === currentUser ? "" : name;
   $("profile-username").value = currentUser;
+  renderProfileAvatarPreview();
   $("profile-modal").style.display = "flex";
 };
 $("profile-close").onclick = () => { $("profile-modal").style.display = "none"; };
 $("profile-modal").addEventListener("click", (e) => { if(e.target.id === "profile-modal") $("profile-modal").style.display = "none"; });
-$("profile-displayname").addEventListener("input", () => {
-  const v = $("profile-displayname").value.trim();
-  if(v) $("profile-avatar").textContent = v[0].toUpperCase();
+$("profile-displayname").addEventListener("input", renderProfileAvatarPreview);
+$("profile-photo-btn").onclick = () => $("profile-photo-input").click();
+$("profile-photo-input").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if(!file) return;
+  pendingProfilePhoto = await compressImageFile(file);
+  renderProfileAvatarPreview();
 });
+$("profile-photo-remove").onclick = () => {
+  pendingProfilePhoto = null;
+  renderProfileAvatarPreview();
+};
 $("profile-save-btn").onclick = async () => {
   const msg = $("profile-msg");
   const name = $("profile-displayname").value.trim();
@@ -2400,7 +2444,9 @@ $("profile-save-btn").onclick = async () => {
   msg.className = "auth-msg";
   try{
     const existing = usernameDirectory[currentUser] || {};
-    await set(ref(db, `usernames/${currentUser}`), { ...existing, displayName: name });
+    const photo = pendingProfilePhoto === undefined ? existing.photo || null : pendingProfilePhoto;
+    await set(ref(db, `usernames/${currentUser}`), { ...existing, displayName: name, photo });
+    pendingProfilePhoto = undefined;
     msg.className = "auth-msg ok";
     msg.textContent = "Saved.";
   }catch(e){
@@ -2435,7 +2481,7 @@ function renderForwardList(){
     const row = document.createElement("div");
     row.className = "people-row";
     row.innerHTML = `
-      <div class="avatar ${group ? "group-icon-avatar" : ""}">${group ? "👥" : name[0].toUpperCase()}</div>
+      <div class="avatar ${group ? "group-icon-avatar" : ""}">${group ? "👥" : avatarContent(chatKey)}</div>
       <div style="flex:1;min-width:0;font-size:13.5px;font-weight:600;">${escapeHtml(name)}</div>
     `;
     row.onclick = () => {
@@ -2494,7 +2540,7 @@ function renderBlockedList(){
     row.className = "people-row";
     const pname = getProfileName(u);
     row.innerHTML = `
-      <div class="avatar">${pname[0].toUpperCase()}</div>
+      <div class="avatar">${avatarContent(u)}</div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:13.5px;font-weight:600;">${escapeHtml(pname)}</div>
       </div>
@@ -2540,7 +2586,7 @@ function renderGroupMemberList(){
     const pname = getProfileName(u);
     row.innerHTML = `
       <input type="checkbox" ${checked ? "checked" : ""} />
-      <div class="avatar">${pname[0].toUpperCase()}</div>
+      <div class="avatar">${avatarContent(u)}</div>
       <div style="flex:1;font-size:13.5px;font-weight:600;">${escapeHtml(pname)}</div>
     `;
     const cb = row.querySelector("input");
@@ -2589,8 +2635,8 @@ $("group-info-item").onclick = () => {
     const row = document.createElement("div");
     row.className = "group-member-row";
     row.innerHTML = `
-      <div class="avatar">${m[0].toUpperCase()}<span class="presence-dot ${isOnline(m) ? "online" : ""}"></span></div>
-      <div style="flex:1;font-weight:600;">${escapeHtml(m)} ${m === meta.createdBy ? `<span style="font-size:11px;color:var(--admin-accent);">(Admin)</span>` : ""}</div>
+      <div class="avatar">${avatarContent(m)}<span class="presence-dot ${isOnline(m) ? "online" : ""}"></span></div>
+      <div style="flex:1;font-weight:600;">${escapeHtml(getProfileName(m))} ${m === meta.createdBy ? `<span style="font-size:11px;color:var(--admin-accent);">(Admin)</span>` : ""}</div>
     `;
     box.appendChild(row);
   });
@@ -2700,7 +2746,7 @@ function renderPeopleList(){
       const blocked = getBlocked(currentUser).includes(p.username);
       const pname = getProfileName(p.username);
       row.innerHTML = `
-        <div class="avatar">${pname[0].toUpperCase()}<span class="presence-dot ${isOnline(p.username) ? "online" : ""}"></span></div>
+        <div class="avatar">${avatarContent(p.username)}<span class="presence-dot ${isOnline(p.username) ? "online" : ""}"></span></div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:13.5px;font-weight:600;">${escapeHtml(pname)}</div>
           <div style="font-size:11.5px;color:var(--text-dim);">@${escapeHtml(p.username)}</div>
@@ -2775,7 +2821,7 @@ function renderGlobalSearchResults(){
     const row = document.createElement("div");
     row.className = "people-row";
     row.innerHTML = `
-      <div class="avatar ${group ? "group-icon-avatar" : ""}">${group ? "👥" : name[0].toUpperCase()}</div>
+      <div class="avatar ${group ? "group-icon-avatar" : ""}">${group ? "👥" : avatarContent(chatKey)}</div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:13.5px;font-weight:600;">${escapeHtml(name)}</div>
         <div style="font-size:12.5px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${group ? `${escapeHtml(msg.from === currentUser ? "You" : getProfileName(msg.from))}: ` : ""}${highlightSearch(msg.text, q)}</div>
