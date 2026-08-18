@@ -2184,8 +2184,14 @@ async function compressImageToBudget(file, maxBytes){
   return result;
 }
 
+const MAX_ATTACHMENT_BYTES = 500 * 1024 * 1024; // 500MB
+
 async function handleMediaFiles(files){
   for(const file of files){
+    if(file.size > MAX_ATTACHMENT_BYTES){
+      alert(`"${file.name}" is too large to send (max 500MB).`);
+      continue;
+    }
     if(file.type.startsWith("video/")){
       const data = await readFileAsDataURL(file);
       pendingAttachments.push({ kind: "video", data, name: file.name, size: file.size, type: file.type });
@@ -2199,6 +2205,10 @@ async function handleMediaFiles(files){
 
 async function handleDocumentFiles(files){
   for(const file of files){
+    if(file.size > MAX_ATTACHMENT_BYTES){
+      alert(`"${file.name}" is too large to send (max 500MB).`);
+      continue;
+    }
     const data = await readFileAsDataURL(file);
     pendingAttachments.push({ kind: "document", data, name: file.name, size: file.size, type: file.type || "application/octet-stream" });
   }
