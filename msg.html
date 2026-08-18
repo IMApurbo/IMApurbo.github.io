@@ -85,7 +85,8 @@
   .chat-item-preview{font-size:12.5px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
   .empty-list{padding:30px 20px;color:var(--text-dim);font-size:13px;text-align:center;line-height:1.6;}
 
-  .chat-panel{display:flex;flex-direction:column;min-width:0;min-height:0;background:radial-gradient(circle at 20% 10%, rgba(0,168,132,.05), transparent 40%), var(--bg);}
+  .chat-panel{display:flex;flex-direction:column;min-width:0;min-height:0;background:radial-gradient(circle at 20% 10%, rgba(0,168,132,.05), transparent 40%), var(--bg);position:relative;}
+  .chat-panel.drop-active::after{content:"Drop files to attach";position:absolute;inset:8px;z-index:50;display:flex;align-items:center;justify-content:center;border:2px dashed var(--accent, #00a884);border-radius:14px;background:rgba(0,168,132,.12);backdrop-filter:blur(2px);color:var(--text);font-size:15px;font-weight:600;pointer-events:none;}
   .chat-panel-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-dim);gap:10px;padding:20px;text-align:center;}
   .chat-header{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--panel);flex-shrink:0;}
   .peer-info{min-width:0;}
@@ -255,7 +256,25 @@
   .bubble-img{max-width:100%;border-radius:8px;display:block;margin-bottom:4px;cursor:pointer;}
   .img-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:80;padding:20px;}
   .img-lightbox.open{display:flex;}
-  .img-lightbox img{max-width:100%;max-height:100%;border-radius:8px;}
+  .img-lightbox img,.img-lightbox video{max-width:100%;max-height:100%;border-radius:8px;display:none;}
+  .img-lightbox img.active,.img-lightbox video.active{display:block;}
+  .img-lightbox-close{position:absolute;top:16px;right:20px;width:38px;height:38px;border-radius:50%;border:none;background:rgba(255,255,255,.12);color:#fff;font-size:20px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .img-lightbox-close:hover{background:rgba(255,255,255,.22);}
+  .bubble-video-wrap{position:relative;margin-bottom:4px;}
+  .bubble-video-expand{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .bubble-video-expand svg{width:15px;height:15px;}
+
+  /* ---------------- link previews in chat ---------------- */
+  .msg-link{color:var(--accent);text-decoration:underline;word-break:break-all;}
+  .link-preview{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.06);border-radius:8px;padding:8px 10px;margin:4px 0;max-width:280px;text-decoration:none;color:inherit;border:1px solid var(--line);}
+  .link-preview:hover{background:rgba(255,255,255,.1);}
+  .link-preview-icon{width:28px;height:28px;border-radius:6px;flex-shrink:0;}
+  .link-preview-info{min-width:0;flex:1;}
+  .link-preview-host{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .link-preview-path{font-size:11px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  /* ---------------- lazy-loaded older messages ---------------- */
+  .load-more-messages{text-align:center;font-size:11.5px;color:var(--text-dim);padding:6px 0 10px;}
   .attach-btn{width:40px;height:40px;min-width:40px;border-radius:50%;border:none;background:transparent;color:var(--text-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .attach-btn:hover{background:var(--panel-2);color:var(--text);}
   .attach-btn svg{width:19px;height:19px;}
@@ -277,7 +296,7 @@
   .bubble-doc-size{font-size:11px;color:var(--text-dim);}
 
   /* ---------------- document upload preview ---------------- */
-  .bubble-video{max-width:100%;border-radius:8px;display:block;margin-bottom:4px;}
+  .bubble-video{max-width:100%;border-radius:8px;display:block;}
   .bubble-voice{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
   .bubble-voice audio{height:34px;max-width:220px;}
   .recording-bar{display:none;align-items:center;gap:10px;padding:9px 14px;background:var(--panel-2);border-top:1px solid var(--line);flex-shrink:0;}
@@ -675,9 +694,11 @@
     </div>
   </div>
 
-  <!-- ================= IMAGE LIGHTBOX ================= -->
+  <!-- ================= MEDIA LIGHTBOX ================= -->
   <div class="img-lightbox" id="img-lightbox">
+    <button class="img-lightbox-close" id="img-lightbox-close" title="Close">✕</button>
     <img id="img-lightbox-img" src="" />
+    <video id="img-lightbox-video" src="" controls></video>
   </div>
 </div>
 
@@ -870,12 +891,54 @@ function linkifyMentions(html, memberUsernames){
   return result;
 }
 
+/* ---------------- link previews ---------------- */
+// Runs on already-escaped HTML text (same pattern as linkifyMentions above), turning bare
+// URLs into clickable links. Trailing punctuation (".", ",", ")", etc.) is peeled off so
+// "check https://x.com." doesn't swallow the sentence's period into the link.
+function linkifyUrls(html){
+  return html.replace(/(https?:\/\/[^\s<]+)/g, (url) => {
+    const trailingMatch = url.match(/[),.!?;:'"]+$/);
+    const trailing = trailingMatch ? trailingMatch[0] : "";
+    const clean = trailing ? url.slice(0, -trailing.length) : url;
+    if(!clean) return url;
+    return `<a href="${clean}" target="_blank" rel="noopener noreferrer" class="msg-link">${clean}</a>${trailing}`;
+  });
+}
+function firstUrlIn(text){
+  const m = text.match(/https?:\/\/[^\s<]+/);
+  if(!m) return null;
+  return m[0].replace(/[),.!?;:'"]+$/, "");
+}
+// No backend to fetch a page's og:title/description (and most sites block that fetch via
+// CORS anyway), so this renders a lightweight card from the URL itself — host, path, and a
+// favicon — rather than faking a richer preview we can't actually get without a server.
+function linkPreviewHtml(url){
+  let host = url, path = "";
+  try{
+    const u = new URL(url);
+    host = u.hostname.replace(/^www\./, "");
+    path = u.pathname + u.search;
+    if(path === "/") path = "";
+  }catch(e){ /* not a parseable URL — fall back to showing it as-is */ }
+  const favicon = `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(host)}`;
+  return `
+    <a class="link-preview" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">
+      <img class="link-preview-icon" src="${favicon}" alt="" />
+      <div class="link-preview-info">
+        <div class="link-preview-host">${escapeHtml(host)}</div>
+        ${path ? `<div class="link-preview-path">${escapeHtml(path)}</div>` : ""}
+      </div>
+    </a>`;
+}
+
 /* ---------------- state ---------------- */
 let currentUser = null;
 let activeChat = null;
 let listenerAttached = false;
 let presenceData = {};
 let typingUnsub = null;
+const MESSAGE_PAGE_SIZE = 60;
+let renderedMessageLimit = MESSAGE_PAGE_SIZE;
 let peerIsTyping = false;
 let peopleUsers = [];
 let peoplePage = 0;
@@ -1072,7 +1135,7 @@ function enterApp(){
   attachBanWatcher();
   sweepExpiredMessages();
   disappearSweepInterval = setInterval(sweepExpiredMessages, 20000);
-  requestNotificationPermission();
+  setupNotifications();
 }
 
 /* ---------------- username / profile directory ---------------- */
@@ -1239,10 +1302,23 @@ function flashTitle(){
   });
 }
 
-/* ---------------- desktop notifications ---------------- */
-function requestNotificationPermission(){
-  if("Notification" in window && Notification.permission === "default"){
-    Notification.requestPermission();
+/* ---------------- notifications (plain Notification API + a local service worker, no backend) ----------------
+   This shows a notification any time the browser/app is running — tab open, tab backgrounded, or the
+   app minimized — including on Android, where Chrome refuses the bare `new Notification()` constructor
+   and requires going through a service worker registration instead.
+   It cannot wake the app when the browser process itself is fully closed/killed — that requires a real
+   push server (Web Push/VAPID) sitting between your backend and the browser's push service, which needs
+   something running 24/7 to trigger it. Say the word if you want that added later; for now this covers
+   "app open somewhere, phone doesn't buzz" which is the common case. */
+let swRegistration = null;
+async function setupNotifications(){
+  if(!("Notification" in window)) return;
+  if("serviceWorker" in navigator){
+    try{ swRegistration = await navigator.serviceWorker.register("./sw.js"); }
+    catch(e){ console.warn("Service worker registration failed:", e); }
+  }
+  if(Notification.permission === "default"){
+    try{ await Notification.requestPermission(); }catch(e){ /* ignore */ }
   }
 }
 function showDesktopNotification(chatKey, msg){
@@ -1250,14 +1326,15 @@ function showDesktopNotification(chatKey, msg){
   const name = getDisplayName(chatKey);
   const from = isGroupId(chatKey) ? `${getProfileName(msg.from)} in ${name}` : name;
   const body = msg.image ? "📷 Photo" : (msg.video ? "🎥 Video" : (msg.voice ? "🎤 Voice message" : (msg.document ? `📄 ${msg.document.name}` : (msg.text || "New message"))));
-  let notif;
-  try{ notif = new Notification(from, { body, tag: chatKey }); }
-  catch(e){ return; }
-  notif.onclick = () => {
-    window.focus();
-    openChat(chatKey);
-    notif.close();
-  };
+
+  if(swRegistration){
+    swRegistration.showNotification(from, { body, tag: chatKey, data: { chatKey } }).catch(() => {});
+    return;
+  }
+  try{
+    const notif = new Notification(from, { body, tag: chatKey });
+    notif.onclick = () => { window.focus(); openChat(chatKey); notif.close(); };
+  }catch(e){ /* unsupported in this browser */ }
 }
 
 /* ---------------- apply incoming events ---------------- */
@@ -1534,6 +1611,7 @@ function renderChatList(){
 /* ---------------- rendering: open chat ---------------- */
 function openChat(contact){
   activeChat = contact;
+  renderedMessageLimit = MESSAGE_PAGE_SIZE;
   const group = isGroupId(contact);
   $("chat-panel-empty").style.display = "none";
   $("chat-active").style.display = "flex";
@@ -1603,13 +1681,25 @@ function highlightSearch(text, query){
   return result;
 }
 
-function renderMessages(){
+function renderMessages(opts){
+  const preserveScroll = !!(opts && opts.preserveScroll);
   const box = $("messages");
+  const prevScrollHeight = box.scrollHeight;
+  const prevScrollTop = box.scrollTop;
+
   const chats = getChats(currentUser);
-  const history = chats[activeChat] || [];
+  const fullHistory = chats[activeChat] || [];
+  const history = fullHistory.slice(-renderedMessageLimit);
+  const hiddenCount = fullHistory.length - history.length;
   const isGroup = isGroupId(activeChat);
   const query = searchOpen ? $("chat-search-input").value.trim() : "";
   box.innerHTML = "";
+  if(hiddenCount > 0){
+    const loadMore = document.createElement("div");
+    loadMore.className = "load-more-messages";
+    loadMore.textContent = `Scroll up for ${hiddenCount} earlier message${hiddenCount === 1 ? "" : "s"}`;
+    box.appendChild(loadMore);
+  }
   history.forEach((m) => {
     const out = m.from === currentUser;
     const deleted = !!m.deletedForEveryone;
@@ -1629,7 +1719,11 @@ function renderMessages(){
       bodyHtml = `<span style="font-style:italic;opacity:.75;">🚫 This message was deleted</span>`;
     }else{
       const imgHtml = m.image ? `<img class="bubble-img" src="${m.image}" />` : "";
-      const videoHtml = m.video ? `<video class="bubble-video" src="${m.video}" controls></video>` : "";
+      const videoHtml = m.video ? `
+        <div class="bubble-video-wrap">
+          <video class="bubble-video" src="${m.video}" controls></video>
+          <button class="bubble-video-expand" type="button" title="Expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+        </div>` : "";
       const voiceHtml = m.voice ? `<div class="bubble-voice">🎤<audio src="${m.voice}" controls></audio></div>` : "";
       const docHtml = m.document ? `
         <a class="bubble-doc" href="${m.document.data}" download="${escapeHtml(m.document.name)}">
@@ -1640,11 +1734,14 @@ function renderMessages(){
           </div>
         </a>` : "";
       let textHtml = m.text ? highlightSearch(m.text, query) : "";
+      if(textHtml) textHtml = linkifyUrls(textHtml);
       if(textHtml && isGroup){
         const meta = getGroupMeta(activeChat);
         textHtml = linkifyMentions(textHtml, meta ? Object.keys(meta.members || {}) : []);
       }
-      bodyHtml = imgHtml + videoHtml + voiceHtml + docHtml + textHtml;
+      const linkUrl = m.text ? firstUrlIn(m.text) : null;
+      const linkPreviewHtmlStr = linkUrl ? linkPreviewHtml(linkUrl) : "";
+      bodyHtml = imgHtml + videoHtml + voiceHtml + docHtml + textHtml + linkPreviewHtmlStr;
     }
 
     const editedHtml = (m.edited && !deleted) ? `<span class="edited-tag">(edited)</span>` : "";
@@ -1740,12 +1837,45 @@ function renderMessages(){
       };
     });
     const img = row.querySelector(".bubble-img");
-    if(img) img.onclick = (e2) => { e2.stopPropagation(); openLightbox(img.src); };
+    if(img) img.onclick = (e2) => { e2.stopPropagation(); openLightbox(img.src, "image"); };
+    const videoExpandBtn = row.querySelector(".bubble-video-expand");
+    if(videoExpandBtn) videoExpandBtn.onclick = (e2) => { e2.stopPropagation(); openLightbox(m.video, "video"); };
 
     box.appendChild(row);
   });
-  box.scrollTop = box.scrollHeight;
+  if(preserveScroll){
+    box.scrollTop = box.scrollHeight - prevScrollHeight + prevScrollTop;
+  }else{
+    box.scrollTop = box.scrollHeight;
+  }
 }
+
+/* ---------------- lazy-load older messages on scroll-up ---------------- */
+// Windowed rendering (renderMessages only draws the last `renderedMessageLimit` messages) means
+// jump-to-message features (search hit, pinned message) can target a message older than what's
+// currently in the DOM. This widens the window to include it first, then re-queries — a stale
+// pre-render element reference would silently no-op scrollIntoView once box.innerHTML is rebuilt.
+function ensureMessageRendered(id){
+  if(document.querySelector(`[data-msg-id="${id}"]`)) return true;
+  const history = getChats(currentUser)[activeChat] || [];
+  const idx = history.findIndex((m) => m.id === id);
+  if(idx === -1) return false;
+  const needed = history.length - idx;
+  if(needed > renderedMessageLimit){
+    renderedMessageLimit = needed;
+    renderMessages();
+  }
+  return !!document.querySelector(`[data-msg-id="${id}"]`);
+}
+$("messages").addEventListener("scroll", () => {
+  const box = $("messages");
+  if(box.scrollTop > 60 || !activeChat) return;
+  const chats = getChats(currentUser);
+  const total = (chats[activeChat] || []).length;
+  if(renderedMessageLimit >= total) return;
+  renderedMessageLimit = Math.min(total, renderedMessageLimit + MESSAGE_PAGE_SIZE);
+  renderMessages({ preserveScroll: true });
+});
 
 function closeAllMsgMenus(){
   document.querySelectorAll(".msg-menu-dropdown.open").forEach((el) => el.classList.remove("open"));
@@ -1814,21 +1944,46 @@ $("pinned-banner-unpin").onclick = (e) => {
 $("pinned-banner").addEventListener("click", () => {
   const pin = activeChat && getPinned(activeChat);
   if(!pin) return;
-  const el = document.querySelector(`[data-msg-id="${pin.id}"]`);
-  if(el){
+  if(ensureMessageRendered(pin.id)){
     searchOpen = true;
     searchMatches = [pin.id];
     searchIdx = 0;
     renderMessages();
-    el.scrollIntoView({ block: "center" });
+    document.querySelector(`[data-msg-id="${pin.id}"]`).scrollIntoView({ block: "center" });
   }
 });
 
-function openLightbox(src){
-  $("img-lightbox-img").src = src;
+function closeLightbox(){
+  $("img-lightbox").classList.remove("open");
+  const video = $("img-lightbox-video");
+  video.pause();
+  video.removeAttribute("src");
+  video.classList.remove("active");
+}
+function openLightbox(src, kind){
+  const img = $("img-lightbox-img");
+  const video = $("img-lightbox-video");
+  if(kind === "video"){
+    img.classList.remove("active");
+    img.removeAttribute("src");
+    video.src = src;
+    video.classList.add("active");
+  }else{
+    video.pause();
+    video.removeAttribute("src");
+    video.classList.remove("active");
+    img.src = src;
+    img.classList.add("active");
+  }
   $("img-lightbox").classList.add("open");
 }
-$("img-lightbox").addEventListener("click", () => { $("img-lightbox").classList.remove("open"); });
+$("img-lightbox").addEventListener("click", closeLightbox);
+$("img-lightbox-close").addEventListener("click", (e) => { e.stopPropagation(); closeLightbox(); });
+$("img-lightbox-img").addEventListener("click", (e) => e.stopPropagation());
+$("img-lightbox-video").addEventListener("click", (e) => e.stopPropagation());
+document.addEventListener("keydown", (e) => {
+  if(e.key === "Escape" && $("img-lightbox").classList.contains("open")) closeLightbox();
+});
 
 function deleteMessageForEveryone(id, chatKey = activeChat){
   const chats = getChats(currentUser);
@@ -1959,8 +2114,6 @@ $("attach-menu-document").onclick = () => {
 };
 
 /* ---------------- attachments: photo / video / document, multi-select ---------------- */
-const MAX_DOCUMENT_BYTES = 5 * 1024 * 1024; // 5MB
-const MAX_VIDEO_BYTES = 20 * 1024 * 1024; // 20MB
 const PROFILE_PHOTO_MAX_BYTES = 500 * 1024; // 500KB
 
 function readFileAsDataURL(file){
@@ -2031,15 +2184,9 @@ async function compressImageToBudget(file, maxBytes){
   return result;
 }
 
-$("image-input").addEventListener("change", async (e) => {
-  const files = Array.from(e.target.files);
-  e.target.value = "";
+async function handleMediaFiles(files){
   for(const file of files){
     if(file.type.startsWith("video/")){
-      if(file.size > MAX_VIDEO_BYTES){
-        alert(`"${file.name}" is too large to send (max 20MB).`);
-        continue;
-      }
       const data = await readFileAsDataURL(file);
       pendingAttachments.push({ kind: "video", data, name: file.name, size: file.size, type: file.type });
     }else{
@@ -2048,21 +2195,67 @@ $("image-input").addEventListener("change", async (e) => {
     }
   }
   renderAttachmentPreview();
+}
+
+async function handleDocumentFiles(files){
+  for(const file of files){
+    const data = await readFileAsDataURL(file);
+    pendingAttachments.push({ kind: "document", data, name: file.name, size: file.size, type: file.type || "application/octet-stream" });
+  }
+  renderAttachmentPreview();
+}
+
+$("image-input").addEventListener("change", async (e) => {
+  const files = Array.from(e.target.files);
+  e.target.value = "";
+  await handleMediaFiles(files);
 });
 
 $("document-input").addEventListener("change", async (e) => {
   const files = Array.from(e.target.files);
   e.target.value = "";
-  for(const file of files){
-    if(file.size > MAX_DOCUMENT_BYTES){
-      alert(`"${file.name}" is too large to send (max 5MB).`);
-      continue;
-    }
-    const data = await readFileAsDataURL(file);
-    pendingAttachments.push({ kind: "document", data, name: file.name, size: file.size, type: file.type || "application/octet-stream" });
-  }
-  renderAttachmentPreview();
+  await handleDocumentFiles(files);
 });
+
+/* ---------------- attachments: drag & drop into chat panel ---------------- */
+(function setupChatDropZone(){
+  const panel = $("chat-panel");
+  let dragDepth = 0;
+
+  function isFileDrag(e){
+    return e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files");
+  }
+
+  panel.addEventListener("dragenter", (e) => {
+    if(!isFileDrag(e) || !activeChat) return;
+    e.preventDefault();
+    dragDepth++;
+    panel.classList.add("drop-active");
+  });
+  panel.addEventListener("dragover", (e) => {
+    if(!isFileDrag(e) || !activeChat) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  });
+  panel.addEventListener("dragleave", (e) => {
+    if(!isFileDrag(e)) return;
+    dragDepth = Math.max(0, dragDepth - 1);
+    if(dragDepth === 0) panel.classList.remove("drop-active");
+  });
+  panel.addEventListener("drop", async (e) => {
+    if(!isFileDrag(e)) return;
+    e.preventDefault();
+    dragDepth = 0;
+    panel.classList.remove("drop-active");
+    if(!activeChat) return;
+    const files = Array.from(e.dataTransfer.files || []);
+    if(files.length === 0) return;
+    const media = files.filter((f) => f.type.startsWith("image/") || f.type.startsWith("video/"));
+    const docs = files.filter((f) => !f.type.startsWith("image/") && !f.type.startsWith("video/"));
+    if(media.length) await handleMediaFiles(media);
+    if(docs.length) await handleDocumentFiles(docs);
+  });
+})();
 
 function removeAttachment(idx){
   pendingAttachments.splice(idx, 1);
@@ -2170,10 +2363,6 @@ async function handleRecordingStop(){
   if(wasCancelled || recordedChunks.length === 0 || durationSec < 0.5) return;
 
   const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || "audio/webm" });
-  if(blob.size > MAX_VIDEO_BYTES){
-    alert("That recording is too large to send.");
-    return;
-  }
   const data = await readFileAsDataURL(blob);
   pendingAttachments.push({ kind: "voice", data, duration: durationSec });
   renderAttachmentPreview();
@@ -2203,8 +2392,9 @@ function updateSearchCount(){
 function scrollToSearchHit(){
   const id = searchMatches[searchIdx];
   if(!id) return;
-  const el = document.querySelector(`[data-msg-id="${id}"]`);
-  if(el) el.scrollIntoView({ block: "center" });
+  if(ensureMessageRendered(id)){
+    document.querySelector(`[data-msg-id="${id}"]`).scrollIntoView({ block: "center" });
+  }
 }
 $("chat-search-btn").onclick = () => {
   if(!activeChat) return;
@@ -2994,6 +3184,19 @@ function escapeHtml(str){
 const savedUser = localStorage.getItem(SESSION_KEY);
 if(savedUser && (savedUser === ADMIN_USER || getAccounts()[savedUser] !== undefined)){
   login(savedUser);
+}
+
+/* Deep-link from a clicked push notification into the right chat. */
+function openChatFromDeepLink(chatKey){
+  if(!chatKey || !currentUser || currentUser === ADMIN_USER) return;
+  openChat(chatKey);
+}
+const deepLinkChat = new URLSearchParams(location.search).get("chat");
+if(deepLinkChat) openChatFromDeepLink(deepLinkChat);
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.addEventListener("message", (e) => {
+    if(e.data && e.data.type === "open-chat") openChatFromDeepLink(e.data.chatKey);
+  });
 }
 </script>
 </body>
