@@ -1,0 +1,879 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>LogicLab – Circuit Simulator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#eef2f7;--p:#fff;--t:#16202e;--b:#9aa7bb;--a:#e0a800;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141c;--p:#1a2230;--t:#e8eef8;--b:#4a5a74;--a:#ffd23f}}
+:root[data-theme="dark"]{--bg:#0f141c;--p:#1a2230;--t:#e8eef8;--b:#4a5a74;--a:#ffd23f}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0}
+body{display:flex;background:var(--bg);color:var(--t);font:13px system-ui,-apple-system,Segoe UI,sans-serif;overflow:hidden}
+#side{width:220px;flex:none;overflow:auto;background:var(--p);border-right:1px solid var(--b);padding:8px}
+#side h4{margin:10px 0 4px;font-size:11px;text-transform:uppercase;opacity:.6}
+button{background:var(--bg);color:var(--t);border:1px solid var(--b);border-radius:6px;padding:4px 8px;cursor:pointer;font:inherit}
+button:hover{border-color:var(--a)}
+.cat{padding:6px 8px;border-radius:6px;cursor:pointer}.cat:hover{background:var(--bg)}
+#fly{position:fixed;width:250px;max-height:75vh;overflow:auto;background:var(--p);border:1px solid var(--b);border-radius:8px;padding:6px;z-index:4;box-shadow:0 6px 24px #0005}#fly[hidden]{display:none}#fly button{display:block;width:100%;text-align:left;margin:2px 0;cursor:grab}
+.g button{margin:2px 2px 0 0;padding:3px 6px;font-size:12px}
+#main{flex:1;position:relative;min-width:0}
+canvas{width:100%;height:100%;display:block;touch-action:none}
+#bar{position:absolute;top:8px;left:8px;right:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;pointer-events:none}
+#bar>*{pointer-events:auto}
+#bar .pri{background:var(--a);color:#111;border-color:var(--a);font-weight:600}
+#hint{position:absolute;bottom:6px;left:8px;font-size:11px;opacity:.65;pointer-events:none}
+#md{position:fixed;inset:0;background:#0007;display:flex;align-items:center;justify-content:center;z-index:5}
+#md[hidden]{display:none}
+.box{background:var(--p);border:1px solid var(--b);border-radius:10px;padding:14px;width:min(520px,94vw);max-height:88vh;overflow:auto}
+input,textarea{background:var(--bg);color:var(--t);border:1px solid var(--b);border-radius:6px;padding:4px 6px;font:inherit}
+table{border-collapse:collapse;margin:6px 0}td,th{border:1px solid var(--b);padding:2px 8px;text-align:center}
+td.o{cursor:pointer;color:var(--a);font-weight:700}
+pre{white-space:pre-wrap;font-size:12px}
+.on{background:var(--a);color:#111;border-color:var(--a)}
+#sb{position:absolute;right:10px;top:76px;width:172px;background:var(--p);border:1px solid var(--b);border-radius:10px;padding:6px;z-index:3;box-shadow:0 4px 16px #0004}#sb[hidden]{display:none}#sb>button{display:block;width:100%;text-align:left;margin:2px 0}#sb small{display:block;opacity:.6;margin-top:4px}.al{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin:3px 0}.al button{padding:3px 0;text-align:center}
+.row{display:flex;gap:6px;align-items:center;margin:6px 0;flex-wrap:wrap}
+#bar[hidden]{display:none}
+#toast{position:fixed;left:50%;bottom:44px;transform:translateX(-50%);background:#16202e;color:#fff;padding:8px 14px;border-radius:8px;z-index:20;font-size:13px;box-shadow:0 4px 16px #0006;max-width:90vw}#toast[hidden]{display:none}
+#dbar{position:absolute;top:8px;left:8px;right:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;pointer-events:none;z-index:2}#dbar>*{pointer-events:auto}#dbar[hidden]{display:none}
+#dbar .tag{background:#38d96a;color:#111;padding:4px 10px;border-radius:6px;font-weight:700}
+#pk{position:absolute;right:10px;top:56px;width:320px;max-height:80%;overflow:auto;background:var(--p);border:2px solid #38d96a;border-radius:10px;padding:10px;z-index:4;box-shadow:0 6px 24px #0006}#pk[hidden]{display:none}
+#insp{position:absolute;left:10px;bottom:30px;width:min(540px,94%);background:var(--p);border:1px solid var(--b);border-radius:10px;padding:8px;z-index:3;box-shadow:0 6px 24px #0005}#insp[hidden]{display:none}#icv{width:100%;height:300px;background:var(--bg);border-radius:6px;display:block;touch-action:none}
+#iinfo{font-size:12px;margin-top:4px;max-height:120px;overflow:auto}#iinfo table{font-size:11px;margin:2px 0}#iinfo td,#iinfo th{padding:1px 5px}
+.pre{display:block;width:100%;text-align:left;margin:3px 0}.pre small{display:block;opacity:.65;font-size:10px;white-space:normal}
+</style></head><body>
+<div id="side"><b>LogicLab</b><input placeholder="Search components…" oninput="pal(this.value)" style="width:100%;box-sizing:border-box;margin:6px 0"><div id="pal"></div><h4>Prebuilt circuits</h4><div id="pre"></div><h4>My ICs</h4><div id="libl" class="g"></div></div>
+<div id="main"><canvas id="cv"></canvas>
+<div id="bar"><button class="pri" onclick="openM()">+ Create IC</button><button id="tsel" onclick="setTool(tool=='sel'?'pan':'sel')" title="Drag a box on the board to select an area (S)">⬚ Select</button><button onclick="hist(undo,redo)" title="Undo (Ctrl+Z)">↶</button><button onclick="hist(redo,undo)" title="Redo (Ctrl+Y)">↷</button><button id="rb" onclick="run=!run;this.textContent=run?'⏸':'▶'">⏸</button><button onclick="stepClk()" title="While paused: one full clock pulse (= one instruction). While running: toggles the clock level">Step</button><button onclick="rstS(sim)" title="Reset all flip-flops, counters, registers">Reset state</button>
+<label>Clock <input id="hz" type="range" min="0.5" max="20" step="0.5" value="2" oninput="hz=+this.value" style="width:80px;padding:0"></label>
+<button onclick="openIO()">Import / Export</button><button onclick="if(confirm('Clear canvas?')){sim=mk([]);save()}">Clear</button><button onclick="fitView(sim.cs)" title="Zoom to fit everything (F)">Fit</button><label title="Click any part to see its internal structure"><input type="checkbox" id="insOn" checked> Inspector</label><button id="gs" class="on" onclick="snapOn=!snapOn;this.classList.toggle('on',snapOn)" title="Snap to grid">Snap</button><button onclick="showTT()" title="Truth table of the selection / whole board">Truth table</button><button onclick="openMD()" title="Pin map, instruction reference and example programs for the LL-8 microcontroller">📘 MCU Docs</button><button class="pri" onclick="openPg()" title="Write assembly for the LL-8 microcontroller, upload it, read the instruction reference">🖥 MCU Programmer</button><button class="pri" onclick="openScript()" title="Build circuits from text scripts – made for AI assistants">⌨ Script / AI</button><button onclick="z=1;ox=200;oy=150">Reset view</button></div>
+<div id="sb" hidden><b id="sc"></b>
+<button onclick="dupe()" title="Ctrl+D">⧉ Duplicate</button><button onclick="copy()" title="Ctrl+C">Copy</button><button onclick="copy();delSel()" title="Ctrl+X">Cut</button><button onclick="delSel()" title="Delete">Delete</button>
+<button class="pri" onclick="compressSel()" title="Ctrl+G – wires crossing the selection become IC pins (needs at least one output)">▣ Compress to IC</button><button class="pri" onclick="compressSel(null,null,1)" title="Ctrl+Shift+G – like Compress to IC, but inputs and outputs are optional: the block can have none, one kind or both (a self-contained circuit)">▣ Compress to Circuit</button><button onclick="explodeSel()" title="Turn a selected IC back into its parts">Expand IC</button><button onclick="showTT()">Truth table</button>
+<small>Align</small><div class="al"><button onclick="align('l')" title="Left">⇤</button><button onclick="align('cx')" title="Centre horizontally">⇔</button><button onclick="align('r')" title="Right">⇥</button><button onclick="dist('h')" title="Distribute horizontally">⇹</button><button onclick="align('t')" title="Top">⤒</button><button onclick="align('cy')" title="Centre vertically">⇕</button><button onclick="align('b')" title="Bottom">⤓</button><button onclick="dist('v')" title="Distribute vertically">⇳</button></div>
+<div class="al" style="grid-template-columns:repeat(3,1fr)"><button onclick="front(1)">Front</button><button onclick="front(0)">Back</button><button onclick="fitView([...sels])">Zoom</button></div>
+<button onclick="sels=new Set();sel=null">Deselect</button></div>
+<div id="dbar" hidden><span class="tag">IC DESIGNER</span><span>Build freely – pins are chosen at the end.</span><button onclick="dpt('IN')" title="Drop an input point and wire it to your parts">＋ Input point</button><button onclick="dpt('OUT')" title="Drop an output point and wire a signal into it">＋ Output point</button><button onclick="setTool(tool=='sel'?'pan':'sel')">⬚ Select</button><button onclick="hist(undo,redo)">↶</button><button onclick="hist(redo,undo)">↷</button><button onclick="run=!run;this.textContent=run?'⏸':'▶'">⏸</button><button onclick="stepClk()" title="While paused: one full clock pulse (= one instruction). While running: toggles the clock level">Step</button><button onclick="fitView(sim.cs)">Fit</button><button class="pri" onclick="startPick()">✔ Create IC…</button><button onclick="cancelDesigner()" style="margin-left:auto">✕ Cancel</button></div>
+<div id="pk" hidden><b>Which pins does the IC have?</b><p><small>Click a <b>free input pin</b> on any part → IC <b style="color:#38d96a">INPUT</b>. Click an <b>output pin</b> → IC <b style="color:#4aa3ff">OUTPUT</b>. Click again to remove. Input/Output points you placed are included automatically.</small></p><div class="row"><input id="dnm" placeholder="IC name" style="flex:1"></div><div id="pkl"></div><div class="row"><button class="pri" onclick="finishPick()">Create IC</button><button onclick="PK=null;$('#pk').hidden=true">Back to editing</button></div></div>
+<div id="insp" hidden><div class="row"><b id="itt">Inside</b><button id="ibk" onclick="INS.stack.pop();INS.fit=1">◀ back</button><small>drag = pan · wheel = zoom · click an IC inside to go deeper · click a switch inside to toggle it</small><button onclick="insClose()" style="margin-left:auto">✕</button></div><canvas id="icv"></canvas><div id="iinfo"></div></div>
+<div id="hint">Drag parts from the left menu · <b>⬚ Select</b> (or Shift+drag) = box-select, then use the side panel: duplicate, copy, cut, delete, <b>compress to IC</b> or <b>compress to circuit</b> (pins optional), align · Delete/Backspace · Ctrl+Z/Y · Ctrl+C/X/V/D/G/A · arrows nudge · S select tool · F fit · drag pin→pin to wire · click a wire (turns blue) then Delete removes just that wire · blue corner resizes · zoom into an IC to see inside</div></div>
+<div id="sm" class="box" style="position:fixed;z-index:7;top:4%;left:50%;transform:translateX(-50%);width:min(780px,96vw)" hidden>
+<div class="row"><b>Script / AI builder</b><select id="exs" onchange="loadEx(this.value)"><option value="">Examples…</option></select><label><input type="checkbox" id="scl" checked> clear board first</label><button class="pri" onclick="runUI()">▶ Run script</button><button onclick="$('#st').value=exportScript()">Board → script</button><button onclick="openDocs()">AI documentation</button><button onclick="$('#sm').hidden=true" style="margin-left:auto">Close</button></div>
+<div class="row"><input id="aiq" placeholder="Tell the AI what to build, e.g. '8-bit up/down counter with 7-segment display'" style="flex:1;min-width:240px"><button onclick="copyPrompt()" title="Copies documentation + your request. Paste into any AI, paste its answer below, press Run">Copy prompt for AI</button></div>
+
+<textarea id="st" rows="13" style="width:100%;box-sizing:border-box;font:12px ui-monospace,Menlo,monospace" spellcheck="false" placeholder="Paste a script written by an AI here (or pick an example), then press Run.&#10;Tip: press 'AI documentation', copy it, and give it to your AI together with your request."></textarea><pre id="slog"></pre></div>
+<div id="dm" class="box" style="position:fixed;z-index:8;top:6%;left:50%;transform:translateX(-50%);width:min(780px,96vw)" hidden><div class="row"><b>Documentation to give to your AI</b><button class="pri" onclick="copyDocs()">Copy all</button><span id="cpm"></span><button onclick="$('#dm').hidden=true" style="margin-left:auto">Close</button></div>
+<textarea id="dt" rows="22" readonly style="width:100%;box-sizing:border-box;font:12px ui-monospace,Menlo,monospace"></textarea></div>
+<div id="mcud" class="box" style="position:fixed;z-index:10;top:4%;left:50%;transform:translateX(-50%);width:min(820px,96vw)" hidden><div class="row"><b>LL-8 microcontroller – pins, code &amp; docs</b><button class="pri" onclick="openPg()">🖥 Open programmer</button><button onclick="$('#mcud').hidden=true" style="margin-left:auto">Close</button></div><div id="mcudc" style="font-size:12px"></div></div>
+<div id="pg" class="box" style="position:fixed;z-index:9;top:4%;left:50%;transform:translateX(-50%);width:min(900px,96vw)" hidden><div class="row"><b>LL-8 microcontroller programmer</b><select id="pgt" onchange="pgLoad()"></select><select id="pge" onchange="if(this.value){$('#pgc').value=MEX[this.value];this.value=''}"></select><button class="pri" onclick="pgUp()">⬆ Upload &amp; restart</button><button onclick="$('#pg').hidden=true" style="margin-left:auto">Close</button></div>
+<div style="display:flex;gap:10px;flex-wrap:wrap"><div style="flex:1;min-width:260px"><textarea id="pgc" rows="18" style="width:100%;box-sizing:border-box;font:12px ui-monospace,Menlo,monospace" spellcheck="false" placeholder="loop: IN&#10;OUT&#10;JMP loop"></textarea><pre id="pgl"></pre></div><div id="pgd" style="flex:1.2;min-width:280px;max-height:60vh;overflow:auto;font-size:12px"></div></div></div><div id="fly" hidden></div><div id="toast" hidden></div>
+<div id="tm" class="box" style="position:fixed;z-index:6;top:8%;left:50%;transform:translateX(-50%)" hidden><div class="row"><b>Truth table</b><button onclick="$('#tm').hidden=true" style="margin-left:auto">Close</button></div><div id="tmc"></div></div>
+<div id="md" hidden><div class="box">
+<div class="row"><b>Create IC</b><button class="pri" onclick="mode(1)" title="Opens a separate workspace – no pins needed up front">Design manually (new workspace)</button><button onclick="mode(2)">From truth table</button><button onclick="$('#md').hidden=true" style="margin-left:auto">Close</button></div>
+<div class="row"><input id="nm" placeholder="IC name"></div>
+<div id="pm"><p>Design the circuit on the board. <b>Switches / IN pins → inputs</b>, <b>LEDs / OUT pins → outputs</b>. Select 2+ parts first (Shift+click or Shift+drag) to use only those; otherwise the whole board is used. ICs, flip-flops, counters, etc. can all be inside.</p>
+<button onclick="detect()">Detect pins from design</button><div id="pn"></div><label><input type="checkbox" id="rp"> Replace the design on the board with the new IC</label><br><br><button class="pri" onclick="mkManual()">Create IC</button></div>
+<div id="pt" hidden><div class="row">Inputs <input id="ni" type="number" min="1" max="6" value="2" style="width:50px" onchange="bt()"> Outputs <input id="no" type="number" min="1" max="8" value="1" style="width:50px" onchange="bt()"> <small>click output cells: 0 → 1 → x (don't care)</small></div><div id="tb"></div><button class="pri" onclick="mkTT()">Create IC (auto-simplified)</button><pre id="eq"></pre></div>
+</div></div>
+<div id="io" class="box" style="position:fixed;z-index:6;top:10%;left:50%;transform:translateX(-50%)" hidden><div class="row"><b>Import / Export ICs</b><button onclick="$('#io').hidden=true" style="margin-left:auto">Close</button></div>
+<textarea id="ta" rows="10" style="width:100%" placeholder="IC library JSON"></textarea><div class="row"><button onclick="$('#ta').value=JSON.stringify(lib)">Export all (fills box – copy it)</button><button onclick="impTxt($('#ta').value)">Import from box</button><button onclick="$('#ta').value=JSON.stringify({board:ser(sim.cs),lib})">Export board + ICs</button><input type="file" accept=".json" onchange="this.files[0]&&this.files[0].text().then(impTxt)"></div></div>
+<script>
+const $=s=>document.querySelector(s),cv=$('#cv'),mctx=cv.getContext('2d'),dpr=window.devicePixelRatio||1;
+let ctx=mctx,DZ=null,PK=null,selW=null,INS=null,W,H,z=1,ox=200,oy=150,lib={},sim,uid=1,clk=0,run=true,hz=2,acc=0,last=performance.now(),T=0,drag=null,cur={x:0,y:0},sel=null,snapOn=true,hov=null,sels=new Set(),undo=[],redo=[],clip=null,pre0='',det=null,C={};
+function rs(){W=cv.clientWidth;H=cv.clientHeight;cv.width=W*dpr;cv.height=H*dpr}addEventListener('resize',rs);
+const G={AND:v=>v.every(x=>x),OR:v=>v.some(x=>x),NAND:v=>!v.every(x=>x),NOR:v=>!v.some(x=>x),XOR:v=>v.reduce((a,b)=>a^b,0),XNOR:v=>!v.reduce((a,b)=>a^b,0),NOT:v=>!v[0],BUF:v=>v[0]};
+const LC=['#ff3b3b','#38d96a','#4aa3ff','#ffd23f','#ffffff'],cl=(v,a,b)=>Math.max(a,Math.min(b,v)),snap=v=>snapOn?Math.round(v/10)*10:Math.round(v);
+const PN={DFF:[['D','>'],['Q','Q̄']],JK:[['J','K','>'],['Q','Q̄']],REG4:[['D0','D1','D2','D3','>'],['Q0','Q1','Q2','Q3']],NMOS:[['G','D'],['S']],PMOS:[['G','D'],['S']],SEG7:[['a','b','c','d','e','f','g'],[]],RGB:[['R','G','B'],[]]};
+const SEG=[[18,12,44,8],[62,22,8,44],[62,74,8,44],[18,120,44,8],[10,74,8,44],[10,22,8,44],[18,66,44,8]];
+function spec(c){const t=c.t;let ni=0,no=0,w=60,h=40,lab=t;
+if(G[t]){ni=(t=='NOT'||t=='BUF')?1:(c.n||2);no=1;h=Math.max(40,ni*20+10)}
+else if(t=='SW'||t=='IN'){no=1;w=46;h=30;lab=c.name||t}
+else if(t=='CLK'){no=1;w=46;h=30}else if(t=='HI'||t=='LO'){no=1;w=36;h=26}
+else if(t=='LED'){ni=1;w=34;h=34;lab=''}else if(t=='OUT'){ni=1;w=46;h=30;lab=c.name||'OUT'}
+else if(t=='RGB'){ni=3;w=44;h=60;lab=''}else if(t=='SEG7'){ni=7;w=80;h=140;lab=''}
+else if(t=='DFF'){ni=2;no=2;w=64;h=56}else if(t=='JK'){ni=3;no=2;w=64;h=70}else if(t=='REG4'){ni=5;no=4;w=80;h=120}
+else if(t=='NMOS'||t=='PMOS'){ni=2;no=1;w=56;h=44}else if(t=='DIODE'){ni=1;no=1;w=50;h=24;lab='▷|'}
+else if(t=='NOTE'){w=Math.max(60,String(c.name||'Note').length*7+16);h=26;lab=c.name||'Note'}
+else if(t=='M'){const K=KS[c.k],a=c.nm,z2=K.sz&&K.sz(c.p);ni=a[0].length;no=a[1].length;lab=K.nolab?'':(c.lab||c.k);w=z2?z2[0]:Math.max(84,lab.length*6.4+16);h=z2?z2[1]:Math.max(40,Math.max(c.vi.length,c.vo.length)*16+22)}
+else if(t=='IC'){const d=lib[c.def]||{ni:0,no:0};ni=d.ni;no=d.no;w=110;h=Math.max(ni,no)*22+30;lab=c.def}
+if(c.w)w=c.w;if(c.h)h=c.h;return{ni,no,w,h,lab}}
+const RGc={},RG=n=>RGc[n]||(RGc[n]=Array.from({length:n},(_,i)=>i));
+function pins(c,k,s){if(c.t=='M')return k?c.vo:c.vi;s=s||spec(c);return RG(k?s.no:s.ni)}
+function setVis(c,all,s){const op=KS[c.k].op||[];c.vi=[];c.vo=[];c.full=all;c.nm[0].forEach((n,i)=>{if(all||!op.includes(n)||c.src[i])c.vi.push(i)});c.nm[1].forEach((n,j)=>{if(all||!op.includes(n)||(s&&s.cs.some(o=>o.src.some(r=>r&&r.id==c.id&&r.o==j))))c.vo.push(j)})}
+function pin(c,k,i){const s=spec(c);if(c.t=='IC'){const d=lib[c.def],p=d.pins&&d.pins[k?'o':'i'][i];if(p)return{x:c.x+p.x*s.w/110,y:c.y+p.y*s.h/(Math.max(d.ni,d.no)*22+30)}}
+const L=pins(c,k,s),r=L.indexOf(i);if(r<0)return null;return{x:c.x+(k?s.w:0),y:c.y+s.h*(r+1)/(L.length+1)}}
+function hitHandle(p){for(const c of[hov,sel])if(c){const s=spec(c);if(Math.abs(p.x-c.x-s.w)<10/z&&Math.abs(p.y-c.y-s.h)<10/z)return c}return null}
+function mk(cs){const s={cs,map:{}};cs.forEach(c=>{init(c);s.map[c.id]=c});cs.forEach(c=>c.t=='M'&&setVis(c,c.full,s));return s}
+function init(c){c.o=new Array(40).fill(0);c.q=c.q||0;c.src=c.src||[];if(c.t=='M'){const K=KS[c.k];c.p=c.p||{};c.nm=[K.i(c.p),K.o(c.p)];c.mem=c.mem||[];c.st=K.init?K.init(c.p):0;if(!c.vi)setVis(c,c.full)}if(c.t=='IC')c.sub=mk(JSON.parse(JSON.stringify(lib[c.def].comps)))}
+const ser=cs=>cs.map(c=>({id:c.id,t:c.t,x:c.x,y:c.y,n:c.n,def:c.def,name:c.name,color:c.color,s:c.s,k:c.k,p:c.p,w:c.w,h:c.h,vi:c.vi,vo:c.vo,full:c.full,lab:c.lab,mem:c.mem,asm:c.asm,src:Array.from(c.src,s=>s?{id:s.id,o:s.o}:null)}));
+const iv=(s,c,i)=>{const r=c.src[i];if(!r)return 0;const m=s.map[r.id];return m?m.o[r.o]:0};
+function setO(c,a){let ch=false;a.forEach((v,i)=>{v=+!!v;if(c.o[i]!==v){c.o[i]=v;ch=true}});return ch}
+function ev(s,c){const t=c.t,n=spec(c).ni,v=[];for(let i=0;i<n;i++)v.push(iv(s,c,i));c.iv=v;
+if(G[t])return setO(c,[G[t](v)]);
+switch(t){case'SW':case'IN':return setO(c,[c.s]);case'CLK':return setO(c,[clk]);case'HI':return setO(c,[1]);case'LO':return setO(c,[0]);
+case'DFF':case'JK':return setO(c,[c.q,!c.q]);case'REG4':return setO(c,[c.q&1,c.q>>1&1,c.q>>2&1,c.q>>3&1]);
+case'NMOS':return setO(c,[v[0]&&v[1]]);case'PMOS':return setO(c,[!v[0]&&v[1]]);case'DIODE':return setO(c,[v[0]]);
+case'M':{const K=KS[c.k],p=c.p;if(K.dv)c.nm[0].forEach((n,i)=>{if(!c.src[i]&&K.dv[n]!=null)v[i]=K.dv[n]});if(K.rs&&v[K.rs(p)])c.st=K.init?K.init(p):0;return setO(c,K.out(v,c,p))}
+case'IC':{const d=lib[c.def];let ch=false;d.inIds.forEach((id,i)=>{const m=c.sub.map[id];if((m.s|0)!==v[i]){m.s=v[i];ch=true}});settle(c.sub);
+d.outIds.forEach((id,j)=>{const x=+!!c.sub.map[id].iv[0];if(c.o[j]!==x){c.o[j]=x;ch=true}});return ch}}
+return false}
+function settle(s){for(let p=0;p<20;p++){let ch=false;for(const c of s.cs)ch=ev(s,c)||ch;if(!ch)break}}
+function latch(s){const U=[];for(const c of s.cs){const t=c.t;if(t=='DFF'||t=='JK'||t=='REG4'){const ck=iv(s,c,t=='DFF'?1:t=='JK'?2:4),v=c.iv;
+if(ck&&!c.pc)U.push(()=>{if(t=='DFF')c.q=v[0];else if(t=='JK'){c.q=v[0]&&v[1]?+!c.q:v[0]?1:v[1]?0:c.q}else c.q=v[0]|v[1]<<1|v[2]<<2|v[3]<<3});c.pc=ck}else if(t=='M'){const K=KS[c.k];if(K.ck){const ck=iv(s,c,K.ck(c.p)),v=c.iv;if(ck&&!c.pc)U.push(()=>{c.st=K.nx(v,c,c.p)});c.pc=ck}}else if(t=='IC')latch(c.sub)}U.forEach(f=>f())}
+/* ---------- truth table → simplified gates ---------- */
+function qm(n,on,dc){let cur=new Map(),pr=[];[...on,...dc].forEach(m=>cur.set(m+',0',{v:m,m:0}));
+while(cur.size){const a=[...cur.values()],used=new Set(),nx=new Map();
+for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++){const x=a[i],y=a[j];if(x.m!=y.m)continue;const d=x.v^y.v;if(d&&!(d&(d-1))){const m=x.m|d,v=x.v&~d;nx.set(v+','+m,{v,m});used.add(i);used.add(j)}}
+a.forEach((p,i)=>{if(!used.has(i))pr.push(p)});cur=nx}
+const cov=(p,t)=>(t&~p.m)==p.v;let ch=[];
+on.forEach(t=>{const c=pr.filter(p=>cov(p,t));if(c.length==1&&!ch.includes(c[0]))ch.push(c[0])});
+let rem=on.filter(t=>!ch.some(p=>cov(p,t)));
+while(rem.length){let b=null,bn=-1;pr.forEach(p=>{const k=rem.filter(t=>cov(p,t)).length;if(k>bn){bn=k;b=p}});ch.push(b);rem=rem.filter(t=>!cov(b,t))}
+return ch}
+function ttDef(name,n,no,tt){const N='ABCDEF';let id=1,ty=0;const cs=[],ex=[],ins=[],nots=[],outIds=[];
+const mkc=(t,x,y)=>{const c={id:id++,t,x,y,src:[]};cs.push(c);return c};
+for(let k=0;k<n;k++){const c=mkc('IN',0,k*70);c.name=N[k];ins.push(c)}
+const nt=k=>nots[k]||(nots[k]=Object.assign(mkc('NOT',130,k*70+30),{src:[{id:ins[k].id,o:0}]}));
+for(let j=0;j<no;j++){const on=[],dc=[];tt.forEach((r,i)=>{r[j]==1?on.push(i):r[j]==2&&dc.push(i)});
+const imps=on.length?qm(n,on,dc):[],o=mkc('OUT',600,j*90);o.name='Y'+j;outIds.push(o.id);
+if(!on.length){o.src[0]={id:mkc('LO',450,j*90).id,o:0};ex.push('Y'+j+' = 0')}
+else if(imps.some(p=>p.m==(1<<n)-1)){o.src[0]={id:mkc('HI',450,j*90).id,o:0};ex.push('Y'+j+' = 1')}
+else{const terms=imps.map(p=>{const L=[];for(let k=0;k<n;k++){const b=1<<(n-1-k);if(!(p.m&b))L.push({k,neg:!(p.v&b)})}return L});
+const nodes=terms.map(L=>{const s=L.map(l=>({id:(l.neg?nt(l.k):ins[l.k]).id,o:0}));if(s.length==1)return s[0];const a=mkc('AND',300,(ty++)*50);a.n=s.length;a.src=s;return{id:a.id,o:0}});
+if(nodes.length==1)o.src[0]=nodes[0];else{const r=mkc('OR',450,j*90);r.n=nodes.length;r.src=nodes;o.src[0]={id:r.id,o:0}}
+ex.push('Y'+j+' = '+terms.map(L=>L.map(l=>N[l.k]+(l.neg?"'":'')).join('')).join(' + '))}}
+return{name,ni:n,no,comps:cs,inIds:ins.map(c=>c.id),outIds,inN:ins.map(c=>c.name),outN:outIds.map((_,j)=>'Y'+j),expr:ex}}
+
+/* ---------- component library: macro kinds ---------- */
+const Bn=(n,s)=>Array.from({length:n},(_,i)=>s+i),bv=(v,a,n)=>{let x=0;for(let i=0;i<n;i++)if(v[a+i])x+=2**i;return x},nb=(x,n)=>Array.from({length:n},(_,i)=>Math.floor(x/2**i)%2),md=(x,m)=>((x%m)+m)%m;
+const HEX='1111110 0110000 1101101 1111001 0110011 1011011 1011111 1110000 1111111 1111011 1110111 0011111 1001110 0111101 1001111 1000111'.split(' '),TAP={3:[3,2],4:[4,3],5:[5,3],6:[6,5],7:[7,6],8:[8,6,5,4]};
+const AB=p=>[...Bn(p.n,'A'),...Bn(p.n,'B')];
+const KS={
+add:{i:p=>[...AB(p),'CIN'],o:p=>[...Bn(p.n,'S'),'COUT'],out:(v,c,p)=>{const n=p.n,s=bv(v,0,n)+bv(v,n,n)+v[2*n];return[...nb(s,n),+(s>=2**n)]}},
+sub:{i:AB,o:p=>[...Bn(p.n,'D'),'BOUT'],out:(v,c,p)=>{const n=p.n,a=bv(v,0,n),b=bv(v,n,n);return[...nb(md(a-b,2**n),n),+(a<b)]}},
+asub:{i:p=>[...AB(p),'SUB'],o:p=>[...Bn(p.n,'S'),'COUT'],out:(v,c,p)=>{const n=p.n,m=2**n,sb=v[2*n],b=bv(v,n,n),s=bv(v,0,n)+(sb?m-1-b:b)+sb;return[...nb(s,n),+(s>=m)]}},
+incr:{i:p=>Bn(p.n,'A'),o:p=>[...Bn(p.n,'Y'),'COUT'],out:(v,c,p)=>{const s=bv(v,0,p.n)+1;return[...nb(s,p.n),+(s>=2**p.n)]}},
+decr:{i:p=>Bn(p.n,'A'),o:p=>[...Bn(p.n,'Y'),'BOUT'],out:(v,c,p)=>{const a=bv(v,0,p.n);return[...nb(md(a-1,2**p.n),p.n),+(a==0)]}},
+neg:{i:p=>Bn(p.n,'A'),o:p=>Bn(p.n,'Y'),out:(v,c,p)=>nb(md(-bv(v,0,p.n),2**p.n),p.n)},
+cmp:{i:AB,o:()=>['A>B','A=B','A<B'],out:(v,c,p)=>{const a=bv(v,0,p.n),b=bv(v,p.n,p.n);return[+(a>b),+(a==b),+(a<b)]}},
+mul:{i:AB,o:p=>Bn(2*p.n,'P'),out:(v,c,p)=>nb(bv(v,0,p.n)*bv(v,p.n,p.n),2*p.n)},
+alu:{i:p=>[...AB(p),'OP0','OP1','OP2','CIN'],o:p=>[...Bn(p.n,'F'),'COUT','ZERO'],out:(v,c,p)=>{const n=p.n,m=2**n,a=bv(v,0,n),b=bv(v,n,n),op=bv(v,2*n,3),ci=v[2*n+3];let r,co=0;
+if(op==0){r=a+b+ci;co=+(r>=m)}else if(op==1){r=a-b-ci;co=+(r<0)}else if(op==2)r=a&b;else if(op==3)r=a|b;else if(op==4)r=a^b;else if(op==5)r=m-1-a;else if(op==6){r=a*2;co=+(r>=m)}else{r=Math.floor(a/2);co=a%2}
+r=md(r,m);return[...nb(r,n),co,+(r==0)]}},
+sh:{i:p=>[...Bn(p.n,'A'),...Bn(Math.log2(p.n),'SH'),'RIGHT'],o:p=>Bn(p.n,'Y'),out:(v,c,p)=>{const n=p.n,k=Math.log2(n),s=bv(v,n,k),a=bv(v,0,n);return nb(v[n+k]?Math.floor(a/2**s):(a*2**s)%2**n,n)}},
+mux:{i:p=>{const a=[];for(let j=0;j<2**p.k;j++)for(let b=0;b<p.w;b++)a.push('I'+j+(p.w>1?'.'+b:''));return[...a,...Bn(p.k,'S')]},o:p=>p.w>1?Bn(p.w,'Y'):['Y'],out:(v,c,p)=>{const s=bv(v,2**p.k*p.w,p.k);return Array.from({length:p.w},(_,b)=>v[s*p.w+b])}},
+dmx:{i:p=>['D',...Bn(p.k,'S')],o:p=>Bn(2**p.k,'Y'),out:(v,c,p)=>{const s=bv(v,1,p.k);return Array.from({length:2**p.k},(_,j)=>j==s?v[0]:0)}},
+dcd:{i:p=>[...Bn(p.k,'A'),'EN'],o:p=>Bn(2**p.k,'Y'),out:(v,c,p)=>{const a=bv(v,0,p.k);return Array.from({length:2**p.k},(_,j)=>+(j==a&&v[p.k]))}},
+enc:{i:p=>Bn(2**p.k,'I'),o:p=>[...Bn(p.k,'A'),'V'],out:(v,c,p)=>{let h=-1;for(let i=0;i<2**p.k;i++)if(v[i])h=i;return[...nb(Math.max(h,0),p.k),+(h>=0)]}},
+par:{i:p=>Bn(p.n,'I'),o:()=>['P'],out:(v,c,p)=>{const x=v.slice(0,p.n).reduce((a,b)=>a^b,0);return[p.odd?1-x:x]}},
+h7:{i:()=>Bn(4,'D'),o:()=>[...'abcdefg'],out:(v,c,p)=>{const d=bv(v,0,4);return[...(p.bcd&&d>9?'0000000':HEX[d])].map(Number)}},
+b2g:{i:p=>Bn(p.n,'B'),o:p=>Bn(p.n,'G'),out:(v,c,p)=>{const x=bv(v,0,p.n);return nb(x^(x>>1),p.n)}},
+g2b:{i:p=>Bn(p.n,'G'),o:p=>Bn(p.n,'B'),out:(v,c,p)=>{let g=bv(v,0,p.n),b=g;while(g>>=1)b^=g;return nb(b,p.n)}},
+tff:{i:()=>['T','CK'],o:()=>['Q','Q̄'],ck:()=>1,nx:(v,c)=>v[0]?1-c.st:c.st,out:(v,c)=>[c.st,1-c.st]},
+dl:{i:()=>['D','EN'],o:()=>['Q','Q̄'],out:(v,c)=>{if(v[1])c.st=v[0];return[c.st,1-c.st]}},
+srl:{i:()=>['S','R'],o:()=>['Q','Q̄'],out:(v,c)=>{if(v[0]&&!v[1])c.st=1;else if(v[1])c.st=0;return[c.st,1-c.st]}},
+reg:{i:p=>[...Bn(p.n,'D'),'CK','RST'],o:p=>Bn(p.n,'Q'),ck:p=>p.n,rs:p=>p.n+1,nx:(v,c,p)=>bv(v,0,p.n),out:(v,c,p)=>nb(c.st,p.n)},
+shr:{i:()=>['SI','CK','RST'],o:p=>Bn(p.n,'Q'),ck:()=>1,rs:()=>2,nx:(v,c,p)=>p.left?Math.floor(c.st/2)+v[0]*2**(p.n-1):(c.st*2)%2**p.n+v[0],out:(v,c,p)=>nb(c.st,p.n)},
+piso:{i:p=>[...Bn(p.n,'D'),'LD','CK','RST'],o:()=>['SO'],ck:p=>p.n+1,rs:p=>p.n+2,nx:(v,c,p)=>v[p.n]?bv(v,0,p.n):Math.floor(c.st/2),out:(v,c)=>[c.st%2]},
+ushr:{i:p=>[...Bn(p.n,'D'),'SR','SL','S0','S1','CK','RST'],o:p=>Bn(p.n,'Q'),ck:p=>p.n+4,rs:p=>p.n+5,nx:(v,c,p)=>{const n=p.n,s=v[n+2]+2*v[n+3];return s==0?c.st:s==1?Math.floor(c.st/2)+v[n]*2**(n-1):s==2?(c.st*2)%2**n+v[n+1]:bv(v,0,n)},out:(v,c,p)=>nb(c.st,p.n)},
+cnt:{i:p=>['CK','RST','EN',...(p.m=='ud'?['DIR']:[]),...(p.ld?['LD',...Bn(p.n,'D')]:[])],o:p=>[...Bn(p.n,'Q'),...(['john','ring','lfsr'].includes(p.m)?[]:['TC'])],ck:()=>0,rs:()=>1,init:p=>p.m=='ring'||p.m=='lfsr'?1:0,
+nx:(v,c,p)=>{if(!v[2])return c.st;const n=p.n,m=p.m,M=p.mod||2**n,o=3+(m=='ud'),s=c.st,T=2**n,msb=Math.floor(s/2**(n-1))%2;
+if(p.ld&&v[o])return bv(v,o+1,n);if(m=='down'||(m=='ud'&&v[3]))return md(s-1,M);
+if(m=='john')return(s*2)%T+1-msb;if(m=='ring')return(s*2)%T+msb;
+if(m=='lfsr')return(s*2)%T+TAP[n].reduce((a,t)=>a^(Math.floor(s/2**(t-1))%2),0);return(s+1)%M},
+out:(v,c,p)=>{const n=p.n,m=p.m,s=c.st,q=nb(m=='gray'?(s^(s>>1)):s,n);if(['john','ring','lfsr'].includes(m))return q;const M=p.mod||2**n;return[...q,+((m=='down'||(m=='ud'&&v[3]))?s==0:s==M-1)]}},
+rom:{i:p=>Bn(p.a,'A'),o:p=>Bn(p.w,'D'),out:(v,c,p)=>nb(c.mem[bv(v,0,p.a)]||0,p.w)},
+ram:{i:p=>[...Bn(p.a,'A'),...Bn(p.w,'D'),'WE','CK'],o:p=>Bn(p.w,'Q'),ck:p=>p.a+p.w+1,nx:(v,c,p)=>{if(v[p.a+p.w])c.mem[bv(v,0,p.a)]=bv(v,p.a,p.w);return c.st},out:(v,c,p)=>nb(c.mem[bv(v,0,p.a)]||0,p.w)},
+rf:{i:p=>[...Bn(p.k,'WA'),...Bn(p.k,'RA'),...Bn(p.w,'D'),'WE','CK'],o:p=>Bn(p.w,'Q'),ck:p=>2*p.k+p.w+1,nx:(v,c,p)=>{if(v[2*p.k+p.w])c.mem[bv(v,0,p.k)]=bv(v,2*p.k,p.w);return c.st},out:(v,c,p)=>nb(c.mem[bv(v,p.k,p.k)]||0,p.w)},
+bar:{i:p=>Bn(p.n,'L'),o:()=>[],out:()=>[],sz:p=>[44,p.n*20+14],nolab:1},
+hexd:{i:()=>Bn(4,'D'),o:()=>[],out:()=>[],sz:()=>[80,140],nolab:1}};
+Object.entries({cnt:['TC'],alu:['ZERO'],enc:['V'],tff:['Q̄'],dl:['Q̄'],srl:['Q̄']}).forEach(([k,o])=>KS[k].op=o);KS.cnt.dv=KS.dcd.dv={EN:1};
+/* ---------- catalogue (palette) ---------- */
+const CAT=[],E=(g,n,o)=>CAT.push({g,n,...o}),EM=(g,n,k,p)=>E(g,n,{t:'M',k,p});
+E('Inputs','Switch',{t:'SW'});E('Inputs','Clock',{t:'CLK'});E('Inputs','High (1)',{t:'HI'});E('Inputs','Low (0)',{t:'LO'});E('Inputs','IC input pin',{t:'IN'});
+const DS='Outputs / Displays';['Red','Green','Blue','Yellow','White'].forEach((n,i)=>E(DS,n+' LED',{t:'LED',color:LC[i]}));
+E(DS,'RGB LED',{t:'RGB'});E(DS,'7-seg (7 pins)',{t:'SEG7'});E(DS,'IC output pin',{t:'OUT'});EM(DS,'Hex display','hexd',{});[4,8,16].forEach(n=>EM(DS,'LED bar '+n,'bar',{n}));
+E('Gates','NOT',{t:'NOT'});E('Gates','Buffer',{t:'BUF'});['AND','OR','NAND','NOR','XOR','XNOR'].forEach(t=>[2,3,4,5,6,8].forEach(n=>E('Gates',t+n,{t,gn:n})));
+const FF='Flip-flops';E(FF,'D flip-flop',{t:'DFF'});E(FF,'JK flip-flop',{t:'JK'});EM(FF,'T flip-flop','tff');EM(FF,'D latch','dl');EM(FF,'SR latch','srl');
+E('Parts','NMOS transistor',{t:'NMOS'});E('Parts','PMOS transistor',{t:'PMOS'});E('Parts','Diode',{t:'DIODE'});
+[2,3,4,5,6,8,10,12,16].forEach(n=>EM('Registers',n+'-bit register','reg',{n}));
+const SR='Shift registers';for(let n=2;n<=8;n++){EM(SR,`Shift reg ${n}-bit (→)`,'shr',{n});EM(SR,`Shift reg ${n}-bit (←)`,'shr',{n,left:1})}
+[4,8].forEach(n=>{EM(SR,`PISO ${n}-bit`,'piso',{n});EM(SR,`Universal shift ${n}-bit`,'ushr',{n})});
+const CN='Counters',SQ='Sequencers (ring/Johnson/LFSR)';
+for(let n=2;n<=8;n++){EM(CN,`Up counter ${n}-bit`,'cnt',{n,m:'up'});EM(CN,`Down counter ${n}-bit`,'cnt',{n,m:'down'});EM(CN,`Up/Down counter ${n}-bit`,'cnt',{n,m:'ud'});EM(SQ,`Johnson ${n}-bit`,'cnt',{n,m:'john'})}
+for(let n=2;n<=6;n++)EM(CN,`Gray counter ${n}-bit`,'cnt',{n,m:'gray'});
+for(let n=3;n<=8;n++){EM(SQ,`Ring counter ${n}-bit`,'cnt',{n,m:'ring'});EM(SQ,`LFSR ${n}-bit`,'cnt',{n,m:'lfsr'})}
+for(let M=3;M<=16;M++)EM(CN,`Mod-${M} counter${M==10?' (BCD decade)':''}`,'cnt',{n:Math.ceil(Math.log2(M)),m:'up',mod:M});
+[4,8,12,16].forEach(n=>EM(CN,`Program counter ${n}-bit (load)`,'cnt',{n,m:'up',ld:1}));
+const AR='Arithmetic';[1,2,3,4,5,6,7,8,12,16].forEach(n=>EM(AR,n+'-bit adder','add',{n}));
+[2,4,8,16].forEach(n=>EM(AR,n+'-bit subtractor','sub',{n}));
+[4,8,16].forEach(n=>{EM(AR,n+'-bit add/sub','asub',{n});EM(AR,n+'-bit incrementer','incr',{n});EM(AR,n+'-bit decrementer','decr',{n});EM(AR,n+'-bit ALU','alu',{n});EM(AR,n+'-bit barrel shifter','sh',{n})});
+[4,8].forEach(n=>EM(AR,n+'-bit negate','neg',{n}));[2,3,4,6,8].forEach(n=>EM(AR,`${n}×${n} multiplier`,'mul',{n}));
+[1,2,3,4,5,6,7,8,16].forEach(n=>EM('Comparators',n+'-bit comparator','cmp',{n}));
+const MX='Mux / Demux / Decoders';for(let k=1;k<=4;k++)[1,2,4,8].forEach(w=>{if(2**k*w<=64)EM(MX,`Mux ${2**k}:1 × ${w}-bit`,'mux',{k,w})});
+for(let k=1;k<=4;k++)EM(MX,`Demux 1:${2**k}`,'dmx',{k});for(let k=1;k<=5;k++)EM(MX,`Decoder ${k}:${2**k}`,'dcd',{k});for(let k=2;k<=4;k++)EM(MX,`Priority encoder ${2**k}:${k}`,'enc',{k});
+const CV='Code converters';[3,4,8].forEach(n=>{EM(CV,`Binary→Gray ${n}-bit`,'b2g',{n});EM(CV,`Gray→Binary ${n}-bit`,'g2b',{n})});
+[3,4,5,6,8].forEach(n=>{EM(CV,`Even parity ${n}-bit`,'par',{n});EM(CV,`Odd parity ${n}-bit`,'par',{n,odd:1})});EM(CV,'Hex→7-seg decoder','h7',{});EM(CV,'BCD→7-seg decoder','h7',{bcd:1});
+const MM='Memory';[[3,8],[4,4],[4,8],[5,8],[6,8],[8,8]].forEach(([a,w])=>{EM(MM,`ROM ${2**a}×${w} (dbl-click to edit)`,'rom',{a,w});EM(MM,`RAM ${2**a}×${w}`,'ram',{a,w})});EM(MM,'RAM 8×4','ram',{a:3,w:4});
+[[2,4],[2,8],[3,8],[4,8]].forEach(([k,w])=>EM(MM,`Register file ${2**k}×${w}`,'rf',{k,w}));
+E('Annotations','Text note (dbl-click to edit)',{t:'NOTE'});
+const TB=(n,f)=>Array.from({length:1<<n},(_,i)=>f(Array.from({length:n},(_,k)=>i>>(n-1-k)&1),i)),GL='Gate-level ICs (see inside)';
+const EI=(name,n,no,f)=>CAT.push({g:GL,n:name,ic:()=>ttDef(name,n,no,TB(n,f))}),num=b=>b.reduce((a,x)=>a*2+x,0),bits=(x,n)=>Array.from({length:n},(_,k)=>x>>(n-1-k)&1);
+EI('HalfAdder',2,2,b=>[b[0]^b[1],b[0]&b[1]]);EI('FullAdder',3,2,b=>{const s=b[0]+b[1]+b[2];return[s&1,s>>1]});
+EI('HalfSubtractor',2,2,b=>[b[0]^b[1],+(!b[0]&&b[1])]);EI('FullSubtractor',3,2,b=>{const d=b[0]-b[1]-b[2];return[d&1,+(d<0)]});
+EI('Mux2:1 gates (A=sel)',3,1,b=>[b[0]?b[2]:b[1]]);EI('Mux4:1 gates (A,B=sel)',6,1,b=>[b[2+b[0]*2+b[1]]]);
+EI('Decoder2:4 gates',2,4,b=>[0,1,2,3].map(j=>+(j==num(b))));EI('Decoder3:8 gates',3,8,b=>[0,1,2,3,4,5,6,7].map(j=>+(j==num(b))));
+EI('PriorityEnc4:2 gates',4,3,b=>{let h=-1;b.forEach((x,k)=>{if(x)h=k});return[h>>1&1,h&1,+(h>=0)].map(x=>x<0?0:x)});
+[1,2,3].forEach(n=>EI(`Comparator${n}bit gates`,2*n,3,b=>{const a=num(b.slice(0,n)),c=num(b.slice(n));return[+(a>c),+(a==c),+(a<c)]}));
+[3,4,5,6].forEach(n=>{EI(`EvenParity${n} gates`,n,1,b=>[b.reduce((a,x)=>a^x,0)]);EI(`OddParity${n} gates`,n,1,b=>[1-b.reduce((a,x)=>a^x,0)])});
+[3,4].forEach(n=>{EI(`Bin→Gray${n} gates`,n,n,b=>{const x=num(b);return bits(x^(x>>1),n)});EI(`Gray→Bin${n} gates`,n,n,b=>{let g=num(b),x=g;while(g>>=1)x^=g;return bits(x,n)})});
+EI('Adder2bit gates',5,3,b=>{const s=num(b.slice(0,2))+num(b.slice(2,4))+b[4];return[s&1,s>>1&1,s>>2]});EI('Multiplier2x2 gates',4,4,b=>{const p=num(b.slice(0,2))*num(b.slice(2));return[p&1,p>>1&1,p>>2&1,p>>3&1]});
+EI('Majority3 gates',3,1,b=>[+(b[0]+b[1]+b[2]>1)]);EI('Majority5 gates',5,1,b=>[+(b.reduce((a,x)=>a+x,0)>2)]);
+EI('Hex→7seg gates',4,7,(b,i)=>[...HEX[i]].map(Number));EI('BCD→7seg gates',4,7,(b,i)=>i<10?[...HEX[i]].map(Number):Array(7).fill(2));
+EI('BCD→Excess-3 gates',4,4,(b,i)=>i<10?bits(i+3,4):[2,2,2,2]);EI('Thermometer3→7 gates',3,7,(b,i)=>[1,2,3,4,5,6,7].map(k=>+(i>=k)));
+/* ---------- history / clipboard ---------- */
+const snapState=()=>JSON.stringify(ser(sim.cs));
+function rec(pre){if(snapState()!==pre){undo.push(pre);if(undo.length>100)undo.shift();redo=[]}save()}
+function restore(t){selW=null;sim=mk(JSON.parse(t).filter(c=>c.t!='IC'||lib[c.def]));sels=new Set();sel=null;hov=null;save()}
+function hist(a,b){if(!a.length)return;b.push(snapState());restore(a.pop())}
+function copy(){if(!sels.size)return;const ids=new Set([...sels].map(c=>c.id));clip=ser([...sels]).map(c=>({...c,src:c.src.map(r=>r&&ids.has(r.id)?r:null)}))}
+function paste(){if(!clip)return;const pre=snapState(),m={};clip.forEach(c=>m[c.id]=uid++);const n=JSON.parse(JSON.stringify(clip)).map(c=>({...c,id:m[c.id],x:c.x+40,y:c.y+40,src:c.src.map(r=>r?{id:m[r.id],o:r.o}:null)}));
+clip=JSON.parse(JSON.stringify(n));n.forEach(c=>{init(c);sim.cs.push(c);sim.map[c.id]=c});n.forEach(c=>c.t=='M'&&setVis(c,c.full,sim));sels=new Set(n);sel=n[0];rec(pre)}
+function delSel(){if(!sels.size)return;const pre=snapState();sels.forEach(c=>del(c));sels=new Set();sel=null;rec(pre)}
+/* ---------- UI ---------- */
+function place(c,pos){const pre=snapState();c.id=uid++;c.x=pos?snap(pos.x-30):snap((W/2-ox)/z-30+Math.random()*60);c.y=pos?snap(pos.y-20):snap((H/2-oy)/z-20+Math.random()*60);c.src=[];init(c);sim.cs.push(c);sim.map[c.id]=c;rec(pre)}
+function add(t,def,pos){const c={t};if(def)c.def=def;if(t=='LED')c.color=LC[0];place(c,pos)}
+function addE(i,pos){const e=CAT[i];if(e.ic){if(!lib[e.n]){lib[e.n]=e.ic();saveLib();renderLib()}add('IC',e.n,pos);return}const c={t:e.t,lab:e.n};if(e.gn)c.n=e.gn;['color','k'].forEach(f=>e[f]!=null&&(c[f]=e[f]));if(e.p)c.p={...e.p};place(c,pos)}
+let GR={},fh;
+function dp(e){if(e.ic)return'Built from gates – drop it, then zoom in to see inside';if(e.t!='M')return e.n;const K=KS[e.k],p=e.p||{},op=K.op||[];return('in: '+K.i(p).filter(n=>!op.includes(n)).join(' ')+' | out: '+K.o(p).filter(n=>!op.includes(n)).join(' ')+(op.length?' | optional (double-click part): '+op.join(' '):'')).slice(0,300)}
+function pal(q){q=(q||'').toLowerCase();GR={};CAT.forEach((e,i)=>{if(q&&!(e.n+' '+e.g).toLowerCase().includes(q))return;(GR[e.g]=GR[e.g]||[]).push(`<button draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${i}')" ondragend="$('#fly').hidden=true" onclick="addE(${i})" title="${dp(e)}">${e.n}</button>`)});
+$('#pal').innerHTML=q?`<div class="g">${Object.values(GR).flat().join('')}</div>`:`<small>${CAT.length} components – hover a category, drag onto the board</small>`+Object.entries(GR).map(([g,v])=>`<div class="cat" data-g="${g}" onmouseenter="fly(this.dataset.g,this)" onmouseleave="hf()" onclick="fly(this.dataset.g,this)">${g} <small>(${v.length})</small></div>`).join('')}
+function fly(g,el){clearTimeout(fh);const f=$('#fly');f.innerHTML=GR[g].join('');f.hidden=false;f.style.left=$('#side').getBoundingClientRect().right+'px';f.style.top=Math.max(4,Math.min(el.getBoundingClientRect().top,innerHeight-f.offsetHeight-8))+'px'}
+function hf(){fh=setTimeout(()=>$('#fly').hidden=true,250)}
+$('#fly').onmouseenter=()=>clearTimeout(fh);$('#fly').onmouseleave=hf;
+cv.addEventListener('dragover',e=>e.preventDefault());
+cv.addEventListener('drop',e=>{e.preventDefault();const d=e.dataTransfer.getData('text/plain'),p=W2(e);if(d.startsWith('ic:'))add('IC',d.slice(3),p);else if(d!=='')addE(+d,p);$('#fly').hidden=true});
+function renderLib(){$('#libl').innerHTML=Object.keys(lib).map(n=>`<div><button draggable="true" ondragstart="event.dataTransfer.setData('text/plain','ic:'+this.dataset.n)" onclick="add('IC',this.dataset.n)" data-n="${n}">${n}</button><button onclick="delIC(this.dataset.n)" data-n="${n}">✕</button></div>`).join('')||'<small>none yet</small>'}
+function delIC(n){if(Object.values(lib).some(d=>d.name!=n&&d.comps.some(c=>c.def==n)))return alert(n+' is used inside another IC – delete that one first');if(confirm('Delete IC '+n+' from the library? Copies placed on the board will be removed too.')){undo=[];redo=[];delete lib[n];sim.cs=sim.cs.filter(c=>c.def!=n);sim=mk(ser(sim.cs));saveLib();renderLib()}}
+function saveLib(){try{localStorage.setItem('ll_lib',JSON.stringify(lib))}catch(e){}}
+function save(){if(DZ)return;try{localStorage.setItem('ll_ws',JSON.stringify(ser(sim.cs)))}catch(e){}}
+function openM(){$('#md').hidden=false;mode(0)}
+function mode(m){if(m==1)return openDesigner();$('#pm').hidden=true;$('#pt').hidden=m!=2;if(m==2)bt()}
+function openIO(){$('#io').hidden=false}
+function impTxt(s){try{const o=JSON.parse(s);if(o.board){Object.values(o.lib||{}).forEach(d=>{if(d.name&&d.comps)lib[d.name]=d});saveLib();renderLib();const pre=snapState();sim=mk(o.board.filter(c=>c.t!='IC'||lib[c.def]));uid=Math.max(uid,1+Math.max(0,...o.board.map(c=>c.id)));sels=new Set();rec(pre);return alert('Board imported')}const arr=o.comps?[o]:Object.values(o);arr.forEach(d=>{if(d.name&&d.comps)lib[d.name]=d});saveLib();renderLib();alert('Imported '+arr.length+' IC(s)')}catch(e){alert('Invalid JSON')}}
+let tt=[];
+function bt(){const n=+$('#ni').value,no=+$('#no').value;tt=[];for(let r=0;r<1<<n;r++)tt.push(Array(no).fill(0));rt()}
+function rt(){const n=+$('#ni').value,no=+$('#no').value;let h='<table><tr>';for(let k=0;k<n;k++)h+=`<th>${'ABCDEF'[k]}</th>`;for(let j=0;j<no;j++)h+=`<th>Y${j}</th>`;h+='</tr>';
+tt.forEach((r,i)=>{h+='<tr>';for(let k=0;k<n;k++)h+=`<td>${i>>(n-1-k)&1}</td>`;r.forEach((v,j)=>h+=`<td class="o" data-r="${i}" data-c="${j}">${'01x'[v]}</td>`);h+='</tr>'});$('#tb').innerHTML=h+'</table>'}
+$('#tb').onclick=e=>{const d=e.target.dataset;if(d.r==null)return;tt[d.r][d.c]=(tt[d.r][d.c]+1)%3;e.target.textContent='01x'[tt[d.r][d.c]]};
+function mkTT(){const name=$('#nm').value.trim();if(!name)return alert('Name your IC');const d=ttDef(name,+$('#ni').value,+$('#no').value,tt);lib[name]=d;saveLib();renderLib();$('#eq').textContent='Simplified equations:\n'+d.expr.join('\n');add('IC',name)}
+function detect(){const src=sels.size>1?[...sels]:sim.cs,o=(a,b)=>a.y-b.y||a.x-b.x;let I=src.filter(c=>c.t=='IN').sort(o),O=src.filter(c=>c.t=='OUT').sort(o);if(!I.length)I=src.filter(c=>c.t=='SW').sort(o);if(!O.length)O=src.filter(c=>c.t=='LED').sort(o);det={src,I,O};const note=`<p><small>Using ${src===sim.cs?'the whole board ('+src.length+' parts)':src.length+' selected parts'}.</small></p>`;
+const row=(k,c,i)=>`<div class="row">${k=='i'?'in':'out'} #${i+1} <input data-k="${k}" value="${(c.name||(k=='i'?'I':'O')+i).replace(/"/g,'')}"></div>`;
+$('#pn').innerHTML=note+`<b>Inputs (${I.length}, top→bottom)</b>`+I.map((c,i)=>row('i',c,i)).join('')+`<b>Outputs (${O.length})</b>`+O.map((c,i)=>row('o',c,i)).join('')+(I.length&&O.length?'':'<p>⚠ Add at least one switch/IN pin and one LED/OUT pin.</p>')}
+function usesName(n,cs){return cs.some(c=>c.t=='IC'&&lib[c.def]&&(c.def==n||usesName(n,lib[c.def].comps)))}
+function mkManual(){const name=$('#nm').value.trim();if(!name)return alert('Name your IC');if(!det||!det.src.every(c=>sim.map[c.id]))detect();const{src,I,O}=det;
+if(!I.length||!O.length)return alert('Need at least one input (switch/IN pin) and one output (LED/OUT pin)');
+const nI=[...document.querySelectorAll('#pn input[data-k="i"]')].map(x=>x.value.trim()),nO=[...document.querySelectorAll('#pn input[data-k="o"]')].map(x=>x.value.trim());
+const ids=new Set(src.map(c=>c.id)),cs=ser(src).map(c=>({...c,src:c.src.map(r=>r&&ids.has(r.id)?r:null)})),by={};cs.forEach(c=>by[c.id]=c);
+I.forEach((c,i)=>{by[c.id].t='IN';by[c.id].name=nI[i]||'I'+i});O.forEach((c,i)=>{by[c.id].t='OUT';by[c.id].name=nO[i]||'O'+i});
+if(usesName(name,cs))return alert('An IC cannot contain itself');const had=!!lib[name];if(had&&!confirm('Replace existing IC "'+name+'"?'))return;
+lib[name]={name,ni:I.length,no:O.length,comps:cs,inIds:I.map(c=>c.id),outIds:O.map(c=>c.id),inN:I.map((c,i)=>nI[i]||'I'+i),outN:O.map((c,i)=>nO[i]||'O'+i)};saveLib();renderLib();
+if($('#rp').checked){const pre=snapState(),x=Math.min(...src.map(c=>c.x)),y=Math.min(...src.map(c=>c.y));src.forEach(c=>del(c));const c={t:'IC',def:name,id:uid++,x,y,src:[]};init(c);sim.cs.push(c);sim.map[c.id]=c;sels=new Set([c]);sel=c;rec(pre)}
+else if(had)sim=mk(JSON.parse(snapState()));det=null;$('#md').hidden=true}
+/* ---------- drawing ---------- */
+function curve(a,b){const d=Math.max(30,Math.abs(b.x-a.x)/2);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.bezierCurveTo(a.x+d,a.y,b.x-d,b.y,b.x,b.y)}
+function wire(a,b,on,hl){if(hl){curve(a,b);ctx.lineWidth=9;ctx.strokeStyle='rgba(74,163,255,.6)';ctx.stroke()}curve(a,b);ctx.lineWidth=3;if(on){ctx.strokeStyle='#ffd23f';ctx.shadowColor='#ffb300';ctx.shadowBlur=8;ctx.stroke();ctx.shadowBlur=0;ctx.strokeStyle='#fffbe0';ctx.lineWidth=1.5;ctx.setLineDash([4,14]);ctx.lineDashOffset=-T*0.04;ctx.stroke();ctx.setLineDash([])}else{ctx.strokeStyle='#7a8599';ctx.stroke()}}
+function draw(s){for(const c of s.cs){const n=spec(c).ni;for(let i=0;i<n;i++){const r=c.src[i],m=r&&s.map[r.id];if(m){const a=pin(m,1,r.o),b=pin(c,0,i);if(a&&b)wire(a,b,m.o[r.o],s===sim&&selW&&selW.c===c&&selW.i===i)}}}for(const c of s.cs)dcomp(c)}
+function dcomp(c){const sp=spec(c),w=sp.w,h=sp.h,t=c.t,S=ctx.getTransform().a/dpr,v=c.iv||[];ctx.lineWidth=2;ctx.strokeStyle=C.b;ctx.fillStyle=C.p;
+if(t=='LED'||t=='RGB'){const cx=c.x+w/2,cy=c.y+h/2,r=Math.min(w,h)*(t=='LED'?.41:.45),on=t=='LED'?v[0]:(v[0]||v[1]||v[2]),col=t=='LED'?(c.color||LC[0]):`rgb(${v[0]*255},${v[1]*255},${v[2]*255})`;
+ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(cx,cy,r-3,0,7);if(on){ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=20}else{ctx.fillStyle=t=='LED'?(c.color||LC[0]):'#888';ctx.globalAlpha=.2}ctx.fill();ctx.shadowBlur=0;ctx.globalAlpha=1}
+else if(t=='SEG7'){ctx.beginPath();ctx.roundRect(c.x,c.y,w,h,6);ctx.fillStyle='#14181f';ctx.fill();ctx.stroke();SEG.forEach((r,i)=>{ctx.fillStyle=v[i]?'#ff3b3b':'rgba(128,128,128,.25)';ctx.fillRect(c.x+r[0]*w/80,c.y+r[1]*h/140,r[2]*w/80,r[3]*h/140)})}
+else{ctx.beginPath();ctx.roundRect(c.x,c.y,w,h,6);if((t=='SW'||t=='IN')&&c.s)ctx.fillStyle='#ffd23f';else if(t=='NOTE')ctx.fillStyle='rgba(255,210,63,.22)';ctx.fill();ctx.stroke();
+const inside=t=='IC'&&c.sub&&S*w>240;ctx.fillStyle=(t=='SW'||t=='IN')&&c.s?'#111':C.t;ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+if(sp.lab)ctx.fillText(sp.lab,c.x+w/2,inside?c.y+11:c.y+h/2);
+if(inside){let a=1e9,b=1e9,A=-1e9,B=-1e9;c.sub.cs.forEach(q=>{const s2=spec(q);a=Math.min(a,q.x);b=Math.min(b,q.y);A=Math.max(A,q.x+s2.w);B=Math.max(B,q.y+s2.h)});
+const bw=A-a||1,bh=B-b||1,k=Math.min((w-24)/bw,(h-30)/bh);ctx.save();ctx.beginPath();ctx.rect(c.x+2,c.y+22,w-4,h-24);ctx.clip();ctx.translate(c.x+12+((w-24)-bw*k)/2-a*k,c.y+26-b*k);ctx.scale(k,k);draw(c.sub);ctx.restore()}}
+if(t=='M'&&c.k=='hexd'){const sg=HEX[bv(v,0,4)];SEG.forEach((r,i)=>{ctx.fillStyle=sg[i]=='1'?'#ff3b3b':'rgba(128,128,128,.25)';ctx.fillRect(c.x+r[0]*w/80,c.y+r[1]*h/140,r[2]*w/80,r[3]*h/140)})}
+if(t=='M'&&c.k=='bar'){for(let i=0;i<c.p.n;i++){const p=pin(c,0,i);ctx.beginPath();ctx.arc(c.x+w/2+6,p.y,6,0,7);ctx.fillStyle=v[i]?'#ff3b3b':'rgba(128,128,128,.3)';if(v[i]){ctx.shadowColor='#ff3b3b';ctx.shadowBlur=12}ctx.fill();ctx.shadowBlur=0}}
+if(sels.has(c)){ctx.strokeStyle='#4aa3ff';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.strokeRect(c.x-4,c.y-4,w+8,h+8);ctx.setLineDash([])}
+if(c===hov||c===sel){const q=8/S;ctx.fillStyle='#4aa3ff';ctx.fillRect(c.x+w-q/2,c.y+h-q/2,q,q)}
+for(let k=0;k<2;k++)for(const i of pins(c,k,sp)){const p=pin(c,k,i),on=k?c.o[i]:v[i];ctx.beginPath();ctx.arc(p.x,p.y,4,0,7);ctx.fillStyle=on?'#ffd23f':'#7a8599';ctx.fill();if(PK&&sim.map[c.id]===c&&t!='IN'&&t!='OUT'){const e=PK.list.find(e=>e.c===c&&e.i===i&&e.io==(k?'out':'in')&&!e.pt);ctx.beginPath();ctx.arc(p.x,p.y,e?10:7,0,7);ctx.lineWidth=e?3:1.5;ctx.strokeStyle=e?(k?'#4aa3ff':'#38d96a'):(k||!c.src[i]?'#ffd23f':'#ff3b3b55');ctx.stroke();ctx.lineWidth=2}
+if(S>.8){const N=t=='IC'?(k?lib[c.def].outN:lib[c.def].inN):t=='M'?c.nm[k]:(PN[t]&&PN[t][k]);if(N&&N[i]){ctx.font='9px system-ui';ctx.fillStyle=C.t;ctx.textBaseline='middle';const lft=(p.x-c.x)<w/2;ctx.textAlign=lft?'left':'right';ctx.fillText(N[i],p.x+(lft?7:-7),p.y)}}}}
+function frame(now){T=now;updSB();const dt=(now-last)/1000;last=now;if(run){acc+=dt*hz*2;if(acc>=1){acc-=Math.floor(acc);clk^=1}}
+settle(sim);latch(sim);settle(sim);
+const cs=getComputedStyle(document.documentElement);C={p:cs.getPropertyValue('--p').trim(),t:cs.getPropertyValue('--t').trim(),b:cs.getPropertyValue('--b').trim()};
+ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+const g=40*z>8?40:200;ctx.strokeStyle='rgba(128,128,128,.16)';ctx.lineWidth=1;ctx.beginPath();for(let x=((ox%(g*z))+g*z)%(g*z);x<W;x+=g*z){ctx.moveTo(x,0);ctx.lineTo(x,H)}for(let y=((oy%(g*z))+g*z)%(g*z);y<H;y+=g*z){ctx.moveTo(0,y);ctx.lineTo(W,y)}ctx.stroke();
+ctx.setTransform(dpr*z,0,0,dpr*z,dpr*ox,dpr*oy);draw(sim);
+if(drag&&drag.t=='mq'&&drag.p1){ctx.strokeStyle='#4aa3ff';ctx.lineWidth=1/z;ctx.setLineDash([4/z,3/z]);ctx.strokeRect(drag.p0.x,drag.p0.y,drag.p1.x-drag.p0.x,drag.p1.y-drag.p0.y);ctx.setLineDash([])}
+if(drag&&drag.t=='w'){const a=pin(drag.c,drag.k,drag.i);drag.k?wire(a,cur,0):wire(cur,a,0)}
+try{drawIns()}catch(e){ctx=mctx}
+requestAnimationFrame(frame)}
+/* ---------- interaction ---------- */
+const W2=e=>{const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left-ox)/z,y:(e.clientY-r.top-oy)/z}};
+function hitPin(p){const r=9/z;for(let q=sim.cs.length-1;q>=0;q--){const c=sim.cs[q],sp=spec(c);for(let k=1;k>=0;k--)for(const i of pins(c,k,sp)){const a=pin(c,k,i);if(Math.hypot(a.x-p.x,a.y-p.y)<r)return{c,k,i}}}return null}
+function hitComp(p){for(let q=sim.cs.length-1;q>=0;q--){const c=sim.cs[q],s=spec(c);if(p.x>=c.x&&p.x<=c.x+s.w&&p.y>=c.y&&p.y<=c.y+s.h)return c}return null}
+function del(c){sim.cs=sim.cs.filter(x=>x!==c);delete sim.map[c.id];sim.cs.forEach(o=>o.src.forEach((s,i)=>{if(s&&s.id==c.id)o.src[i]=null}));save()}
+cv.addEventListener('pointerdown',e=>{if(e.button)return;cv.setPointerCapture(e.pointerId);pre0=snapState();const p=cur=W2(e),hp=hitPin(p);
+if(PK){if(hp)pickPin(hp);else drag={t:'p',sx:e.clientX,sy:e.clientY,ox,oy};return}
+if(hp){if(e.shiftKey&&hp.c.t=='IC')drag={t:'pin',...hp};else if(hp.k==0&&hp.c.src[hp.i]){selW={c:hp.c,i:hp.i};sels=new Set();sel=null;drag=null}else drag={t:'w',...hp};return}
+const rh=hitHandle(p);if(rh){sel=rh;sels=new Set([rh]);drag={t:'rs',c:rh};return}
+const c=hitComp(p);if(c){selW=null;sel=c;if(e.shiftKey){sels.has(c)?sels.delete(c):sels.add(c)}else if(!sels.has(c))sels=new Set([c]);drag={t:'c',c,p0:p,st:[...sels].map(q=>[q,q.x,q.y]),mv:0,sx:e.clientX,sy:e.clientY,sh:e.shiftKey}}
+else if(e.shiftKey||tool=='sel')drag={t:'mq',p0:p,add:e.shiftKey};else{sel=null;sels=new Set();selW=hitWire(p);drag={t:'p',sx:e.clientX,sy:e.clientY,ox,oy}}});
+cv.addEventListener('pointermove',e=>{const p=cur=W2(e);if(!drag){hov=hitComp(p);cv.style.cursor=hitHandle(p)?'nwse-resize':tool=='sel'?'crosshair':'';return}
+if(drag.t=='p'){ox=drag.ox+e.clientX-drag.sx;oy=drag.oy+e.clientY-drag.sy}
+else if(drag.t=='c'){if(Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>3)drag.mv=1;if(drag.mv&&!drag.sh){const dx=snap(p.x-drag.p0.x),dy=snap(p.y-drag.p0.y);drag.st.forEach(([q,x,y])=>{q.x=x+dx;q.y=y+dy})}}
+else if(drag.t=='mq')drag.p1=p;
+else if(drag.t=='rs'){drag.c.w=Math.max(30,snap(p.x-drag.c.x));drag.c.h=Math.max(24,snap(p.y-drag.c.y))}
+else if(drag.t=='pin'){const c=drag.c,sp=spec(c),d=lib[c.def],h0=Math.max(d.ni,d.no)*22+30;d.pins=d.pins||{i:[],o:[]};
+['i','o'].forEach((key,kk)=>{const n=kk?d.no:d.ni;if(d.pins[key].length!=n)d.pins[key]=Array.from({length:n},(_,j)=>({x:kk?110:0,y:h0*(j+1)/(n+1)}))});
+const lx=cl(p.x-c.x,0,sp.w),ly=cl(p.y-c.y,0,sp.h),ds=[lx,sp.w-lx,ly,sp.h-ly],q=ds.indexOf(Math.min(...ds));
+d.pins[drag.k?'o':'i'][drag.i]={x:(q==0?0:q==1?sp.w:lx)*110/sp.w,y:(q==2?0:q==3?sp.h:ly)*h0/sp.h}}});
+cv.addEventListener('pointerup',e=>{if(!drag)return;const d=drag;drag=null;if(d.t=='mq'){const a=d.p0,b=d.p1||a,x0=Math.min(a.x,b.x),x1=Math.max(a.x,b.x),y0=Math.min(a.y,b.y),y1=Math.max(a.y,b.y);sels=new Set([...(d.add?sels:[]),...sim.cs.filter(c=>{const q=spec(c);return c.x<x1&&c.x+q.w>x0&&c.y<y1&&c.y+q.h>y0})]);sel=[...sels][0]||null;return}
+if(d.t=='w'){const tp=hitPin(cur);if(tp&&tp.k!=d.k){const dc=d.k==1?tp.c:d.c,di=d.k==1?tp.i:d.i;if(dc.src[di])toast('That input already has a wire. Click the wire (it turns blue) and press Delete first.');else if(d.k==1)tp.c.src[tp.i]={id:d.c.id,o:d.i};else d.c.src[d.i]={id:tp.c.id,o:tp.i}}save()}
+else if(d.t=='c'){if(!d.mv&&!d.sh){if(d.c.t=='SW'||d.c.t=='IN')d.c.s=d.c.s?0:1;inspect(d.c)}save()}else if(d.t=='pin')saveLib();else if(d.t=='rs')save();rec(pre0)});
+cv.addEventListener('dblclick',e=>{const c=hitComp(W2(e));if(!c)return;const pre=snapState();if(G[c.t]&&c.t!='NOT'&&c.t!='BUF')c.n=(c.n||2)>=8?2:(c.n||2)+1;else if(c.t=='M'&&/^(rom|ram|rf)$/.test(c.k)){const t=prompt('Memory contents: numbers (decimal or 0x hex, comma separated) OR LL-8 assembly, e.g.  LDI 5; OUT; HLT',c.mem.map(x=>'0x'+x.toString(16)).join(','));if(t!=null)try{c.mem=isNum(t)?t.split(',').map(x=>parseInt(x.trim())||0):asm(t)}catch(er){alert(er.message)}}else if(c.t=='M'&&KS[c.k].op)setVis(c,!c.full,sim)
+else if(c.t=='LED')c.color=LC[(LC.indexOf(c.color)+1)%LC.length];else if(c.t=='IN'||c.t=='OUT'||c.t=='SW'||c.t=='NOTE'){const n=prompt('Pin name',c.name||'');if(n)c.name=n}rec(pre)});
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;const k=e.key.toLowerCase(),m=e.ctrlKey||e.metaKey;
+if(k=='delete'||k=='backspace'){e.preventDefault();if(PK)return;if(selW){const pre=snapState();selW.c.src[selW.i]=null;selW=null;rec(pre)}else delSel()}
+else if(m&&k=='z'&&!e.shiftKey){e.preventDefault();hist(undo,redo)}
+else if(m&&(k=='y'||(k=='z'&&e.shiftKey))){e.preventDefault();hist(redo,undo)}
+else if(m&&k=='c'){copy()}else if(m&&k=='x'){e.preventDefault();copy();delSel()}else if(m&&k=='v'){e.preventDefault();paste()}
+else if(m&&k=='a'){e.preventDefault();sels=new Set(sim.cs)}else if(k=='escape'){selW=null;sels=new Set();sel=null;setTool('pan')}
+else if(m&&k=='d'){e.preventDefault();dupe()}else if(m&&k=='g'){e.preventDefault();compressSel(null,null,e.shiftKey)}
+else if(!m&&k=='s')setTool(tool=='sel'?'pan':'sel');else if(!m&&k=='f')fitView(sels.size?[...sels]:sim.cs);
+else if(k.startsWith('arrow')&&sels.size){e.preventDefault();const st=e.shiftKey?50:10,pre=snapState();sels.forEach(c=>{if(k=='arrowleft')c.x-=st;if(k=='arrowright')c.x+=st;if(k=='arrowup')c.y-=st;if(k=='arrowdown')c.y+=st});rec(pre)}});
+cv.addEventListener('wheel',e=>{e.preventDefault();const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,f=e.deltaY<0?1.12:1/1.12,nz=cl(z*f,.03,400);ox=mx-(mx-ox)*nz/z;oy=my-(my-oy)*nz/z;z=nz},{passive:false});
+/* ---------- selection tools ---------- */
+let tool='pan';const SB=$('#sb'),SC=$('#sc'),esc=x=>String(x).replace(/[<>&"]/g,'');
+function setTool(t){tool=t;$('#tsel').classList.toggle('on',t=='sel')}
+function updSB(){const n=sels.size;SB.hidden=!n;if(n&&SC._n!==n){SC._n=n;SC.textContent=n+' selected'}}
+const bb=L=>{let a=1e9,b=1e9,A=-1e9,B=-1e9;L.forEach(c=>{const q=spec(c);a=Math.min(a,c.x);b=Math.min(b,c.y);A=Math.max(A,c.x+q.w);B=Math.max(B,c.y+q.h)});return{a,b,A,B}};
+function fitView(L){if(!L.length)return;const q=bb(L),w=q.A-q.a||1,h=q.B-q.b||1;z=cl(Math.min(Math.max(100,W-240)/w,Math.max(100,H-140)/h),.05,4);ox=(W-w*z)/2-q.a*z;oy=(H-h*z)/2-q.b*z}
+function dupe(){const k=clip;copy();paste();clip=k}
+function align(k){const L=[...sels];if(L.length<2)return;const pre=snapState(),q=bb(L);L.forEach(c=>{const p=spec(c);if(k=='l')c.x=q.a;else if(k=='r')c.x=q.A-p.w;else if(k=='t')c.y=q.b;else if(k=='b')c.y=q.B-p.h;else if(k=='cx')c.x=snap((q.a+q.A)/2-p.w/2);else c.y=snap((q.b+q.B)/2-p.h/2)});rec(pre)}
+function dist(ax){const L=[...sels];if(L.length<3)return;const pre=snapState(),X=ax=='h',K=X?'x':'y',D=c=>X?spec(c).w:spec(c).h;L.sort((a,b)=>a[K]-b[K]);const q=bb(L),gap=((X?q.A-q.a:q.B-q.b)-L.reduce((t,c)=>t+D(c),0))/(L.length-1);let p=X?q.a:q.b;L.forEach(c=>{c[K]=snap(p);p+=D(c)+gap});rec(pre)}
+function front(f){const pre=snapState(),a=sim.cs.filter(c=>!sels.has(c)),b=sim.cs.filter(c=>sels.has(c));sim.cs=f?[...a,...b]:[...b,...a];rec(pre)}
+function rstS(s){s.cs.forEach(c=>{c.q=0;c.pc=0;if(c.t=='M'){const K=KS[c.k];c.st=K.init?K.init(c.p):0}if(c.t=='IC')rstS(c.sub)})}
+function compressSel(nm,L,circ){const ER=m=>{if(nm)throw new Error(m);alert(m)};if(L)sels=new Set(L);if(!sels.size)return ER('Select the parts to compress first (⬚ Select tool, or Shift+drag a box).');
+const src=[...sels].sort((a,b)=>a.y-b.y||a.x-b.x),ids=new Set(src.map(c=>c.id)),name=(nm||prompt('Name for the new '+(circ?'circuit':'IC')+':')||'').trim();if(!name)return;if(lib[name]&&!nm)return ER('An IC named "'+name+'" already exists – pick another name.');
+const cs=ser(src).map(c=>({...c,src:c.src.map(r=>r&&ids.has(r.id)?r:null)})),by={};cs.forEach(c=>by[c.id]=c);const bx=bb(src);let nid=Math.max(0,...cs.map(c=>c.id))+1;
+const dI=src.filter(c=>c.t=='IN'),dO=src.filter(c=>c.t=='OUT'),inIds=dI.map(c=>c.id),inN=dI.map((c,i)=>c.name||'I'+i),ext=dI.map(()=>null),key={};
+src.forEach(c=>{for(let i=0;i<spec(c).ni;i++){const r=c.src[i];if(r&&!ids.has(r.id)){const k=r.id+':'+r.o;if(!(k in key)){const p={id:nid++,t:'IN',x:bx.a-140,y:bx.b+inIds.length*50,name:'I'+inIds.length,src:[]};cs.push(p);key[k]=p.id;inIds.push(p.id);inN.push(p.name);ext.push(r)}by[c.id].src[i]={id:key[k],o:0}}}});
+const outIds=dO.map(c=>c.id),outN=dO.map((c,i)=>c.name||'O'+i),outRef=dO.map(()=>null);
+src.forEach(c=>{for(let j=0;j<spec(c).no;j++){if(sim.cs.some(q=>!ids.has(q.id)&&q.src.some(r=>r&&r.id==c.id&&r.o==j))){const p={id:nid++,t:'OUT',x:bx.A+140,y:bx.b+outIds.length*50,name:'O'+outIds.length,src:[{id:c.id,o:j}]};cs.push(p);outIds.push(p.id);outN.push(p.name);outRef.push({id:c.id,o:j})}}});
+if(!outIds.length&&!circ)return ER('The selection has no outputs: nothing outside it uses its signals. Add an OUT pin, select a region that feeds the rest of the board, or use ▣ Compress to Circuit (pins are optional there).');
+if(usesName(name,cs))return ER('An IC cannot contain itself');
+lib[name]={name,ni:inIds.length,no:outIds.length,comps:cs,inIds,outIds,inN,outN,circuit:!!circ};saveLib();renderLib();
+const pre=snapState(),inst={t:'IC',def:name,id:uid++,x:bx.a,y:bx.b,src:[]};init(inst);inst.src=ext.map(r=>r?{id:r.id,o:r.o}:null);
+outRef.forEach((r,k)=>{if(r)sim.cs.forEach(q=>{if(!ids.has(q.id))q.src.forEach((s,i)=>{if(s&&s.id==r.id&&s.o==r.o)q.src[i]={id:inst.id,o:k}})})});
+sim.cs=sim.cs.filter(c=>!ids.has(c.id));ids.forEach(id=>delete sim.map[id]);sim.cs.push(inst);sim.map[inst.id]=inst;sels=new Set([inst]);sel=inst;rec(pre)}
+function explode1(c){const d=lib[c.def],cs=JSON.parse(JSON.stringify(d.comps)),m={},iI={},oI={};cs.forEach(q=>m[q.id]=uid++);d.inIds.forEach((id,i)=>iI[id]=i);d.outIds.forEach((id,j)=>oI[id]=j);
+let mx=1e9,my=1e9;cs.forEach(q=>{mx=Math.min(mx,q.x);my=Math.min(my,q.y)});
+const res=r=>!r?null:(r.id in iI?(c.src[iI[r.id]]||null):{id:m[r.id],o:r.o}),outS=[],keep=[];
+cs.forEach(q=>{if(q.id in iI)return;if(q.id in oI){outS[oI[q.id]]=res(q.src[0]);return}keep.push(q)});
+keep.forEach(q=>{q.src=q.src.map(res);q.id=m[q.id];q.x+=c.x-mx;q.y+=c.y-my});
+sim.cs.forEach(o=>o.src.forEach((r,i)=>{if(r&&r.id==c.id)o.src[i]=outS[r.o]||null}));
+sim.cs=sim.cs.filter(x=>x!==c);delete sim.map[c.id];keep.forEach(q=>{init(q);sim.cs.push(q);sim.map[q.id]=q});keep.forEach(q=>q.t=='M'&&setVis(q,q.full,sim));return keep}
+function explodeSel(){const L=[...sels].filter(c=>c.t=='IC');if(!L.length)return alert('Select an IC to expand it back into its parts.');const pre=snapState(),ks=[];L.forEach(c=>ks.push(...explode1(c)));sels=new Set(ks);sel=ks[0]||null;rec(pre)}
+function showTT(){const all=sels.size>1?[...sels]:sim.cs,ids=new Set(all.map(c=>c.id)),o=(a,b)=>a.y-b.y||a.x-b.x;let I=all.filter(c=>c.t=='IN').sort(o),O=all.filter(c=>c.t=='OUT').sort(o);if(!I.length)I=all.filter(c=>c.t=='SW').sort(o);if(!O.length)O=all.filter(c=>c.t=='LED').sort(o);
+if(!I.length||!O.length)return alert('The design needs inputs (switches / IN pins) and outputs (LEDs / OUT pins).');if(I.length>10)return alert('Truth tables support up to 10 inputs.');
+const tmp=mk(ser(all).map(c=>({...c,src:c.src.map(r=>r&&ids.has(r.id)?r:null)}))),ti=I.map(c=>tmp.map[c.id]),to=O.map(c=>tmp.map[c.id]),n=I.length,rows=[];
+for(let r=0;r<1<<n;r++){ti.forEach((c,k)=>c.s=r>>(n-1-k)&1);settle(tmp);settle(tmp);rows.push(to.map(c=>c.iv?+!!c.iv[0]:0))}
+const nI=I.map((c,k)=>esc(c.name||'I'+k)),nO=O.map((c,k)=>esc(c.name||'O'+k));let h='<table><tr>'+nI.map(x=>`<th>${x}</th>`).join('')+nO.map(x=>`<th>${x}</th>`).join('')+'</tr>';
+rows.forEach((r,i)=>{h+='<tr>'+nI.map((_,k)=>`<td>${i>>(n-1-k)&1}</td>`).join('')+r.map(v=>`<td class="o">${v}</td>`).join('')+'</tr>'});h+='</table>';
+if(n<=6){try{h='<b>Simplified equations</b> (A,B,C… = '+nI.join(', ')+')<pre>'+ttDef('t',n,O.length,rows).expr.map(e=>e.replace(/^Y(\d)/,(m,d)=>nO[d])).join('\n')+'</pre>'+h}catch(e){}}
+$('#tmc').innerHTML=(sels.size>1?'<small>Selection only</small>':'<small>Whole board</small>')+h;$('#tm').hidden=false}
+/* ---------- scripting / AI ---------- */
+const RAW=['SW','IN','OUT','CLK','HI','LO','LED','RGB','SEG7','DFF','JK','REG4','NMOS','PMOS','DIODE','NOTE'],LET='ABCDEFGHIJKLMNOP',nm1=x=>String(x).toLowerCase().replace(/[^a-z0-9]/g,''),np=x=>String(x).toLowerCase().replace(/q̄/g,'qn').replace(/[^a-z0-9><=_]/g,'');
+const PT={SW:[[],['Q']],IN:[[],['Q']],CLK:[[],['Q']],HI:[[],['Q']],LO:[[],['Q']],LED:[['D'],[]],OUT:[['D'],[]],RGB:[['R','G','B'],[]],SEG7:[[...'abcdefg'],[]],DFF:[['D','CK'],['Q','QN']],JK:[['J','K','CK'],['Q','QN']],REG4:[['D0','D1','D2','D3','CK'],['Q0','Q1','Q2','Q3']],NMOS:[['G','D'],['S']],PMOS:[['G','D'],['S']],DIODE:[['A'],['K']],NOTE:[[],[]]};
+function pinNames(c){if(c.t=='M')return c.nm;if(c.t=='IC'){const d=lib[c.def];return[d.inN,d.outN]}if(G[c.t])return[(c.t=='NOT'||c.t=='BUF')?['A']:Array.from({length:c.n||2},(_,i)=>LET[i]),['Y']];return PT[c.t]||[[],[]]}
+const tok=l=>(l.match(/(?:[^\s"]|"[^"]*")+/g)||[]).map(x=>x.replace(/"/g,'')),pv=v=>v!==''&&!isNaN(v)?+v:v=='true'?1:v=='false'?0:v;
+const stepSim=()=>{settle(sim);latch(sim);settle(sim)};
+function stepClk(){if(run){clk^=1;return}clk=0;stepSim();clk=1;stepSim();clk=0;stepSim()}
+function rpin(c,k,tk,id){const L=pinNames(c)[k],n=np(tk),sp=spec(c);let i=L.findIndex(x=>np(x)==n);if(i<0&&/^[io]\d+$/.test(n)&&n[0]==(k?'o':'i'))i=+n.slice(1);if(i<0||i>=(k?sp.no:sp.ni))throw new Error(`${id} has no ${k?'output':'input'} pin "${tk}". Available ${k?'outputs':'inputs'}: ${L.join(', ')||'(none)'}${G[c.t]&&!k?' (use n=3.. or AND3 etc. for more gate inputs)':''}`);return i}
+function ex(tk){const j=tk.indexOf('.'),id=j<0?tk:tk.slice(0,j);if(j<0)return[{id,pin:null}];const pn=tk.slice(j+1),m=pn.match(/^([A-Za-z_]*)(\d+)\.\.(\d+)$/);if(!m)return[{id,pin:pn}];const a=+m[2],b=+m[3],o=[];for(let k=a;a<=b?k<=b:k>=b;k+=a<=b?1:-1)o.push({id,pin:m[1]+k});return o}
+const RES=['x','y','name','lab','color','s','w','h'];
+function mkComp(type,kv){let c,p={};const T=type.toUpperCase();
+if(/^m:/i.test(type)){const k=type.slice(2);if(!KS[k])throw new Error('unknown macro kind "'+k+'". Kinds: '+Object.keys(KS).join(', '));Object.keys(kv).forEach(a=>{if((!RES.includes(a)||(a=='w'&&/^(mux|rom|ram|rf)$/.test(k)))&&a!='n_')p[a]=kv[a]});c={t:'M',k,p}}
+else if(lib[type])c={t:'IC',def:type};
+else if(G[T]||RAW.includes(T)){c={t:T};if(G[T]&&kv.n!=null)c.n=kv.n}
+else{const q=nm1(type),e=CAT.find(e=>nm1(e.n)==q);if(!e)throw new Error('unknown component "'+type+'". Similar: '+(CAT.filter(e=>nm1(e.n).includes(q.slice(0,4))||q.includes(nm1(e.n))).slice(0,6).map(e=>'"'+e.n+'"').join(', ')||'(none – see the documentation list)'));
+if(e.ic){if(!lib[e.n])lib[e.n]=e.ic();c={t:'IC',def:e.n}}else{c={t:e.t};if(e.gn)c.n=e.gn;['color','k'].forEach(f=>e[f]!=null&&(c[f]=e[f]));if(e.p)c.p={...e.p};c.lab=e.n;if(c.t=='M')Object.keys(kv).forEach(a=>{if(!RES.includes(a))c.p[a]=kv[a]});else if(G[c.t]&&kv.n!=null)c.n=kv.n}}
+['name','lab','color','w','h'].forEach(a=>{if(kv[a]!=null&&!(a=='w'&&c.t=='M'&&c.p&&'w' in c.p))c[a]=kv[a]});if(kv.s!=null)c.s=kv.s?1:0;return c}
+const nctx=d=>({ids:{},map:{},pend:[],def:d}),allC=ctx=>ctx.def?ctx.pend:[...sim.cs,...ctx.pend];
+const isSeq=c=>c.t=='DFF'||c.t=='JK'||c.t=='REG4'||(c.t=='M'&&!!(KS[c.k].ck||c.k=='dl'||c.k=='srl'));
+function autoLay(A,all,x0,y0,dx){const map={},dep={};all.forEach(c=>{map[c.id]=c;dep[c.id]=0});
+for(let it=0;it<all.length+1;it++){let ch=false;all.forEach(c=>{if(isSeq(c))return;c.src.forEach(r=>{if(r&&map[r.id]&&dep[c.id]<dep[r.id]+1&&dep[r.id]<all.length){dep[c.id]=dep[r.id]+1;ch=true}})});if(!ch)break}
+const yc={};A.forEach(c=>{const d=dep[c.id];if(yc[d]==null)yc[d]=y0;c.x=x0+d*dx;c.y=yc[d];yc[d]+=spec(c).h+36;delete c.auto})}
+function layout(ctx,x0,y0){const A=ctx.pend.filter(c=>c.auto);if(A.length)autoLay(A,Object.values(ctx.map),x0,y0,240)}
+function flush(ctx){if(!ctx.pend.length)return;const all=[...sim.cs,...ctx.pend];ctx.pend.forEach(c=>c.t=='M'&&setVis(c,c.full,{cs:all}));const B=sim.cs.length?bb(sim.cs):null;layout(ctx,B?B.A+140:0,B?B.b:0);ctx.pend.forEach(c=>{delete c.auto;sim.cs.push(c);sim.map[c.id]=c});ctx.pend=[]}
+let SC_np=0,SC_nw=0;
+function exec(ctx,t,cmd){const g=id=>{const c=ctx.ids[id];if(!c)throw new Error('unknown part "'+id+'". Defined so far: '+(Object.keys(ctx.ids).join(', ')||'(none)'));return c};
+if(cmd=='part'){const id=t[1],type=t[2];if(!id||!type)throw new Error('usage: part <id> <type> [at x y] [key=value ...]');if(ctx.ids[id])throw new Error('duplicate part id "'+id+'"');let kv={},x,y;
+for(let i=3;i<t.length;i++){if(t[i]=='at'){x=+t[++i];y=+t[++i]}else{const j=t[i].indexOf('=');if(j<1)throw new Error('bad token "'+t[i]+'" – expected key=value or "at x y"');kv[t[i].slice(0,j)]=pv(t[i].slice(j+1))}}
+const c=mkComp(type,kv);if(kv.x!=null)x=kv.x;if(kv.y!=null)y=kv.y;c.id=uid++;c.src=[];c.x=x==null?0:x;c.y=y==null?0:y;if(x==null||y==null)c.auto=1;init(c);ctx.ids[id]=c;ctx.map[c.id]=c;ctx.pend.push(c);SC_np++}
+else if(cmd=='label'){flush(ctx);const c=g(t[1]),txt=t[2];if(!txt)throw new Error('usage: label <id> "<text>" [left|right|above|below]');const sp=spec(c),n=mkComp('NOTE',{name:txt});n.name=txt;n.id=uid++;n.src=[];init(n);const ns=spec(n),sd=(t[3]||'').toLowerCase()||(sp.ni==0?'left':sp.no==0?'right':'above');
+if(!['left','right','above','below'].includes(sd))throw new Error('label side must be left, right, above or below');
+const ov=(a,b)=>a[0]<b[2]&&b[0]<a[2]&&a[1]<b[3]&&b[1]<a[3],bx=q=>{const z=spec(q);return[q.x,q.y,q.x+z.w,q.y+z.h]},pos=d=>[d=='left'?c.x-ns.w-10:d=='right'?c.x+sp.w+10:c.x,d=='above'?c.y-ns.h-8:d=='below'?c.y+sp.h+8:c.y+(sp.h-ns.h)/2];
+let pk=null;for(const d of[sd,'below','above','right','left']){const q=pos(d);n.x=q[0];n.y=q[1];if(!sim.cs.some(z=>z!==c&&ov(bx(n),bx(z)))){pk=q;break}}if(!pk)pk=pos(sd);n.x=pk[0];n.y=pk[1];sim.cs.push(n);sim.map[n.id]=n;SC_np++}
+else if(cmd=='wire'){const ar=t.indexOf('->'),S=ex(t[1]),bs=ar>0?t.slice(ar+1):t.slice(2);if(!bs.length)throw new Error('usage: wire <src>[.pin] -> <dst>[.pin] [more dst ...]');
+const conn=(a,b)=>{const sc=g(a.id),dc=g(b.id);if(spec(sc).no<1)throw new Error(a.id+' has no outputs');const si=a.pin==null?0:rpin(sc,1,a.pin,a.id);let di;
+if(b.pin==null){di=0;while(di<spec(dc).ni&&dc.src[di])di++;if(di>=spec(dc).ni)throw new Error(b.id+' has no free input pin')}else di=rpin(dc,0,b.pin,b.id);
+dc.src[di]={id:sc.id,o:si};const all=allC(ctx);[sc,dc].forEach(c=>c.t=='M'&&setVis(c,c.full,{cs:all}));SC_nw++};
+bs.forEach(b=>{const D=ex(b);if(S.length!=1&&S.length!=D.length)throw new Error('range sizes differ: '+t[1]+' has '+S.length+', '+b+' has '+D.length);D.forEach((d,i)=>conn(S.length==1?S[0]:S[i],d))})}
+else if(cmd=='set'){const c=g(t[1]);t.slice(2).forEach(a=>{const j=a.indexOf('='),k=j<0?'s':a.slice(0,j),v=pv(j<0?a:a.slice(j+1));if(k=='s')c.s=v?1:0;else if(['name','lab','color','n','x','y','w','h'].includes(k))c[k]=v;else throw new Error('cannot set "'+k+'" (allowed: s name lab color n x y w h)')})}
+else if(cmd=='asm'){const c=g(t[1]);if(!c.mem||c.k!='rom'&&c.k!='ram')throw new Error(t[1]+' is not a ROM/RAM');c.mem=asm(t.slice(2).join(' '))}
+else if(cmd=='mem'){const c=g(t[1]);if(!c.mem)throw new Error(t[1]+' is not a ROM/RAM/register file');c.mem=t.slice(2).join(',').split(/[,\s]+/).filter(Boolean).map(x=>parseInt(x)||0)}
+else return false;return true}
+function finishDef(d){const ctx=d.ctx,name=d.name;if(!name)throw new Error('define needs a name');layout(ctx,0,0);ctx.pend.forEach(c=>c.t=='M'&&setVis(c,c.full,{cs:ctx.pend}));
+let I=ctx.pend.filter(c=>c.t=='IN'),O=ctx.pend.filter(c=>c.t=='OUT');if(!d.circuit){if(!I.length)I=ctx.pend.filter(c=>c.t=='SW');if(!O.length)O=ctx.pend.filter(c=>c.t=='LED');if(!O.length)throw new Error('define '+name+': needs at least one OUT pin (or write "define '+name+' circuit" for a block whose pins are optional)')}
+const cs=ser(ctx.pend),by={};cs.forEach(c=>by[c.id]=c);I.forEach(c=>by[c.id].t='IN');O.forEach(c=>by[c.id].t='OUT');if(usesName(name,cs))throw new Error('IC '+name+' cannot contain itself');const had=!!lib[name];
+lib[name]={name,ni:I.length,no:O.length,comps:cs,inIds:I.map(c=>c.id),outIds:O.map(c=>c.id),inN:I.map((c,i)=>c.name||'I'+i),outN:O.map((c,i)=>c.name||'O'+i),circuit:!!d.circuit};if(had)sim=mk(JSON.parse(snapState()));
+return`defined IC ${name}  inputs: ${lib[name].inN.join(', ')||'-'}  |  outputs: ${lib[name].outN.join(', ')}`}
+function rd(ctx,ref){const j=ref.indexOf('.'),id=j<0?ref:ref.slice(0,j),c=ctx.ids[id];if(!c)throw new Error('unknown part "'+id+'"');const P=j<0?[null]:ex(ref).map(q=>q.pin);let v=0;
+P.forEach((pn,b)=>{let x;const[I,O]=pinNames(c);if(pn==null)x=spec(c).no?c.o[0]:(c.iv?c.iv[0]:0);else{const oi=O.findIndex(q=>np(q)==np(pn));if(oi>=0)x=c.o[oi];else{const ii=I.findIndex(q=>np(q)==np(pn));if(ii<0)throw new Error(id+' has no pin "'+pn+'"');x=c.iv?c.iv[ii]:0}}if(x)v+=2**b});return v}
+function runScript(text,opt){opt=opt||{};const log=[];let ok=true,fails=0;const pre=snapState();SC_np=0;SC_nw=0;
+if(/^\s*\{/.test(text)){try{const j=JSON.parse(text);text=(j.parts||[]).map(p=>{const{id,type,x,y,...r}=p;return`part ${id} "${type}"`+(x!=null?` at ${x} ${y}`:'')+' '+Object.entries(r).map(([k,v])=>`${k}="${v}"`).join(' ')}).concat((j.wires||[]).map(w=>`wire ${w[0]} -> ${w[1]}`),j.script||[]).join('\n')}catch(e){return{ok:false,fails:0,log:['ERROR: invalid JSON – '+e.message]}}}
+const L=String(text).split('\n');let ctx=nctx(),def=null,n=0;
+try{if(opt.clear)sim=mk([]);
+for(n=0;n<L.length;n++){const raw=L[n].trim();if(!raw||raw[0]=='#'||raw.startsWith('//'))continue;const t=tok(raw),cmd=t[0].toLowerCase();
+if(def){if(cmd=='end'){log.push(finishDef(def));def=null}else if(!exec(def.ctx,t,cmd))throw new Error('"'+cmd+'" is not allowed inside define (use part / wire / set / mem)');continue}
+if(cmd=='define'){def={name:t[1],circuit:t.includes('circuit'),ctx:nctx(1)};continue}
+if(exec(ctx,t,cmd))continue;
+if(cmd=='clear'){sim=mk([]);ctx=nctx()}
+else if(cmd=='tt'){const name=t[1],k=+t[2],m=+t[3],rows=t.slice(4);if(!name||!(k>=1&&k<=6)||!(m>=1))throw new Error('usage: tt <name> <inputs 1-6> <outputs> <2^inputs output-strings>');if(rows.length!=2**k)throw new Error(`tt ${name}: need ${2**k} rows, got ${rows.length}`);
+const tt=rows.map(r=>{if(r.length!=m)throw new Error(`row "${r}" must have ${m} characters (0/1/x)`);return[...r].map(ch=>ch=='1'?1:ch=='0'?0:2)}),had=!!lib[name];lib[name]=ttDef(name,k,m,tt);if(had)sim=mk(JSON.parse(snapState()));log.push('tt '+name+' (simplified): '+lib[name].expr.join(' ; '))}
+else if(cmd=='ic'){flush(ctx);const name=t[1],fi=t.indexOf('from'),ai=t.indexOf('as'),circ=t.includes('circuit');if(fi<0)throw new Error('usage: ic <name> from <id> <id> ... [circuit] [as <instanceId>]');const ids=t.slice(fi+1,ai>0?ai:undefined).filter(x=>x!='circuit'),P=ids.map(i=>{if(!ctx.ids[i])throw new Error('unknown part "'+i+'"');return ctx.ids[i]});compressSel(name,P,circ);if(ai>0)ctx.ids[t[ai+1]]=sel;log.push(`compressed ${ids.length} parts into IC ${name}`)}
+else if(cmd=='clock'){flush(ctx);const k=t[1]?+t[1]:1;clk=0;stepSim();for(let i=0;i<k;i++){clk=1;stepSim();clk=0;stepSim()}}
+else if(cmd=='settle'){flush(ctx);stepSim()}
+else if(cmd=='reset'){flush(ctx);rstS(sim);stepSim()}
+else if(cmd=='expect'){flush(ctx);stepSim();const ref=t[1],want=pv(t[t.length-1]),got=rd(ctx,ref);if(got!=want){fails++;log.push(`FAIL line ${n+1}: ${ref} = ${got}, expected ${want}`)}else log.push(`ok   line ${n+1}: ${ref} = ${got}`)}
+else if(cmd=='print'){flush(ctx);stepSim();if(t.length>1)t.slice(1).forEach(r=>log.push(r+' = '+rd(ctx,r)));else Object.keys(ctx.ids).forEach(k=>{const c=ctx.ids[k];if(c.t=='LED'||c.t=='OUT')log.push(k+' = '+rd(ctx,k))})}
+else if(cmd=='table'){flush(ctx);const inv=c=>Object.keys(ctx.ids).find(k=>ctx.ids[k]===c)||c.name||c.t,o=(a,b)=>a.y-b.y||a.x-b.x;let I=sim.cs.filter(c=>c.t=='IN').sort(o),O=sim.cs.filter(c=>c.t=='OUT').sort(o);if(!I.length)I=sim.cs.filter(c=>c.t=='SW').sort(o);if(!O.length)O=sim.cs.filter(c=>c.t=='LED').sort(o);
+if(!I.length||!O.length||I.length>10)throw new Error('table needs 1-10 inputs (IN/switch) and at least one output (OUT/LED) on the board');const keep=I.map(c=>c.s);log.push(I.map(inv).join(' ')+' | '+O.map(inv).join(' '));
+for(let r=0;r<1<<I.length;r++){I.forEach((c,k)=>c.s=r>>(I.length-1-k)&1);stepSim();stepSim();log.push(I.map(c=>c.s).join(' ')+' | '+O.map(c=>c.iv&&c.iv[0]?1:0).join(' '))}I.forEach((c,k)=>c.s=keep[k]);stepSim()}
+else throw new Error('unknown command "'+t[0]+'". Commands: part wire set mem define/end tt ic clock settle reset expect print table clear')}
+if(def)throw new Error('missing "end" for define '+def.name);flush(ctx);if(opt.fit!==false)fitView(sim.cs)}
+catch(e){ok=false;log.push('ERROR line '+(n+1)+': '+e.message);sim=mk(JSON.parse(pre));sels=new Set();sel=null}
+saveLib();renderLib();rec(pre);if(ok)log.push(`built ${SC_np} parts, ${SC_nw} wires`);return{ok,pass:ok&&!fails,fails,log}}
+function openScript(){$('#sm').hidden=false;const s=$('#exs');if(s.options.length<2)Object.keys(EX).forEach(k=>s.add(new Option(k,k)))}
+function loadEx(k){if(k)$('#st').value=EX[k]}
+function runUI(){const r=runScript($('#st').value,{clear:$('#scl').checked});$('#slog').textContent=r.log.join('\n')+(r.ok?(r.fails?'\nX '+r.fails+' expectation(s) failed':'\nOK done'):'\nBoard restored (nothing was changed).')}
+const EX={
+'Half adder (switches + LEDs)':`part a SW
+part b SW
+part x XOR2
+part c AND2
+part sum "Red LED"
+part carry "Green LED"
+wire a.Q -> x.A c.A
+wire b.Q -> x.B c.B
+wire x.Y -> sum.D
+wire c.Y -> carry.D
+set a 1
+set b 1
+expect sum = 0
+expect carry = 1
+table`,
+'4-bit counter + hex display':`part clk CLK
+part cnt "Up counter 4-bit"
+part hex "Hex display"
+wire clk.Q -> cnt.CK
+wire cnt.Q0..3 -> hex.D0..3
+clock 5
+expect cnt.Q0..3 = 5
+print cnt.Q0..3`,
+'Custom IC with define (full adder)':`define MyFullAdder
+  part a IN name=A
+  part b IN name=B
+  part ci IN name=Cin
+  part x1 XOR2
+  part x2 XOR2
+  part a1 AND2
+  part a2 AND2
+  part o1 OR2
+  part s OUT name=Sum
+  part co OUT name=Cout
+  wire a.Q -> x1.A a1.A
+  wire b.Q -> x1.B a1.B
+  wire x1.Y -> x2.A a2.A
+  wire ci.Q -> x2.B a2.B
+  wire x2.Y -> s.D
+  wire a1.Y -> o1.A
+  wire a2.Y -> o1.B
+  wire o1.Y -> co.D
+end
+part i1 SW
+part i2 SW
+part i3 SW
+part fa MyFullAdder
+part s "Red LED"
+part c "Green LED"
+wire i1.Q -> fa.A
+wire i2.Q -> fa.B
+wire i3.Q -> fa.Cin
+wire fa.Sum -> s.D
+wire fa.Cout -> c.D
+set i1 1
+set i2 1
+set i3 1
+expect s = 1
+expect c = 1`,
+'Truth-table IC (auto-simplified)':`# outputs listed per input row (A B C = 000..111); x = don't care
+tt Majority3 3 1 0 0 0 1 0 1 1 1
+part a SW
+part b SW
+part c SW
+part m Majority3
+part y "Red LED"
+wire a.Q -> m.A
+wire b.Q -> m.B
+wire c.Q -> m.C
+wire m.Y0 -> y.D
+table`,
+'8-bit register + shift register':`part clk CLK
+part d SW
+part sr "Shift reg 4-bit (→)"
+part bar "LED bar 4"
+wire clk.Q -> sr.CK
+wire d.Q -> sr.SI
+wire sr.Q0..3 -> bar.L0..3
+set d 1
+clock 3
+expect sr.Q0..3 = 7`};
+const DOC_HEAD=`# LogicLab scripting reference (for AI assistants)
+
+LogicLab is a browser digital-logic simulator. You build circuits by writing a plain-text SCRIPT; the user pastes it into "Script / AI" and presses Run. Answer with ONLY the script (no prose inside it). Lines starting with # are comments (full-line only). Everything is case-sensitive for ids, case-insensitive for component names and pin names. No coordinates are needed (auto layout), but "at X Y" is allowed.
+
+## Commands
+part <id> <type> [at X Y] [key=value ...]   create a component. <type> can be a catalog name in quotes (see list below), a raw type (SW IN OUT CLK HI LO LED RGB SEG7 DFF JK NMOS PMOS DIODE NOTE NOT BUF AND OR NAND NOR XOR XNOR), a macro kind "M:<kind>" with parameters, or the name of an IC you defined/created.
+   keys: n=<gate inputs 2-8>, name=<label>, color=<#hex>, s=<0|1 initial switch>, plus macro parameters. Quote values containing spaces: name="my label".
+wire <src>[.pin] -> <dst>[.pin] [<dst2>[.pin] ...]   connect ONE output pin to one or more input pins. Omit .pin on the source to use output 0; omit on a destination to use its first free input.
+   Ranges connect buses: wire cnt.Q0..3 -> reg.D0..3   (pairs Q0->D0 ... Q3->D3; ranges need equal length).
+set <id> <0|1>          set a switch (SW/IN). Also: set <id> name=.. color=.. n=.. x=.. y=..
+mem <id> v0,v1,...      fill ROM / RAM / register-file contents (decimal or 0x hex, from address 0)
+asm <romId> "<program>"  assemble LL-8 microcontroller code into its program ROM (part rom M:rom a=8 w=13). Separate instructions with ; and write labels as "name:".  Example: asm rom "LDI 5; loop: OUT; SUBI 1; JNZ loop; HLT"
+   LL-8 (word = 5-bit opcode + 8-bit operand, 1 instruction per clock): NOP | LDI n (A=n) | LDA r | STA r (RAM[r], r=0..15) | ADD r SUB r AND r OR r XOR r (A=A op RAM[r]) | ADDI n SUBI n | SHL SHR NOT | IN (A = input port, 8 switches named P0..P7) | OUT (output port = A) | JMP x JZ x JNZ x | HLT. Z flag = last arithmetic/logic result was 0 (IN does not change Z).
+   The sidebar "Prebuilt circuits" has a complete LL-8 (input switches P0-P7, RST, output port ids: outr). The user programs it with the "MCU Programmer" button; AI scripts can instead write their own: part rom M:rom a=8 w=13 ... asm rom "...".
+   IMPORTANT macro parameters: mux needs k (select bits) and w (data width), e.g. M:mux k=2 w=8 ; rom/ram need a (address bits) and w (data bits), e.g. M:rom a=8 w=13 ; rf needs k and w. Mux/ROM data pins with w>1 are named I0.0 I0.1 ... (input j, bit b) and rom/ram data D0.. ; ranges (..) cannot be used on pin names that contain a dot.
+define <Name> [circuit] ... end   define a reusable IC in isolation (add the word circuit when it may have no inputs and/or no outputs: only explicit IN / OUT parts become pins). Inside use only part/wire/set/mem. Inputs = parts of type IN (in declaration order, give name=), outputs = parts of type OUT. Afterwards: part x <Name>; its pins are the IN/OUT names.
+tt <Name> <n> <m> <row0> <row1> ...  truth-table IC: n inputs (1-6, named A B C ..., A is the most significant bit), m outputs (pins Y0..), then 2^n rows in counting order, each row an m-character string of 0/1/x. The tool minimises every output equation automatically and builds real gates.
+label <id> "<text>" [left|right|above|below]   add a comment-only NOTE label beside an existing part (by default left of inputs, right of outputs). It has no pins and does nothing - use it to name input switches / output LEDs. Put label lines at the END of the script.
+ic <Name> from <id> <id> ... [circuit] [as <inst>]   compress existing parts into an IC (wires crossing the boundary become pins I0.. / O0..). Add the word circuit to allow a block with no outputs and/or no inputs (pins optional)
+clock [N]               apply N full clock cycles (0->1->0)  |  settle  |  reset (clear all flip-flops/counters)
+expect <id>[.pin] = <v>   assertion (bus ranges compare as integer, first pin = bit 0). Failures are reported, so ALWAYS add expect lines or "table" to verify your own circuit.
+print <id>[.pin] ...     show values  |  table : prints the truth table of the whole board (inputs = IN pins or switches, outputs = OUT pins or LEDs)
+clear                   empty the board
+
+## Pin names
+Gates: inputs A B C D E F G H, output Y (NOT/BUF: input A). SW IN CLK HI LO: output Q. LED / OUT: input D. RGB: R G B. SEG7: a b c d e f g. DFF: D CK -> Q QN. JK: J K CK -> Q QN. NMOS/PMOS: G D -> S. DIODE: A -> K. Macro/catalog parts use the pin names in the list below (Q0 Q1.., D0.., CK, RST, EN ...). Any pin can also be addressed as i0,i1.. (inputs) / o0,o1.. (outputs). Defined/tt ICs use their own pin names (tt ICs: inputs A B C.., outputs Y0 Y1..).
+
+## Simulation semantics
+Combinational logic settles instantly. Flip-flops, registers, counters, RAM trigger on the RISING edge of their CK pin. RST pins are asynchronous and active-high. EN on counters and decoders defaults to 1 when unwired. A CLK part drives every clock in the design; use "clock N" to step it in tests. Switches are inputs you set; LEDs/OUT pins are what you read. An IC cannot contain itself.
+
+## Macro kinds (any size) – use as: part c1 M:cnt n=6 m=up
+add n | sub n | asub n | incr n | decr n | neg n | cmp n | mul n | alu n | sh n(power of 2) | mux k w | dmx k | dcd k | enc k | par n [odd=1] | h7 [bcd=1] | b2g n | g2b n | tff | dl | srl | reg n | shr n [left=1] | piso n | ushr n | cnt n m=up|down|ud|gray|john|ring|lfsr [mod=N] [ld=1] | rom a w | ram a w | rf k w | bar n | hexd
+(n=bits, k=select/address bits, a=address bits, w=data width.)
+
+## Examples
+`+Object.entries(EX).map(([k,v])=>'--- '+k+'\n'+v).join('\n\n')+`
+
+## How to work
+1. Plan the design; prefer catalog parts (counters, adders, registers, muxes, ALU, RAM...) over building them from gates.
+2. Define reusable blocks with define...end, or tt for pure logic tables.
+3. Wire everything, set inputs, run "clock" and finish with expect lines / table so the user sees PASS/FAIL.
+4. If the run reports ERROR, the board is untouched: fix the reported line and send the whole script again.
+JavaScript access (for browser-control agents): window.LL.run(scriptText, {clear:true}) returns {ok, pass, fails, log[]}; LL.export() returns the current board as a script; LL.docs() returns this text.
+
+## Component catalog  (name in quotes = <type>; in:/out: = pin names)`;
+function entryPins(e){if(e.ic){const d=e.ic();return[d.inN,d.outN]}const c={t:e.t,src:[]};if(e.gn)c.n=e.gn;['color','k'].forEach(f=>e[f]!=null&&(c[f]=e[f]));if(e.p)c.p={...e.p};init(c);return pinNames(c)}
+function aiDocs(){const g={};CAT.forEach(e=>{let p;try{p=entryPins(e)}catch(x){p=[[],[]]}const op=e.t=='M'&&KS[e.k].op||[];(g[e.g]=g[e.g]||[]).push(`- "${e.n}"  in: ${p[0].join(' ')||'-'} | out: ${p[1].join(' ')||'-'}${op.length?' (optional pins: '+op.join(' ')+')':''}`)});return DOC_HEAD+'\n'+Object.entries(g).map(([k,v])=>'\n### '+k+'\n'+v.join('\n')).join('\n')+'\n'}
+function openDocs(){$('#dt').value=aiDocs();$('#dm').hidden=false;$('#cpm').textContent=''}
+function copyDocs(){const t=$('#dt');t.select();let p;try{p=navigator.clipboard.writeText(t.value)}catch(e){}Promise.resolve(p).then(()=>{$('#cpm').textContent='copied (or press Ctrl+C)'}).catch(()=>{$('#cpm').textContent='press Ctrl+C to copy'})}
+const q2=x=>/[\s=]/.test(String(x))?'"'+String(x).replace(/"/g,'')+'"':x;
+function genLines(cs){const nm=c=>'p'+c.id,L=[];const ord=[...cs.filter(c=>c.t=='IN'),...cs.filter(c=>c.t!='IN'&&c.t!='OUT'),...cs.filter(c=>c.t=='OUT')];
+ord.forEach(c=>{const kv=[];if(G[c.t]&&c.n&&c.n!=2)kv.push('n='+c.n);if(c.t=='LED'&&c.color)kv.push('color='+c.color);if((c.t=='IN'||c.t=='OUT'||c.t=='NOTE'||c.t=='SW')&&c.name)kv.push('name='+q2(c.name));if((c.t=='SW'||c.t=='IN')&&c.s)kv.push('s=1');if(c.w)kv.push('w='+c.w);if(c.h)kv.push('h='+c.h);
+if(c.t=='M')Object.entries(c.p||{}).forEach(([k,v])=>kv.push(k+'='+v));const ty=c.t=='M'?'M:'+c.k:c.t=='IC'?q2(c.def):c.t;L.push(`part ${nm(c)} ${ty} at ${Math.round(c.x)} ${Math.round(c.y)} ${kv.join(' ')}`.trim());if(c.t=='M'&&c.mem&&c.mem.length)L.push(`mem ${nm(c)} ${c.mem.join(',')}`)});
+const byId={};cs.forEach(c=>byId[c.id]=c);cs.forEach(c=>c.src.forEach((r,i)=>{const sc=r&&byId[r.id];if(!sc)return;const so=pinNames(sc)[1][r.o]||'o'+r.o,di=pinNames(c)[0][i]||'i'+i;L.push(`wire ${nm(sc)}.${so} -> ${nm(c)}.${di}`)}));return L}
+function exportScript(){const out=['# exported from LogicLab'],seen=new Set();const dep=n=>{if(seen.has(n)||!lib[n])return;seen.add(n);lib[n].comps.forEach(c=>c.t=='IC'&&dep(c.def));out.push('define '+q2(n)+(lib[n].circuit?' circuit':''),...genLines(lib[n].comps).map(l=>'  '+l),'end')};sim.cs.forEach(c=>c.t=='IC'&&dep(c.def));out.push(...genLines(sim.cs));return out.join('\n')}
+window.LL={prebuilt:n=>loadPre(PRE.findIndex(p=>p.n==n)),asm:t=>asm(t),run:(t,o)=>runScript(t,o||{clear:true}),docs:aiDocs,export:exportScript,examples:EX};
+/* ================= v2 additions ================= */
+let tmr;function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(tmr);tmr=setTimeout(()=>t.hidden=true,4500)}
+const isNum=t=>t.split(',').every(x=>/^\s*(0x[0-9a-f]+|\d+)\s*$/i.test(x));
+/* ---- wires: hit-test (a wire is only removed when it is selected and Delete is pressed) ---- */
+const bez=(a,b,t)=>{const d=Math.max(30,Math.abs(b.x-a.x)/2),u=1-t;return{x:u*u*u*a.x+3*u*u*t*(a.x+d)+3*u*t*t*(b.x-d)+t*t*t*b.x,y:u*u*u*a.y+3*u*u*t*a.y+3*u*t*t*b.y+t*t*t*b.y}};
+function hitWire(p){const r=7/z;for(const c of sim.cs){const n=spec(c).ni;for(let i=0;i<n;i++){const s=c.src[i],m=s&&sim.map[s.id];if(!m)continue;const a=pin(m,1,s.o),b=pin(c,0,i);if(!a||!b)continue;for(let k=0;k<=24;k++){const q=bez(a,b,k/24);if(Math.hypot(q.x-p.x,q.y-p.y)<r)return{c,i}}}}return null}
+
+/* ---- IC designer workspace ---- */
+function openDesigner(){if(DZ)return;insClose();DZ={sim,undo,redo,ox,oy,z,sels,sel};sim=mk([]);undo=[];redo=[];sels=new Set();sel=null;selW=null;ox=300;oy=180;z=1;
+$('#md').hidden=true;$('#bar').hidden=true;$('#dbar').hidden=false;$('#hint').hidden=true;$('#dbar button:nth-of-type(6)').textContent=run?'⏸':'▶';toast('IC designer: build your circuit, then press “Create IC…” and pick which pins are inputs / outputs.')}
+function endDesigner(){const d=DZ;DZ=null;PK=null;sim=d.sim;undo=d.undo;redo=d.redo;ox=d.ox;oy=d.oy;z=d.z;sels=d.sels;sel=d.sel;selW=null;$('#bar').hidden=false;$('#dbar').hidden=true;$('#pk').hidden=true;$('#hint').hidden=false;insClose()}
+function cancelDesigner(){if(DZ&&(!sim.cs.length||confirm('Discard this IC design?')))endDesigner()}
+function dpt(t){const n=sim.cs.filter(c=>c.t==t).length;place({t,name:(t=='IN'?'I':'O')+n})}
+function startPick(){if(!sim.cs.length)return toast('Draw something first');const o=(a,b)=>a.y-b.y||a.x-b.x;PK={list:[]};
+sim.cs.filter(c=>c.t=='IN').sort(o).forEach(c=>PK.list.push({io:'in',c,pt:1,name:c.name||'I'+PK.list.length}));
+sim.cs.filter(c=>c.t=='OUT').sort(o).forEach(c=>PK.list.push({io:'out',c,pt:1,name:c.name||'O'+PK.list.length}));
+sels=new Set();sel=null;selW=null;$('#pk').hidden=false;rpk()}
+function rpk(){const row=(e,j)=>`<div class="row"><b style="color:${e.io=='in'?'#38d96a':'#4aa3ff'};width:30px">${e.io=='in'?'IN':'OUT'}</b><input value="${esc(e.name)}" oninput="PK.list[${j}].name=this.value" style="width:90px"><small>${e.pt?'point':esc((pinNames(e.c)[e.io=='in'?0:1][e.i]||'pin')+' of '+(e.c.name||e.c.lab||e.c.t))}</small><button onclick="pkMv(${j},-1)">▲</button><button onclick="pkMv(${j},1)">▼</button>${e.pt?'':`<button onclick="PK.list.splice(${j},1);rpk()">✕</button>`}</div>`;
+$('#pkl').innerHTML=PK.list.map(row).join('')||'<small>No pins chosen yet – click pins on the circuit.</small>'}
+function pkMv(j,d){const L=PK.list,k=j+d;if(k<0||k>=L.length)return;[L[j],L[k]]=[L[k],L[j]];rpk()}
+function pickPin(hp){if(!hp)return;const c=hp.c;if(c.t=='IN'||c.t=='OUT')return toast('Input/Output points are already included');const io=hp.k?'out':'in',L=PK.list,j=L.findIndex(e=>e.c===c&&e.i===hp.i&&e.io==io&&!e.pt);
+if(j>=0){L.splice(j,1);return rpk()}
+if(!hp.k&&c.src[hp.i])return toast('That input pin already has a wire – only free input pins can become IC inputs');
+const base=(pinNames(c)[hp.k][hp.i]||(hp.k?'O':'I')+L.length).replace(/[^\w]/g,'')||'P';let nm=base,n=1;while(L.some(e=>e.io==io&&e.name==nm))nm=base+(++n);L.push({io,c,i:hp.i,name:nm});rpk()}
+function finishPick(){const name=$('#dnm').value.trim(),L=PK.list,ins=L.filter(e=>e.io=='in'),outs=L.filter(e=>e.io=='out'),nms=e=>e.name.trim();
+if(!name)return toast('Type a name for the IC');if(!outs.length)return toast('Choose at least one OUTPUT (click an output pin, or add an Output point)');
+if([...ins,...outs].some(e=>!nms(e)))return toast('Every pin needs a name');if(new Set(ins.map(nms)).size<ins.length||new Set(outs.map(nms)).size<outs.length)return toast('Input names must be unique and output names must be unique');
+const B=bb(sim.cs),cs=ser(sim.cs),by={};cs.forEach(c=>by[c.id]=c);let nid=Math.max(0,...cs.map(c=>c.id))+1,yi=0,yo=0;
+const inIds=ins.map(e=>{if(e.pt){by[e.c.id].name=nms(e);return e.c.id}const id=nid++;cs.push({id,t:'IN',x:B.a-160,y:B.b+50*yi++,name:nms(e),src:[]});by[e.c.id].src[e.i]={id,o:0};return id});
+const outIds=outs.map(e=>{if(e.pt){by[e.c.id].name=nms(e);return e.c.id}const id=nid++;cs.push({id,t:'OUT',x:B.A+160,y:B.b+50*yo++,name:nms(e),src:[{id:e.c.id,o:e.i}]});return id});
+if(usesName(name,cs))return toast('An IC cannot contain itself');const had=!!lib[name];if(had&&!confirm('Replace existing IC "'+name+'"?'))return;
+lib[name]={name,ni:inIds.length,no:outIds.length,comps:cs,inIds,outIds,inN:ins.map(nms),outN:outs.map(nms)};saveLib();endDesigner();renderLib();if(had)sim=mk(JSON.parse(snapState()));add('IC',name);toast('IC "'+name+'" created and placed on the board (click it to look inside)')}
+
+/* ---- assembler for the LL-8 microcontroller ---- */
+const OPS='NOP LDI LDA STA ADD SUB ADDI OUT JMP JZ JNZ AND SHL SUBI SHR HLT IN OR XOR NOT'.split(' '),NOARG=['NOP','OUT','SHL','SHR','HLT','IN','NOT'];
+const RAMOP=['LDA','STA','ADD','SUB','AND','OR','XOR'],JOPS=['JMP','JZ','JNZ'],PSEUDO={INC:['ADDI','1'],DEC:['SUBI','1'],CLR:['LDI','0'],TST:['ADDI','0']};
+function asmNum(s){s=String(s).trim();let m;if(/^-?(\d+|0x[0-9a-f]+|0b[01]+)$/i.test(s)){const ng=s[0]=='-',b=ng?s.slice(1):s,v=/^0b/i.test(b)?parseInt(b.slice(2),2):Number(b);return ng?-v:v}if(m=s.match(/^'(.)'$/))return m[1].charCodeAt(0);return NaN}
+function asm(src){const L=[],lab=Object.create(null),K=Object.create(null);
+String(src).split(/[\n;]/).forEach(l=>{l=l.replace(/#.*/,'').trim();let m;while(m=l.match(/^([A-Za-z_]\w*):\s*(.*)$/)){if(m[1] in lab)throw new Error('asm: label "'+m[1]+'" is defined twice');lab[m[1]]=L.length;l=m[2]}
+if(!l)return;if(m=l.match(/^(?:\.?equ\s+([A-Za-z_]\w*)\s+|([A-Za-z_]\w*)\s*=\s*)(\S+)$/i)){K[m[1]||m[2]]=m[3];return}L.push(l.split(/[\s,]+/))});
+if(L.length>256)throw new Error('asm: program too long ('+L.length+' instructions, max 256)');
+return L.map((t,i)=>{const n=i+1;let op=t[0].toUpperCase(),a=t[1],cnt=t.length-1;
+const rs=(x,d)=>{d=d||0;if(x in lab)return lab[x];if(x in K&&d<6)return rs(K[x],d+1);const v=asmNum(x);if(isNaN(v))throw new Error(/^[A-Za-z_]\w*$/.test(x)?'asm: unknown label or constant "'+x+'" (instruction '+n+')':'asm: bad operand "'+x+'" (instruction '+n+')');return v};
+if(PSEUDO[op]){if(cnt)throw new Error('asm: '+op+' takes no operand (instruction '+n+')');[op,a]=PSEUDO[op]}
+const o=OPS.indexOf(op);if(o<0)throw new Error('asm: unknown instruction "'+t[0]+'" (instruction '+n+'). Valid: '+OPS.join(' ')+' + INC DEC CLR TST');let v=0;
+if(NOARG.includes(op)){if(cnt)throw new Error('asm: '+op+' takes no operand (instruction '+n+')')}
+else{if(a==null||a==='')throw new Error('asm: '+op+' needs an operand (instruction '+n+')');if(cnt>1)throw new Error('asm: '+op+' takes one operand (instruction '+n+')');v=rs(a);
+if(RAMOP.includes(op)){if(v<0||v>15)throw new Error('asm: RAM address '+v+' is out of range 0-15 (instruction '+n+')')}
+else if(JOPS.includes(op)){if(v<0||v>255)throw new Error('asm: jump target '+v+' is out of range 0-255 (instruction '+n+')')}
+else{if(v<-128||v>255)throw new Error('asm: value '+v+' does not fit in 8 bits, use -128..255 (instruction '+n+')');v&=255}}
+return o<<8|v})}
+function disasm(mem){let n=mem.length;while(n&&!mem[n-1])n--;const T=new Set();for(let i=0;i<n;i++){const op=OPS[mem[i]>>8];if(JOPS.includes(op)&&(mem[i]&255)<n)T.add(mem[i]&255)}
+const o=[];for(let i=0;i<n;i++){const v=mem[i]||0,op=OPS[v>>8]||'NOP';if(T.has(i))o.push('L'+i+':');o.push(NOARG.includes(op)?op:op+' '+(JOPS.includes(op)&&(v&255)<n?'L'+(v&255):v&255))}return o.join('\n')}
+function ctlRom(){const J=1,JZ=2,JNZ=4,WM=8,WO=16,WZ=32,SB=64,HL=128,A=n=>n<<8,F=n=>n<<11,R=[];
+R[0]=0;R[1]=A(2);R[2]=A(3);R[3]=WM;R[4]=A(1)|WZ;R[5]=A(1)|WZ|F(1);R[6]=A(1)|WZ|SB;R[7]=WO;R[8]=J;R[9]=JZ;R[10]=JNZ;R[11]=A(1)|WZ|F(2);R[12]=A(1)|WZ|F(6);R[13]=A(1)|WZ|SB|F(1);R[14]=A(1)|WZ|F(7);R[15]=HL;R[16]=A(4);R[17]=A(1)|WZ|F(3);R[18]=A(1)|WZ|F(4);R[19]=A(1)|WZ|F(5);return R}
+function mcu(prog){const S=['# LL-8: 8-bit microcontroller. Inputs: P0-P7 switches (IN instruction), RST, CLK. Outputs: output port (OUT instruction) shown on LED bar + 2 hex digits. 1 instruction per clock.'],P=x=>S.push(x),W=(a,b)=>S.push('wire '+a+' -> '+b);
+['clk CLK','rst SW name=RST','pc M:cnt n=8 m=up ld=1 lab="Program counter"','rom M:rom a=8 w=13 lab="Program ROM"','ctl M:rom a=5 w=14 lab="Control ROM"','ram M:ram a=4 w=8 lab="RAM 16x8"','alu M:alu n=8 lab=ALU','mb M:mux k=1 w=8 lab="B select"','ma M:mux k=3 w=8 lab="A source select"','acc M:reg n=8 lab=Accumulator','mo M:mux k=1 w=8 lab="Port hold"','outr M:reg n=8 lab="Output port"','zm M:mux k=1 w=1 lab="Z hold"','z M:reg n=1 lab="Z flag"','nh NOT','zn NOT','jz AND2','jn AND2','jr OR n=3','ob "LED bar 8"','hl "Hex display"','hh "Hex display"','ab "LED bar 8"','zl "Green LED"','hlt "Red LED"','n1 NOTE name="INPUT PORT: switches P0-P7 (read with IN)"','n2 NOTE name="OUTPUT PORT: LED bar + hex (written by OUT)"','n3 NOTE name="ACCUMULATOR LEDs / Z flag / HALT"'].forEach(x=>P('part '+x));
+for(let b=0;b<8;b++)P('part p'+b+' SW name=P'+b);
+W('clk.Q','pc.CK acc.CK z.CK outr.CK ram.CK');W('rst.Q','pc.RST acc.RST outr.RST');W('pc.Q0..7','rom.A0..7');W('rom.D8..12','ctl.A0..4');W('rom.D0..7','pc.D0..7');W('rom.D0..3','ram.A0..3');
+W('acc.Q0..7','ram.D0..7 alu.A0..7');W('ctl.D3','ram.WE');W('mb.Y0..7','alu.B0..7');W('ctl.D6','mb.S0');W('ctl.D11','alu.OP0');W('ctl.D12','alu.OP1');W('ctl.D13','alu.OP2');
+for(let b=0;b<8;b++){W('ram.Q'+b,'mb.I0.'+b+' ma.I3.'+b);W('rom.D'+b,'mb.I1.'+b+' ma.I2.'+b);W('acc.Q'+b,'ma.I0.'+b+' mo.I1.'+b);W('alu.F'+b,'ma.I1.'+b);W('p'+b+'.Q','ma.I4.'+b);W('outr.Q'+b,'mo.I0.'+b)}
+W('ctl.D8','ma.S0');W('ctl.D9','ma.S1');W('ctl.D10','ma.S2');W('ma.Y0..7','acc.D0..7');W('ctl.D4','mo.S0');W('mo.Y0..7','outr.D0..7');
+W('z.Q0','zm.I0');W('alu.ZERO','zm.I1');W('ctl.D5','zm.S0');W('zm.Y','z.D0');W('rst.Q','z.RST');
+W('ctl.D1','jz.A');W('z.Q0','jz.B');W('ctl.D2','jn.A');W('z.Q0','zn.A');W('zn.Y','jn.B');W('ctl.D0','jr.A');W('jz.Y','jr.B');W('jn.Y','jr.C');W('jr.Y','pc.LD');W('ctl.D7','nh.A hlt.D');W('nh.Y','pc.EN');
+W('outr.Q0..7','ob.L0..7');W('outr.Q0..3','hl.D0..3');W('outr.Q4..7','hh.D0..3');W('acc.Q0..7','ab.L0..7');W('z.Q0','zl.D');
+P('label clk \"CLK: 1 instruction per rising edge\"');P('label rst \"RST: switch on then off = restart\"');for(let b=0;b<8;b++)P('label p'+b+' \"input bit '+b+(b==0?' (LSB)':b==7?' (MSB)':'')+' - read by IN\"');
+P('label ob \"OUTPUT PORT bits - written by OUT\"');P('label hl \"output port: low hex digit\"');P('label hh \"output port: high hex digit\"');P('label ab \"ACCUMULATOR A (live value)\"');P('label zl \"Z flag (1 = last result was 0)\"');P('label hlt \"HALT lamp (HLT executed)\"');
+P('mem ctl '+ctlRom().join(','));P('asm rom "'+prog+'"');return S.join('\n')}
+const FIB='LDI 0; STA 0; LDI 1; STA 1; loop: LDA 0; ADD 1; STA 2; LDA 1; STA 0; LDA 2; STA 1; OUT; JMP loop',CNT='LDI 10; loop: OUT; SUBI 1; JNZ loop; HLT',ECHO='loop: IN; OUT; JMP loop';
+const MEX={'Echo input to output':ECHO,'Input + 1':'loop: IN; ADDI 1; OUT; JMP loop','Invert input (NOT)':'loop: IN; NOT; OUT; JMP loop','Free-running counter':'LDI 0\nloop: ADDI 1\nOUT\nJMP loop','Countdown 10 to 1':CNT.replace(/; /g,'\n'),'Fibonacci':FIB.replace(/; /g,'\n'),
+'Wait for a switch, then show it':'loop: IN; TST; JZ loop; OUT; HLT','Blink all LEDs':'LDI 0\nloop: NOT\nOUT\nJMP loop','Knight-rider scanner':'LDI 1\nleft: OUT\nSHL\nJNZ left\nLDI 128\nright: OUT\nSHR\nJNZ right\nJMP 0','Multiply input by 3':'IN\nSTA 0\nADD 0\nADD 0\nOUT\nHLT','Count switches that are ON':'# popcount of the input port\nLDI 1\nSTA 2      # mask\nCLR\nSTA 1      # count = 0\nIN\nSTA 0      # value\nloop: LDA 0\nAND 2\nJZ skip\nLDA 1\nINC\nSTA 1\nskip: LDA 0\nSHR\nSTA 0\nJNZ loop\nLDA 1\nOUT\nHLT','Input A + input B (two samples)':'# set switches to A, wait one clock, change to B\nIN\nSTA 0\nIN\nADD 0\nOUT\nHLT'};
+const MCUDOC=`<b>What the LL-8 does</b><br>A small 8-bit computer. The program sits in the <i>Program ROM</i> (up to 256 instructions). On every <b>rising clock edge</b> it runs exactly one instruction: the Program counter addresses the ROM, the Control ROM decodes the opcode, and the ALU / RAM / ports do the work.<br>
+<table><tr><th colspan=2>Pins you use</th></tr>
+<tr><td><b>P0–P7</b> (switches, left)</td><td>8-bit <b>input port</b> – read with <code>IN</code> (value goes into A). P0 = bit 0.</td></tr>
+<tr><td><b>RST</b> switch</td><td>Turn on, then off: restarts at address 0 and clears PC, A, the output port and the Z flag (RAM keeps its contents).</td></tr>
+<tr><td><b>CLK</b> + Clock slider</td><td>Speed. <b>Step</b> (while paused ⏸) = one full clock pulse = one instruction.</td></tr>
+<tr><td><b>Output port</b></td><td>Written by <code>OUT</code> (port = A). Read it on the <b>LED bar</b> (bit 0 = top) and the two <b>hex digits</b> (low / high nibble).</td></tr>
+<tr><td>Accumulator bar, green Z LED, red LED</td><td>Live value of A, the zero flag, and HALT.</td></tr></table>
+<b>Registers &amp; memory</b>: A (accumulator, 8 bit) · Z (zero flag) · RAM[0..15] (16 bytes) · PC (0..255). Only A is used for arithmetic. There is no carry flag: results wrap around (255 + 1 = 0).
+<table><tr><th>Instruction</th><th>Does</th></tr>
+<tr><td>NOP</td><td>nothing</td></tr><tr><td>LDI n</td><td>A = n (-128…255)</td></tr><tr><td>LDA r / STA r</td><td>A = RAM[r] / RAM[r] = A (r = 0…15)</td></tr>
+<tr><td>ADD r, SUB r, AND r, OR r, XOR r</td><td>A = A op RAM[r]; sets Z</td></tr><tr><td>ADDI n, SUBI n</td><td>A = A ± n; sets Z</td></tr>
+<tr><td>SHL, SHR, NOT</td><td>shift A left / right (logical), invert A; sets Z</td></tr>
+<tr><td>IN</td><td>A = input port P0–P7 (does <b>not</b> change Z)</td></tr><tr><td>OUT</td><td>output port = A</td></tr>
+<tr><td>JMP x, JZ x, JNZ x</td><td>jump always / if Z=1 / if Z=0 (x = label or address 0…255)</td></tr><tr><td>HLT</td><td>stop (red LED) – press RST to run again</td></tr>
+<tr><th colspan=2>Shortcuts the assembler expands for you</th></tr>
+<tr><td>INC / DEC</td><td>= ADDI 1 / SUBI 1 (sets Z)</td></tr><tr><td>CLR</td><td>= LDI 0 (does <b>not</b> set Z)</td></tr><tr><td>TST</td><td>= ADDI 0: sets Z from A without changing A</td></tr></table>
+<b>The Z flag</b> is set <i>only</i> by ADD SUB AND OR XOR ADDI SUBI SHL SHR NOT (Z=1 when the result is 0). LDI, LDA, IN, CLR and STA leave it alone – use <code>TST</code> before a <code>JZ</code>/<code>JNZ</code> if A came from one of those.<br>
+<b>Syntax:</b> one instruction per line (or separated by <code>;</code>) · labels <code>name:</code> · comments <code>#</code> · numbers: <code>42</code>, <code>0x2A</code>, <code>0b101010</code>, <code>-1</code>, <code>'A'</code> · constants: <code>MASK = 0x0F</code> or <code>.equ MASK 15</code>. The assembler reports out-of-range values, missing/extra operands, unknown labels and duplicate labels.<br>
+<b>Example:</b> <code>loop: IN; TST; JZ loop; OUT; HLT</code> – waits until a switch is on, shows it, stops.<br>
+<b>Workflow:</b> write code → <b>Upload &amp; restart</b> → flip P0–P7 → watch the LED bar. Your source text (with comments) is kept with the ROM.`;
+function pgRoms(){const L=[],walk=(cs,ch)=>cs.forEach(c=>{if(c.t=='M'&&c.k=='rom'&&c.p&&c.p.a==8&&c.p.w==13){c.__ch=ch;L.push(c)}else if(c.t=='IC'&&c.sub)walk(c.sub.cs,[...ch,c])});walk(sim.cs,[]);return L}
+function openPg(){const L=pgRoms();if(!L.length)return toast('No LL-8 on the board – load “Microcontroller LL-8” from Prebuilt circuits first');
+$('#pgt').innerHTML=L.map((c,i)=>`<option value="${i}">Program ROM #${i+1}${c.__ch.length?' (inside '+c.__ch.map(x=>esc(x.def)).join(' › ')+')':''}</option>`).join('');$('#pge').innerHTML='<option value="">Examples…</option>'+Object.keys(MEX).map(k=>`<option>${k}</option>`).join('');
+$('#pgd').innerHTML=MCUDOC;pgLoad();$('#pg').hidden=false}
+function pgLoad(){const c=pgRoms()[+$('#pgt').value||0];if(c){let t=null;try{if(c.asm&&disasm(asm(c.asm))==disasm(c.mem||[]))t=c.asm}catch(e){}$('#pgc').value=t!=null?t:disasm(c.mem||[])}$('#pgl').textContent=''}
+function pgUp(){const c=pgRoms()[+$('#pgt').value||0];if(!c)return;try{const txt=$('#pgc').value,w=asm(txt),pre=snapState();c.mem=w;c.asm=txt;const ch=c.__ch||[];if(ch.length){const d=lib[ch[ch.length-1].def],q=d&&d.comps.find(x=>x.id==c.id);if(q){q.mem=w.slice();q.asm=txt;saveLib()}}
+const clr=S=>S.cs.forEach(q=>{if(q.t=='M'&&q.k=='ram')q.mem=[];if(q.t=='IC'&&q.sub)clr(q.sub)});rstS(sim);clr(sim);stepSim();rec(pre);$('#pgl').textContent='✔ Uploaded '+w.length+' instruction(s) and restarted.'}catch(e){$('#pgl').textContent='✖ '+e.message}}
+function docEx(i){const k=Object.keys(MEX)[i];openPg();if($('#pg').hidden)return;$('#mcud').hidden=true;$('#pgc').value=MEX[k];$('#pgl').textContent='Example “'+k+'” loaded – press Upload & restart to run it.'}
+function openMD(){const ex=Object.keys(MEX).map((k,i)=>`<div class="row" style="margin:6px 0 0"><b>${esc(k)}</b><button onclick="docEx(${i})" style="margin-left:auto">Load in programmer</button></div><pre style="margin:2px 0 6px;user-select:all">${esc(MEX[k])}</pre>`).join('');
+$('#mcudc').innerHTML=`<b>Quick start</b><ol style="margin:4px 0 8px 18px;padding:0"><li>Sidebar → <i>Prebuilt circuits</i> → <b>Microcontroller LL-8</b>.</li><li>Click <b>🖥 MCU Programmer</b>, write code (or pick an example), press <b>⬆ Upload &amp; restart</b>.</li><li>Flip the <b>P0–P7</b> switches (input) and watch the <b>LED bar / hex digits</b> (output).</li></ol>`+MCUDOC+`<br><b>Example programs</b>`+ex;$('#mcud').hidden=false}
+const bit4=(f,n,k)=>Array.from({length:n},(_,i)=>f(i)).join('\n');
+const PRE=[
+{n:'Microcontroller LL-8 (blank echo)',d:'8-bit CPU with input switches P0-P7 and output port. Opens the programmer: write code, Upload.',mcu:1,s:()=>mcu(ECHO)},
+{n:'Microcontroller LL-8 – Fibonacci',d:'Same CPU running Fibonacci on the output port.',mcu:1,s:()=>mcu(FIB)},
+{n:'SR latch (NAND)',d:'Cross-coupled NANDs, active-low inputs: the basic memory cell.',s:()=>`part s SW s=1 name=Sbar
+part r SW s=1 name=Rbar
+part n1 NAND2
+part n2 NAND2
+part q "Green LED"
+part qn "Red LED"
+wire s.Q -> n1.A
+wire r.Q -> n2.B
+wire n1.Y -> n2.A q.D
+wire n2.Y -> n1.B qn.D
+label s "Sbar: SET input, active-low (0 sets Q=1)"
+label r "Rbar: RESET input, active-low (0 sets Q=0)"
+label q "Q output (green)"
+label qn "Q-bar output (red) = opposite of Q"`},
+{n:'Gated D latch (gates)',d:'D latch from 4 NAND gates + inverter. Transparent while EN=1.',s:()=>`part d SW name=D
+part e SW name=EN
+part nd NOT
+part g1 NAND2
+part g2 NAND2
+part q1 NAND2
+part q2 NAND2
+part q "Green LED"
+part qn "Red LED"
+wire d.Q -> nd.A g1.A
+wire e.Q -> g1.B g2.B
+wire nd.Y -> g2.A
+wire g1.Y -> q1.A
+wire g2.Y -> q2.B
+wire q2.Y -> q1.B qn.D
+wire q1.Y -> q2.A q.D
+label d "D: data input"
+label e "EN: 1 = transparent (Q follows D), 0 = hold"
+label q "Q output (green)"
+label qn "Q-bar output (red)"`},
+{n:'4-bit ripple adder (gates)',d:'Four 1-bit full-adder ICs chained. Switches A0-3, B0-3; set to 5 + 3 = 8.',s:()=>`define FA1
+  part a IN name=A
+  part b IN name=B
+  part ci IN name=Cin
+  part x1 XOR2
+  part x2 XOR2
+  part a1 AND2
+  part a2 AND2
+  part o1 OR2
+  part s OUT name=Sum
+  part co OUT name=Cout
+  wire a.Q -> x1.A a1.A
+  wire b.Q -> x1.B a1.B
+  wire x1.Y -> x2.A a2.A
+  wire ci.Q -> x2.B a2.B
+  wire x2.Y -> s.D
+  wire a1.Y -> o1.A
+  wire a2.Y -> o1.B
+  wire o1.Y -> co.D
+end
+part c0 LO
+${bit4(i=>`part a${i} SW name=A${i} s=${[1,0,1,0][i]}\npart b${i} SW name=B${i} s=${[1,1,0,0][i]}\npart fa${i} FA1\npart s${i} "Red LED"\nwire a${i}.Q -> fa${i}.A\nwire b${i}.Q -> fa${i}.B\nwire fa${i}.Sum -> s${i}.D\n`+(i?`wire fa${i-1}.Cout -> fa${i}.Cin`:'wire c0.Q -> fa0.Cin'),4)}
+part cout "Green LED"
+wire fa3.Cout -> cout.D
+${bit4(i=>`label a${i} \"A bit ${i}${i==0?' (LSB)':i==3?' (MSB)':''}\"\nlabel b${i} \"B bit ${i}\"\nlabel s${i} \"Sum bit ${i}\"`,4)}
+label c0 \"Cin = 0 (constant)\"
+label cout \"Carry out = bit 4 of the result\"`},
+{n:'4-bit ALU + hex display',d:'ALU macro: OP 0 add,1 sub,2 and,3 or,4 xor,5 not,6 shl,7 shr.',s:()=>`part alu M:alu n=4
+part hx "Hex display"
+part co "Green LED"
+part zr "Yellow LED"
+${bit4(i=>`part a${i} SW name=A${i}\npart b${i} SW name=B${i}\nwire a${i}.Q -> alu.A${i}\nwire b${i}.Q -> alu.B${i}\nwire alu.F${i} -> hx.D${i}`,4)}
+${bit4(i=>`part op${i} SW name=OP${i}\nwire op${i}.Q -> alu.OP${i}`,3)}
+wire alu.COUT -> co.D
+wire alu.ZERO -> zr.D
+${bit4(i=>`label a${i} \"A bit ${i}${i==0?' (LSB)':i==3?' (MSB)':''}\"\nlabel b${i} \"B bit ${i}\"`,4)}
+label op0 \"OP bit 0 (operation select, LSB)\"
+label op1 \"OP bit 1\"
+label op2 \"OP bit 2 (MSB): 0 add 1 sub 2 and 3 or 4 xor 5 not 6 shl 7 shr\"
+label hx \"F result (hex)\"
+label co \"COUT (green): carry / borrow out\"
+label zr \"ZERO (yellow): result is 0\"`},
+{n:'Traffic light controller',d:'Mod-6 counter + state ROM driving red / yellow / green LEDs.',s:()=>`part clk CLK
+part st "Mod-6 counter"
+part rom M:rom a=3 w=3
+part r "Red LED"
+part y "Yellow LED"
+part g "Green LED"
+wire clk.Q -> st.CK
+wire st.Q0..2 -> rom.A0..2
+wire rom.D0 -> r.D
+wire rom.D1 -> y.D
+wire rom.D2 -> g.D
+mem rom 4,4,4,2,1,1
+label clk "CLK: one step per tick (cycle of 6 ticks)"
+label r "RED - 2 ticks"
+label y "YELLOW - 1 tick"
+label g "GREEN - 3 ticks"`},
+{n:'Two-digit BCD counter 00-99',d:'Two decade counters chained with carry (TC → EN).',s:()=>`part clk CLK
+part u M:cnt n=4 m=up mod=10
+part t M:cnt n=4 m=up mod=10
+part du "Hex display"
+part dt "Hex display"
+wire clk.Q -> u.CK t.CK
+wire u.TC -> t.EN
+wire u.Q0..3 -> du.D0..3
+wire t.Q0..3 -> dt.D0..3
+label clk "CLK: counts 00 to 99"
+label du "units digit"
+label dt "tens digit"`},
+{n:'LED chaser + random LFSR',d:'8-bit Johnson counter and 8-bit LFSR pseudo-random generator.',s:()=>`part clk CLK
+part j "Johnson 8-bit"
+part l "LFSR 8-bit"
+part jb "LED bar 8"
+part lb "LED bar 8"
+wire clk.Q -> j.CK l.CK
+wire j.Q0..7 -> jb.L0..7
+wire l.Q0..7 -> lb.L0..7
+label clk "CLK input"
+label jb "Johnson counter: LED chaser"
+label lb "LFSR: pseudo-random bits"`}];
+function renderPre(){$('#pre').innerHTML=PRE.map((p,i)=>`<button class="pre" onclick="loadPre(${i})" title="${esc(p.d)}">${p.n}<small>${p.d}</small></button>`).join('')}
+function loadPre(i){if(DZ)return toast('Finish or cancel the IC designer first');const p=PRE[i];if(!p)return;const r=runScript(p.s(),{clear:true});if(!r.ok)alert(r.log.join('\n'));else{try{fitView(sim.cs)}catch(e){}toast('Loaded: '+p.n+' (replaced the board – Ctrl+Z to undo)');if(p.mcu)openPg()}}
+
+/* ---- inspector: internal structure of the clicked part ---- */
+function NL(){const cs=[];let id=1;const a=(t,o)=>{const c={id:id++,t,x:0,y:0,src:[],auto:1,...o};cs.push(c);return c},ref=q=>Array.isArray(q)?{id:q[0].id,o:q[1]}:{id:q.id,o:0};
+return{cs,a,g:(t,...s)=>{const c=a(t,t=='NOT'||t=='BUF'?{}:{n:s.length});s.forEach((q,i)=>c.src[i]=ref(q));return c},I:nm=>a('IN',{name:nm}),O:(nm,s)=>{const c=a('OUT',{name:nm});c.src[0]=ref(s);return c},ln:(d,i,s)=>{d.src[i]=ref(s)}}}
+const DESC={AND:'AND = a NAND stage followed by an inverter (CMOS: n PMOS in parallel + n NMOS in series, then NOT).',OR:'OR = a NOR stage followed by an inverter (CMOS: n PMOS in series + n NMOS in parallel, then NOT).',NAND:'CMOS: n PMOS transistors in parallel (pull-up) and n NMOS in series (pull-down).',NOR:'CMOS: n PMOS in series (pull-up) and n NMOS in parallel (pull-down).',NOT:'CMOS inverter: one PMOS (pull-up) + one NMOS (pull-down).',BUF:'Buffer = two inverters in a row.',XOR:'XOR built from 4 NAND gates.',XNOR:'XNOR = XOR (4 NANDs) followed by an inverter.',
+add:'Ripple-carry adder: one full adder per bit (2 XOR + 2 AND + 1 OR); the carry ripples up from bit 0.',incr:'Half-adder chain adding 1: each bit is XORed with the carry, the carry continues through AND gates.',mux:'Tree of 2:1 multiplexers (AND/OR/NOT); S0 chooses within pairs, S1 between pairs, …',dcd:'One AND gate per output compares the address bits (or their inverses); EN gates every output.',par:'Chain of XOR gates (odd parity adds a NOT).',b2g:'Gray bit i = B(i) XOR B(i+1); the top bit passes straight through.',g2b:'Binary bit i = B(i+1) XOR G(i): an XOR chain from the top bit down.',reg:'One D flip-flop per bit, all sharing the clock; captures D on the rising edge of CK.',tff:'D flip-flop whose D input is T XOR Q – toggles when T=1.',cnt:'D flip-flops + half-adder incrementer: D(i) = Q(i) XOR carry(i), carry(i+1) = Q(i) AND carry(i).',shr:'Chain of D flip-flops on one clock; every stage copies its neighbour on each rising edge.',rom:'Read-only memory: the address bits select one stored word (shown below, current address highlighted).',ram:'RAM: address selects a word; on a rising clock with WE=1 the data input is stored.',rf:'Register file: separate read and write addresses.',alu:'Behavioural block. OP: 0 add, 1 sub, 2 and, 3 or, 4 xor, 5 not A, 6 shift left, 7 shift right.',DFF:'Edge-triggered D flip-flop: Q takes D on the rising edge of CK.',JK:'JK flip-flop: J=K=1 toggles, J=1 sets, K=1 resets (on rising CK).',SW:'Switch: click it on the board to toggle.',NMOS:'N-channel transistor: conducts when gate G=1.',PMOS:'P-channel transistor: conducts when gate G=0.'};
+function inner(c){const t=c.t,N=NL(),{g,I,O,a,ln}=N,nm=pinNames(c),ins=[],inp=i=>ins[i]||(ins[i]=I(nm[0][i]||'i'+i)),xor2=(p,q)=>{const n1=g('NAND',p,q);return g('NAND',g('NAND',p,n1),g('NAND',q,n1))},F=[];let sync;
+if(G[t]){const n=spec(c).ni,x=Array.from({length:n},(_,i)=>inp(i));let y;
+if(t=='AND')y=g('NOT',g('NAND',...x));else if(t=='OR')y=g('NOT',g('NOR',...x));else if(t=='NAND'||t=='NOR')y=g(t,...x);else if(t=='NOT')y=g('NOT',x[0]);else if(t=='BUF')y=g('NOT',g('NOT',x[0]));else{y=x.reduce((p,q)=>xor2(p,q));if(t=='XNOR')y=g('NOT',y)}O('Y',y)}
+else if(t=='M'){const K=c.k,p=c.p,n=p.n,dff=()=>{const f=a('DFF');F.push(f);return f};
+if(K=='add'){let cy=inp(2*n);for(let i=0;i<n;i++){const A=inp(i),B=inp(n+i),x=xor2(A,B);O('S'+i,xor2(x,cy));cy=g('OR',g('AND',A,B),g('AND',x,cy))}O('COUT',cy)}
+else if(K=='incr'){let cy=a('HI');for(let i=0;i<n;i++){const A=inp(i);O('Y'+i,xor2(A,cy));cy=g('AND',A,cy)}O('COUT',cy)}
+else if(K=='mux'){if((2**p.k-1)*p.w>24)return null;const S=Array.from({length:p.k},(_,l)=>inp(2**p.k*p.w+l)),nS=S.map(q=>g('NOT',q));for(let b=0;b<p.w;b++){let L=Array.from({length:2**p.k},(_,j)=>inp(j*p.w+b));for(let l=0;l<p.k;l++){const N2=[];for(let j=0;j<L.length;j+=2)N2.push(g('OR',g('AND',L[j],nS[l]),g('AND',L[j+1],S[l])));L=N2}O(p.w>1?'Y'+b:'Y',L[0])}}
+else if(K=='dcd'){const A=Array.from({length:p.k},(_,i)=>inp(i)),en=inp(p.k),nA=A.map(q=>g('NOT',q));for(let j=0;j<2**p.k;j++)O('Y'+j,g('AND',en,...A.map((q,i)=>j>>i&1?q:nA[i])))}
+else if(K=='par'){let y=inp(0);for(let i=1;i<n;i++)y=xor2(y,inp(i));O('P',p.odd?g('NOT',y):y)}
+else if(K=='b2g'){for(let i=0;i<n;i++)O('G'+i,i<n-1?xor2(inp(i),inp(i+1)):g('BUF',inp(i)))}
+else if(K=='g2b'){const B=[];B[n-1]=g('BUF',inp(n-1));for(let i=n-2;i>=0;i--)B[i]=xor2(B[i+1],inp(i));B.forEach((q,i)=>O('B'+i,q))}
+else if(K=='reg'){for(let i=0;i<n;i++){const f=dff();ln(f,0,inp(i));ln(f,1,inp(n));O('Q'+i,f)}sync=()=>F.forEach((f,i)=>f.q=c.st>>i&1)}
+else if(K=='tff'){const f=dff();ln(f,0,xor2(inp(0),f));ln(f,1,inp(1));O('Q',f);O('QN',[f,1]);sync=()=>F[0].q=c.st|0}
+else if(K=='cnt'&&p.m=='up'&&!p.mod&&!p.ld){let cy=inp(2);for(let i=0;i<n;i++){const f=dff();ln(f,0,xor2(f,cy));ln(f,1,inp(0));cy=g('AND',f,cy);O('Q'+i,f)}O('TC',cy);sync=()=>F.forEach((f,i)=>f.q=c.st>>i&1)}
+else if(K=='shr'){for(let i=0;i<n;i++)dff();F.forEach((f,i)=>{const prv=p.left?F[i+1]:F[i-1],edge=p.left?i==n-1:i==0;ln(f,0,edge?inp(0):prv);ln(f,1,inp(1));O('Q'+i,f)});sync=()=>F.forEach((f,i)=>f.q=c.st>>i&1)}
+else return null}
+else return null;
+return{cs:N.cs,ins,sync}}
+function inspect(c){if(!$('#insOn').checked){insClose();return}if(PK)return;INS={c,stack:[],sim:null,feed:null,sync:null,fit:1,h:'',v:{x:0,y:0,z:1}};
+if(c.t=='IC')INS.stack=[c];else{let r=null;try{r=inner(c)}catch(e){}if(r){autoLay(r.cs,r.cs,0,0,190);INS.sim=mk(r.cs);INS.feed=()=>r.ins.forEach((q,i)=>{if(q)q.s=c.iv&&c.iv[i]?1:0});INS.sync=r.sync}}
+$('#insp').hidden=false}
+function insClose(){$('#insp').hidden=true;INS=null}
+const insCur=()=>INS.stack.length?INS.stack[INS.stack.length-1].sub:INS.sim;
+function insFit(){const S=insCur();if(!S||!S.cs.length)return;const q=bb(S.cs),w=$('#icv').clientWidth||500,h=300,zz=cl(Math.min((w-40)/(q.A-q.a||1),(h-40)/(q.B-q.b||1)),.05,3);INS.v={z:zz,x:(w-(q.A-q.a)*zz)/2-q.a*zz,y:(h-(q.B-q.b)*zz)/2-q.b*zz}}
+function memHTML(c){const p=c.p,A=c.k=='rf'?p.k:p.a,iv=c.iv||[],ad=c.k=='rf'?bv(iv,p.k,p.k):bv(iv,0,A),n=2**A,s0=Math.floor(ad/32)*32;let h='<table><tr><th>addr</th>'+Array.from({length:8},(_,i)=>`<th>+${i}</th>`).join('')+'</tr>';
+for(let r=s0;r<Math.min(n,s0+32);r+=8)h+=`<tr><th>${r}</th>`+Array.from({length:8},(_,i)=>{const x=r+i;return x>=n?'<td></td>':`<td${x==ad?' style="background:#ffd23f;color:#111"':''}>${(c.mem[x]||0).toString(16).toUpperCase().padStart(Math.ceil(p.w/4),'0')}</td>`}).join('')+'</tr>';
+return h+'</table>'+(n>32?`<small>addresses ${s0}–${Math.min(n,s0+32)-1} of ${n} (hex values)</small>`:'')}
+function insInfo(){const c=INS.c,S=insCur(),nm=pinNames(c),iv=c.iv||[],pv2=(a,b)=>a.slice(0,16).map((n,i)=>n+'='+(b[i]|0)).join(' ');
+const key=c.t=='M'?c.k:c.t,lab=c.t=='IC'?'IC '+c.def:c.lab||key;let h=`<b>${esc(lab)}</b> · in: ${esc(pv2(nm[0],iv))||'-'} | out: ${esc(pv2(nm[1],c.o))||'-'}<br>`;
+if(c.t=='IC')h+=`${S.cs.length} parts inside this IC (live view above). Click an IC inside to open it.`;else if(DESC[key])h+=esc(DESC[key]);else h+='Behavioural (simulated directly) – no gate-level netlist is drawn for this part.';
+if(c.t=='M'&&/^(rom|ram|rf)$/.test(c.k))h+=memHTML(c);return h}
+function drawIns(){const P=$('#insp');if(P.hidden||!INS)return;if(sim.map[INS.c.id]!==INS.c){insClose();return}
+const S=insCur(),cvs=$('#icv'),h=insInfo();if(h!==INS.h){INS.h=h;$('#iinfo').innerHTML=h}
+$('#itt').textContent='Inside: '+(INS.stack.length?INS.stack.map(x=>x.def).join(' › '):(INS.c.lab||INS.c.k||INS.c.t));$('#ibk').hidden=INS.stack.length<2;cvs.style.display=S?'block':'none';if(!S)return;
+if(INS.fit){insFit();INS.fit=0}if(INS.feed)INS.feed();if(INS.sync)INS.sync();if(!INS.stack.length)settle(S);
+const w=cvs.clientWidth,hh=cvs.clientHeight;if(cvs.width!==w*dpr||cvs.height!==hh*dpr){cvs.width=w*dpr;cvs.height=hh*dpr}
+const x=cvs.getContext('2d'),v=INS.v;ctx=x;try{x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,w,hh);x.setTransform(dpr*v.z,0,0,dpr*v.z,dpr*v.x,dpr*v.y);draw(S)}finally{ctx=mctx}}
+{const cvs=$('#icv');let d=null;cvs.addEventListener('pointerdown',e=>{if(!INS)return;d={x:e.clientX,y:e.clientY,vx:INS.v.x,vy:INS.v.y,m:0};cvs.setPointerCapture(e.pointerId)});
+cvs.addEventListener('pointermove',e=>{if(!d||!INS)return;const dx=e.clientX-d.x,dy=e.clientY-d.y;if(Math.hypot(dx,dy)>3)d.m=1;INS.v.x=d.vx+dx;INS.v.y=d.vy+dy});
+cvs.addEventListener('pointerup',e=>{if(!d||!INS)return;const m=d.m;d=null;if(m)return;const r=cvs.getBoundingClientRect(),p={x:(e.clientX-r.left-INS.v.x)/INS.v.z,y:(e.clientY-r.top-INS.v.y)/INS.v.z},S=insCur();if(!S)return;
+for(let q=S.cs.length-1;q>=0;q--){const c=S.cs[q],s=spec(c);if(p.x>=c.x&&p.x<=c.x+s.w&&p.y>=c.y&&p.y<=c.y+s.h){if(c.t=='IC'&&c.sub){INS.stack.push(c);INS.fit=1}else if(c.t=='SW'&&INS.stack.length){c.s=c.s?0:1;const d=lib[INS.stack[INS.stack.length-1].def],q=d&&d.comps.find(x=>x.id==c.id);if(q){q.s=c.s;saveLib()}}break}}});
+cvs.addEventListener('wheel',e=>{e.preventDefault();if(!INS)return;const r=cvs.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,f=e.deltaY<0?1.15:1/1.15,v=INS.v,nz=cl(v.z*f,.03,50);v.x=mx-(mx-v.x)*nz/v.z;v.y=my-(my-v.y)*nz/v.z;v.z=nz},{passive:false})}
+
+/* ---- AI helpers ---- */
+function copyTxt(t){let p;try{p=navigator.clipboard.writeText(t)}catch(e){}return Promise.resolve(p).then(()=>true).catch(()=>{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand('copy')}catch(e){}a.remove();return ok})}
+function copyPrompt(){const q=$('#aiq').value.trim();if(!q)return toast('Describe the circuit first');copyTxt(aiDocs()+'\n\n# TASK\nBuild this circuit and answer with ONLY a LogicLab script (no markdown, no explanation). End with expect/table lines that verify it.\n'+q).then(ok=>toast(ok?'Copied – paste it into your AI, then paste the answer here and press Run':'Copy failed – use "AI documentation" and copy manually'))}
+
+/* ---------- boot ---------- */
+try{lib=JSON.parse(localStorage.getItem('ll_lib')||'null')||{}}catch(e){lib={}}
+let ws=[];try{ws=JSON.parse(localStorage.getItem('ll_ws')||'[]')}catch(e){}
+ws=ws.filter(c=>c.t!='IC'||lib[c.def]);sim=mk(ws);uid=Math.max(0,...ws.map(c=>c.id))+1;
+pal();renderLib();renderPre();rs();requestAnimationFrame(frame);
+</script></body></html>
