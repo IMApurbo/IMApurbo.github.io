@@ -304,7 +304,7 @@ s=s.replace(new RegExp('(^|\\n)[ \\t]*(?:static\\s+|inline\\s+)*(?:void|'+TY+')[
 s=s.replace(/\bfunction\s+(\w+)\s*\(/g,(m,nn)=>{fns.add(nn);return 'function* '+nn+'('});
 s=s.replace(new RegExp('\\b(?:'+TY+')\\b[\\s*&]+(\\w+)\\s*\\[[^\\]]*\\]\\s*=\\s*\\{([^{}]*)\\}','g'),'let $1=[$2]');
 s=s.replace(new RegExp('\\b(?:'+TY+')\\b[\\s*&]+(\\w+)\\s*\\[([^\\]]*)\\]\\s*;','g'),'let $1=new Array($2||0).fill(0);');
-s=s.replace(/\b(Servo|DHT|LiquidCrystal_I2C|LiquidCrystal|NewPing)\s+(\w+)\s*(?:\(([^)]*)\))?\s*;/g,(m,T,nn,a)=>'let '+nn+'='+T+'('+(a||'')+');');
+s=s.replace(/\b(Servo|DHT|LiquidCrystal_I2C|LiquidCrystal|NewPing|Adafruit_NeoPixel)\s+(\w+)\s*(?:\(([^)]*)\))?\s*;/g,(m,T,nn,a)=>'let '+nn+'='+T+'('+(a||'')+');');
 s=s.replace(new RegExp('\\((?:\\s*)(?:'+TY+')\\s*\\*?\\s*\\)','g'),'');
 s=s.replace(new RegExp('\\b(?:const\\s+|volatile\\s+|static\\s+)*(?:'+INTT+')\\b\\s+(\\w+)\\s*=\\s*([^;]*\\/[^;]*);','g'),(m,nn,ex)=>{let d=0,top=false;for(const ch of ex){if(ch=='(')d++;else if(ch==')')d--;else if(ch==','&&!d)top=true}return top?'let '+nn+'='+ex+';':'let '+nn+'=Math.trunc('+ex+');'});
 s=s.replace(new RegExp('\\b(?:'+TY+')\\b[\\s*&]+(?=[A-Za-z_])','g'),'let ');
@@ -359,7 +359,7 @@ catch(e){cp.err=e.message;cps(cp,'[compile error] '+e.message+'\n');cp.gen=null}
 function mcuTick(s,now){for(const c of s.cs){if(c.t=='M'&&KS[c.k].cpu){if(!c.code)continue;c.sim_=s;const cp=cpuOf(c);if(!cp.gen&&!cp.err&&!cp.off)mcuStart(c);if(!cp.gen)continue;
 if(cp.tt.length)cp.tt=cp.tt.filter(q=>{if(cp.vt>=q.end){cp.vl[q.i]=0;cp.tn[q.i]=0;return false}return true});
 const target=(now-cp.t0)*MSPD,w0=performance.now();
-try{while(cp.vt<=target&&performance.now()-w0<4){const r=cp.gen.next();if(r.done){cp.gen=null;cps(cp,'[program finished]\n');break}if(cp.lsv==null||cp.vt-cp.lsv>=.5){cp.lsv=cp.vt;settle(sim);povAdd(sim)}}}
+try{while(cp.vt<=target&&performance.now()-w0<4){const r=cp.gen.next();if(r.done){cp.gen=null;cps(cp,'[program finished]\n');break}if(cp.lsv==null||cp.vt-cp.lsv>=.5){cp.lsv=cp.vt;settle(sim);MCUT=cp.vt;povAdd(sim)}}}
 catch(e){cp.err=e.message;cp.gen=null;cps(cp,'[runtime error] '+e.message+'\n')}
 if(cp.gen&&target-cp.vt>200)cp.t0=now-cp.vt/MSPD}else if(c.t=='IC'&&c.sub)mcuTick(c.sub,now)}}
 function povAdd(s){for(const c of s.cs){if(c.t=='RGB'&&c.lc){c.pa=c.pa||[0,0,0];c.lc.forEach((x,i)=>c.pa[i]+=x);c.pn=(c.pn||0)+1}else if(c.t=='LED'&&c.lv!=null){c.pa=c.pa||[0];c.pa[0]+=c.lv;c.pn=(c.pn||0)+1}}}
@@ -882,7 +882,7 @@ function rpin(c,k,tk,id){const L=pinNames(c)[k],n=np(tk),sp=spec(c);let i=L.find
 function ex(tk){const j=tk.indexOf('.'),id=j<0?tk:tk.slice(0,j);if(j<0)return[{id,pin:null}];const pn=tk.slice(j+1),m=pn.match(/^([A-Za-z_]*)(\d+)\.\.(\d+)$/);if(!m)return[{id,pin:pn}];const a=+m[2],b=+m[3],o=[];for(let k=a;a<=b?k<=b:k>=b;k+=a<=b?1:-1)o.push({id,pin:m[1]+k});return o}
 const RES=['x','y','name','lab','color','s','w','h','val','val2','th'];
 function mkComp(type,kv){let c,p={};const T=type.toUpperCase();
-if(/^m:/i.test(type)){const k=type.slice(2);if(!KS[k])throw new Error('unknown macro kind "'+k+'". Kinds: '+Object.keys(KS).join(', '));Object.keys(kv).forEach(a=>{if((!RES.includes(a)||(a=='w'&&/^(mux|rom|ram|rf)$/.test(k)))&&a!='n_')p[a]=kv[a]});c={t:'M',k,p}}
+if(/^m:/i.test(type)){const k=type.slice(2);if(!KS[k])throw new Error('unknown macro kind "'+k+'". Kinds: '+Object.keys(KS).join(', '));Object.keys(kv).forEach(a=>{if((!RES.includes(a)||(a=='w'&&/^(mux|rom|ram|rf|stack|fifo)$/.test(k)))&&a!='n_')p[a]=kv[a]});c={t:'M',k,p}}
 else if(lib[type])c={t:'IC',def:type};
 else if(G[T]||RAW.includes(T)){c={t:T};if(G[T]&&kv.n!=null)c.n=kv.n}
 else{const q=nm1(type),e=CAT.find(e=>nm1(e.n)==q);if(!e)throw new Error('unknown component "'+type+'". Similar: '+(CAT.filter(e=>nm1(e.n).includes(q.slice(0,4))||q.includes(nm1(e.n))).slice(0,6).map(e=>'"'+e.n+'"').join(', ')||'(none – see the documentation list)'));
@@ -1442,6 +1442,595 @@ cvs.addEventListener('wheel',e=>{e.preventDefault();if(!INS)return;const r=cvs.g
 /* ---- AI helpers ---- */
 function copyTxt(t){let p;try{p=navigator.clipboard.writeText(t)}catch(e){}return Promise.resolve(p).then(()=>true).catch(()=>{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand('copy')}catch(e){}a.remove();return ok})}
 function copyPrompt(){const q=$('#aiq').value.trim();if(!q)return toast('Describe the circuit first');copyTxt(aiDocs()+'\n\n# TASK\nBuild this circuit and answer with ONLY a LogicLab script (no markdown, no explanation). End with expect/table lines that verify it.\n'+q).then(ok=>toast(ok?'Copied – paste it into your AI, then paste the answer here and press Run':'Copy failed – use "AI documentation" and copy manually'))}
+
+/* ================= v4: memory / storage devices + graphical editors ================= */
+const h4=(x,n)=>(x>>>0).toString(16).toUpperCase().padStart(n||1,'0');
+const MEMK=/^(rom|ram|rf|stack|fifo)$/;
+const m4t=c=>String(c.lab||(c.t=='M'?(KS[c.k].lb?KS[c.k].lb(c.p):c.k):c.t)).replace(/\s*\(.*\)/,'');
+
+/* ---- new kinds ---- */
+Object.assign(KS,{
+regen:{lb:p=>p.n+'-bit register + enable',i:p=>[...Bn(p.n,'D'),'EN','CK','RST'],o:p=>Bn(p.n,'Q'),ck:p=>p.n+1,rs:p=>p.n+2,dv:{EN:1},nx:(v,c,p)=>v[p.n]?bv(v,0,p.n):c.st,out:(v,c,p)=>nb(c.st,p.n)},
+stack:{lb:p=>`Stack ${2**p.a}×${p.w}`,i:p=>[...Bn(p.w,'D'),'PUSH','POP','CK','RST'],o:p=>[...Bn(p.w,'Q'),'EMPTY','FULL'],ck:p=>p.w+2,rs:p=>p.w+3,init:()=>({sp:0}),
+ nx:(v,c,p)=>{const N=2**p.a,w=p.w,d=bv(v,0,w),s=c.st;if(v[w]&&v[w+1]){if(s.sp>0)c.mem[s.sp-1]=d}else if(v[w]){if(s.sp<N){c.mem[s.sp]=d;s.sp++}}else if(v[w+1]){if(s.sp>0)s.sp--}return s},
+ out:(v,c,p)=>{const s=c.st,N=2**p.a;return[...nb(s.sp>0?(c.mem[s.sp-1]||0):0,p.w),+(s.sp==0),+(s.sp>=N)]}},
+fifo:{lb:p=>`FIFO ${2**p.a}×${p.w}`,i:p=>[...Bn(p.w,'D'),'WR','RD','CK','RST'],o:p=>[...Bn(p.w,'Q'),'EMPTY','FULL'],ck:p=>p.w+2,rs:p=>p.w+3,init:()=>({h:0,t:0,n:0}),
+ nx:(v,c,p)=>{const N=2**p.a,w=p.w,s=c.st;if(v[w+1]&&s.n>0){s.h=(s.h+1)%N;s.n--}if(v[w]&&s.n<N){c.mem[s.t]=bv(v,0,w);s.t=(s.t+1)%N;s.n++}return s},
+ out:(v,c,p)=>{const s=c.st,N=2**p.a;return[...nb(s.n>0?(c.mem[s.h]||0):0,p.w),+(s.n==0),+(s.n>=N)]}},
+ascd:{lb:()=>'ASCII display',nolab:1,i:()=>Bn(8,'D'),o:()=>[],out:()=>[],sz:()=>[100,170],
+ draw:(c,x,y,w,h,v)=>{const u=bv(v,0,8),ch=u>=32&&u<127?String.fromCharCode(u):'·';tl(x,y,w,'ASCII display',9);for(let i=0;i<8;i++){const py=y+h*(i+1)/9;ctx.beginPath();ctx.arc(x+34,py,4,0,7);ctx.fillStyle=v[i]?'#ff3b3b':'rgba(128,128,128,.3)';ctx.fill()}
+  ctx.fillStyle=C.t;ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 40px ui-monospace,Menlo,monospace';ctx.fillText(ch,x+w/2+14,y+h/2-6);ctx.font='11px ui-monospace,Menlo,monospace';ctx.fillText(u+' / 0x'+h4(u,2),x+w/2+14,y+h-16)}}
+});
+/* number input (clickable bit boxes) + decimal display, 4/8/12/16 bits */
+function ninDraw(c,x,y,w,h){const n=KS[c.k].nin,m=2**n,val=(((c.val|0)%m)+m)%m;tl(x,y,w,'Number input',8);
+ for(let i=0;i<n;i++){const py=y+h*(i+1)/(n+1),on=(val>>i)&1;ctx.fillStyle=on?'#ffd23f':'rgba(128,128,128,.25)';ctx.fillRect(x+w/2-14,py-7,28,14);ctx.strokeStyle=C.b;ctx.lineWidth=1;ctx.strokeRect(x+w/2-14,py-7,28,14);ctx.fillStyle=on?'#111':C.t;ctx.font='bold 10px ui-monospace,Menlo,monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(on?'1':'0',x+w/2,py)}
+ ctx.fillStyle=C.t;ctx.font='11px ui-monospace,Menlo,monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(val+'  0x'+h4(val,Math.ceil(n/4)),x+w/2,y+h-9)}
+function ninHit(c,p){const n=KS[c.k].nin,sp=spec(c),i=Math.round((p.y-c.y)/sp.h*(n+1))-1;if(i<0||i>=n)return -1;const py=c.y+sp.h*(i+1)/(n+1);return Math.abs(p.y-py)<8&&Math.abs(p.x-(c.x+sp.w/2))<16?i:-1}
+function ddDraw(c,x,y,w,h,v){const n=KS[c.k].dd,u=bv(v,0,n),s=u>=2**(n-1)?u-2**n:u;tl(x,y,w,'Decimal display',8);
+ for(let i=0;i<n;i++){const py=y+h*(i+1)/(n+1);ctx.beginPath();ctx.arc(x+34,py,4,0,7);ctx.fillStyle=v[i]?'#ff3b3b':'rgba(128,128,128,.3)';ctx.fill()}
+ ctx.fillStyle=C.t;ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 22px ui-monospace,Menlo,monospace';ctx.fillText(u,x+w/2+16,y+h/2-14);ctx.font='11px ui-monospace,Menlo,monospace';ctx.fillText('signed '+s,x+w/2+16,y+h/2+8);ctx.fillText('0x'+h4(u,Math.ceil(n/4)),x+w/2+16,y+h/2+24)}
+[4,8,12,16].forEach(n=>{
+ KS['nin'+n]={lb:()=>'Number input '+n+'-bit',nin:n,nolab:1,i:()=>[],o:()=>Bn(n,'Q'),out:(v,c)=>nb((((c.val|0)%2**n)+2**n)%2**n,n),sz:()=>[120,n*18+40],draw:ninDraw,click:(c,p)=>{const i=ninHit(c,p);if(i<0)return false;const m=2**n;c.val=((((c.val|0)%m)+m)%m)^(1<<i);return true}};
+ KS['dd'+n]={lb:()=>'Decimal display '+n+'-bit',dd:n,nolab:1,i:()=>Bn(n,'D'),o:()=>[],out:()=>[],sz:()=>[130,n*18+40],draw:ddDraw}});
+
+/* ---- memory contents drawn on the part itself ---- */
+function m4Info(c,v){const p=c.p,k=c.k;if(k=='rom'||k=='ram')return{ad:bv(v,0,p.a),n:2**p.a};if(k=='rf')return{ad:bv(v,p.k,p.k),n:2**p.k};const s=c.st||{};if(k=='stack')return{ad:Math.max(0,(s.sp|0)-1),n:2**p.a,foot:'size = '+(s.sp|0)+' / '+2**p.a+'  (top highlighted)'};return{ad:s.h|0,n:2**p.a,foot:'count = '+(s.n|0)+' / '+2**p.a+'  (front highlighted)'}}
+function memDraw(c,x,y,w,h,v){const p=c.p,I=m4Info(c,v||[]),dg=Math.ceil(p.w/4),cols=dg>2?2:4,per=cols*4,st=Math.floor(I.ad/per)*per,cw=(w-64)/cols;
+ ctx.fillStyle=C.t;ctx.font='bold 10px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(m4t(c),x+w/2,y+10);
+ ctx.font='10px ui-monospace,Menlo,monospace';
+ for(let r=0;r<per;r++){const a=st+r;if(a>=I.n)break;const cx=x+32+(r%cols)*cw,cy=y+25+Math.floor(r/cols)*14,val=c.mem[a]||0,hit=a==I.ad;
+  if(hit){ctx.fillStyle='#ffd23f';ctx.fillRect(cx+1,cy-6,cw-2,13)}
+  ctx.fillStyle=hit?'#111':(val?C.t:'rgba(128,128,128,.7)');ctx.textAlign='center';ctx.fillText(h4(val,dg),cx+cw/2,cy)}
+ ctx.fillStyle=C.t;ctx.font='9px system-ui';ctx.textAlign='center';ctx.fillText(I.foot||('addr '+I.ad+' = 0x'+h4(c.mem[I.ad]||0,dg)),x+w/2,y+h-18);ctx.fillStyle='#4aa3ff';ctx.fillText('double-click to edit contents',x+w/2,y+h-7)}
+['rom','ram','rf','stack','fifo'].forEach(k=>{const K=KS[k];K.nolab=1;K.draw=memDraw;K.sz=p=>[170,Math.max(112,Math.max(K.i(p).length,K.o(p).length)*16+22)];if(!K.lb)K.lb=p=>k.toUpperCase()+' '+2**(p.a!=null?p.a:p.k)+'×'+p.w});
+
+/* ---- catalogue ---- */
+[4,8,16].forEach(n=>EM('Registers',n+'-bit register with enable','regen',{n}));
+EM('Memory','Stack (LIFO) 8×4','stack',{a:3,w:4});EM('Memory','Stack (LIFO) 16×8','stack',{a:4,w:8});
+EM('Memory','FIFO queue 8×4','fifo',{a:3,w:4});EM('Memory','FIFO queue 16×8','fifo',{a:4,w:8});
+[[2,4],[4,16],[8,16],[10,8]].forEach(([a,w])=>{EM('Memory',`ROM ${2**a}×${w} (dbl-click to edit)`,'rom',{a,w});EM('Memory',`RAM ${2**a}×${w}`,'ram',{a,w})});
+[4,8,12,16].forEach(n=>EM('Inputs',`Number input ${n}-bit (click bits / slider)`,'nin'+n,{}));
+[4,8,12,16].forEach(n=>EM('Outputs / Displays',`Decimal display ${n}-bit`,'dd'+n,{}));
+EM('Outputs / Displays','ASCII display','ascd',{});
+
+/* ---- UI scaffolding ---- */
+document.head.insertAdjacentHTML('beforeend','<style>#vq{position:absolute;right:10px;bottom:34px;width:310px;background:var(--p);border:1px solid var(--b);border-radius:10px;padding:8px;z-index:3;box-shadow:0 6px 24px #0005}#vq[hidden]{display:none}#vq small{display:block;opacity:.7;margin-top:4px}.vqb button{width:22px;padding:2px 0;margin:1px;text-align:center}.mg{display:grid;gap:2px;align-items:center;max-height:44vh;overflow:auto;font:12px ui-monospace,Menlo,monospace}.ma{opacity:.55;padding-right:6px}.mc{padding:1px 3px;text-align:center;font:inherit}.mc.mlive{background:#ffd23f;color:#111}.mc.msel{outline:2px solid #4aa3ff}#mebits button{width:24px;padding:2px 0;text-align:center}</style>');
+$('#main').insertAdjacentHTML('beforeend','<div id="vq" hidden></div>');
+document.body.insertAdjacentHTML('beforeend',`<div id="me" class="box" hidden style="position:fixed;z-index:11;top:3%;left:50%;transform:translateX(-50%);width:min(940px,97vw)">
+<div class="row"><b id="met">Memory</b><small id="mes"></small><label>Show as <select id="meb"><option value="16">hex</option><option value="10">decimal</option><option value="2">binary</option></select></label><label>Block <select id="mep"></select></label><label>Go to <input id="mego" size="6" placeholder="addr"></label><button id="mego2">Go</button><label><input type="checkbox" id="mef" checked> follow live address</label><button id="mex" style="margin-left:auto">Close</button></div>
+<div id="megrid"></div>
+<div class="row"><b>Selected</b><span id="mei"></span></div><div class="row vqb" id="mebits"></div>
+<div class="row"><select id="mepre"><option value="">Fill all with…</option><option value="ramp">ramp 0,1,2…</option><option value="rev">reverse ramp</option><option value="sine">sine wave</option><option value="tri">triangle wave</option><option value="sq">square wave</option><option value="rand">random</option><option value="pop">bit count</option><option value="gray">Gray code</option><option value="seg7">7-segment font (hex digits)</option><option value="text">ASCII text…</option></select><label>or value <input id="mefv" size="6" value="0"></label><button id="mefill">Fill all</button><button id="meclr">Clear all</button></div>
+<div class="row"><button id="meexp">Export to box</button><button id="meimp">Import from box</button><button id="medl">Download .txt</button><label>Load file <input type="file" id="mefile"></label></div>
+<textarea id="meta" rows="4" style="width:100%;box-sizing:border-box;font:12px ui-monospace,Menlo,monospace" placeholder="numbers (decimal, 0x hex, 0b binary) separated by spaces, commas or new lines; for an LL-8 program ROM you can also paste assembly"></textarea><small id="mem_"></small></div>`);
+
+/* ---- graphical memory editor ---- */
+let ME=null;
+const meDg=()=>Math.ceil(ME.c.p.w/4);
+const meFmt=v=>ME.base==16?h4(v,meDg()):ME.base==2?v.toString(2).padStart(ME.c.p.w,'0'):String(v);
+function meParse(s,b){s=String(s).trim();if(!s)return NaN;if(/^0x[0-9a-f]+$/i.test(s))return parseInt(s,16);if(/^0b[01]+$/i.test(s))return parseInt(s.slice(2),2);b=b||ME.base;const re=b==16?/^[0-9a-f]+$/i:b==2?/^[01]+$/:/^\d+$/;return re.test(s)?parseInt(s,b):NaN}
+function openMem(c){if(!c||!c.mem||c.t!='M'||!MEMK.test(c.k))return;const p=c.p;ME={c,base:16,page:0,sel:0,A:c.k=='rf'?p.k:p.a,lastv:null};ME.n=2**ME.A;ME.pages=Math.max(1,ME.n/256);const al=Math.ceil(ME.A/4);
+ $('#met').textContent=m4t(c)+' – contents';$('#mes').textContent=ME.n+' words × '+p.w+' bits';$('#meb').value='16';
+ $('#mep').innerHTML=Array.from({length:ME.pages},(_,i)=>`<option value="${i}">${h4(i*256,al)}–${h4(Math.min(ME.n,i*256+256)-1,al)}</option>`).join('');$('#mepre').value='';$('#me').hidden=false;meBuild();meSel(0)}
+function meClose(){ME=null;$('#me').hidden=true}
+function meBuild(){const c=ME.c,p=c.p,b=ME.base,dg=meDg(),w=p.w;ME.cols=b==16?(dg>2?8:16):b==10?8:(w>8?4:8);
+ const s0=ME.page*256,e0=Math.min(ME.n,s0+256),len=b==16?dg:b==2?w:String(2**w-1).length,al=Math.ceil(ME.A/4);
+ let h=`<div class="mg" style="grid-template-columns:auto repeat(${ME.cols},max-content)">`;
+ for(let a=s0;a<e0;a++){if((a-s0)%ME.cols==0)h+=`<span class="ma">${h4(a,al)}</span>`;h+=`<input class="mc" data-a="${a}" style="width:${len+1.6}ch" value="${meFmt(c.mem[a]||0)}">`}
+ $('#megrid').innerHTML=h+'</div>';$('#mep').value=ME.page}
+function meSel(a){const c=ME.c,w=c.p.w,v=c.mem[a]||0,al=Math.ceil(ME.A/4);ME.sel=a;ME.lastv=v;
+ $('#mebits').innerHTML=Array.from({length:w},(_,k)=>{const i=w-1-k,on=Math.floor(v/2**i)%2;return`<button data-b="${i}" class="${on?'on':''}" title="bit ${i}">${on}</button>`}).join('');
+ let t=`addr ${a} (0x${h4(a,al)}) = ${v} · 0x${h4(v,meDg())} · 0b${v.toString(2).padStart(w,'0')}`;
+ if(c.k=='rom'&&c.p.a==8&&w==13){const op=OPS[v>>8]||'NOP';t+=' · '+(NOARG.includes(op)?op:op+' '+(v&255))}
+ $('#mei').textContent=t;const e=$('#megrid').querySelector('.mc[data-a="'+a+'"]');if(e&&e.value!==meFmt(v)&&document.activeElement!==e)e.value=meFmt(v)}
+$('#megrid').addEventListener('change',e=>{const t=e.target;if(!ME||!t.classList.contains('mc'))return;const a=+t.dataset.a,v=meParse(t.value),M=2**ME.c.p.w;if(isNaN(v)){t.value=meFmt(ME.c.mem[a]||0);return toast('Not a valid number for this display mode')}
+ const pre=snapState();ME.c.mem[a]=v%M;rec(pre);t.value=meFmt(ME.c.mem[a]);meSel(a)});
+$('#megrid').addEventListener('focusin',e=>{if(ME&&e.target.classList.contains('mc'))meSel(+e.target.dataset.a)});
+$('#mebits').addEventListener('click',e=>{const b=e.target.closest('button');if(!ME||!b)return;const c=ME.c,a=ME.sel,i=+b.dataset.b,v=c.mem[a]||0,on=Math.floor(v/2**i)%2,pre=snapState();c.mem[a]=on?v-2**i:v+2**i;rec(pre);const q=$('#megrid').querySelector('.mc[data-a="'+a+'"]');if(q)q.value=meFmt(c.mem[a]);meSel(a)});
+$('#meb').onchange=()=>{if(ME){ME.base=+$('#meb').value;meBuild();meSel(ME.sel)}};
+$('#mep').onchange=()=>{if(ME){ME.page=+$('#mep').value;meBuild();meSel(ME.page*256)}};
+function meGo(){if(!ME)return;let a=meParse($('#mego').value,10);if(isNaN(a)||a<0||a>=ME.n)return toast('Address must be 0…'+(ME.n-1));ME.page=Math.floor(a/256);meBuild();meSel(a);const q=$('#megrid').querySelector('.mc[data-a="'+a+'"]');if(q){q.scrollIntoView({block:'center'});q.focus()}}
+$('#mego2').onclick=meGo;$('#mego').onkeydown=e=>{if(e.key=='Enter')meGo()};$('#mex').onclick=meClose;
+function meSetWords(words,note){const c=ME.c,M=2**c.p.w,pre=snapState();c.mem=words.slice(0,ME.n).map(x=>((x%M)+M)%M);rec(pre);meBuild();meSel(Math.min(ME.sel,ME.n-1));toast(note||('Wrote '+Math.min(words.length,ME.n)+' words'))}
+const MEP={ramp:(a,N,M)=>a%M,rev:(a,N,M)=>(N-1-a)%M,sine:(a,N,M)=>Math.round((Math.sin(2*Math.PI*a/N)+1)/2*(M-1)),tri:(a,N,M)=>Math.round((a<N/2?a/(N/2):(N-a)/(N/2))*(M-1)),sq:(a,N,M)=>a<N/2?M-1:0,rand:(a,N,M)=>Math.floor(Math.random()*M),pop:(a,N,M)=>{let x=a,k=0;while(x){k+=x&1;x=Math.floor(x/2)}return k%M},gray:(a,N,M)=>(a^(a>>1))%M,seg7:(a,N,M)=>a<16?[...HEX[a]].reduce((s,ch,i)=>s+(ch=='1'?2**i:0),0)%M:0};
+$('#mepre').onchange=function(){const k=this.value;this.value='';if(!ME||!k)return;const N=ME.n,M=2**ME.c.p.w;let w;
+ if(k=='text'){const t=prompt('Text to store, one ASCII code per address:','Hello, LogicLab!');if(t==null)return;w=[...t].map(ch=>ch.charCodeAt(0))}else w=Array.from({length:N},(_,a)=>MEP[k](a,N,M));
+ meSetWords(w,'Filled with '+k)};
+$('#mefill').onclick=()=>{if(!ME)return;const v=meParse($('#mefv').value,10);if(isNaN(v))return toast('Value must be a number (decimal, 0x… or 0b…)');meSetWords(Array(ME.n).fill(v),'Filled with '+v)};
+$('#meclr').onclick=()=>{if(ME)memClear(ME.c)};
+function memClear(c){const pre=snapState(),K=KS[c.k];c.mem=[];if(K.init)c.st=K.init(c.p);rec(pre);if(ME&&ME.c===c){meBuild();meSel(ME.sel)}}
+function meExport(){const c=ME.c,dg=meDg();let last=ME.n;while(last>0&&!(c.mem[last-1]|0))last--;const o=[];for(let a=0;a<last;a+=8)o.push(Array.from({length:Math.min(8,last-a)},(_,i)=>'0x'+h4(c.mem[a+i]||0,dg)).join(' '));$('#meta').value=o.join('\n')||'0x'+h4(0,dg)}
+function meImport(txt){const c=ME.c,p=c.p;let w;const tk=txt.split(/[\s,;]+/).filter(Boolean);
+ if(tk.length&&tk.every(x=>/^(0x[0-9a-f]+|0b[01]+|\d+)$/i.test(x)))w=tk.map(Number);
+ else if(c.k=='rom'&&p.a==8&&p.w==13){w=asm(txt);c.asm=txt}
+ else throw new Error('Expected numbers (decimal, 0x hex, 0b binary) separated by spaces, commas or new lines');
+ meSetWords(w,'Loaded '+Math.min(w.length,ME.n)+' words'+(w.length>ME.n?' ('+(w.length-ME.n)+' did not fit)':''))}
+$('#meexp').onclick=()=>{if(ME)meExport()};
+$('#meimp').onclick=()=>{if(ME)try{meImport($('#meta').value)}catch(e){$('#mem_').textContent='✖ '+e.message}};
+$('#medl').onclick=()=>{if(!ME)return;meExport();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([$('#meta').value],{type:'text/plain'}));a.download='memory.txt';a.click()};
+$('#mefile').onchange=function(){const f=this.files[0];this.value='';if(!f||!ME)return;f.arrayBuffer().then(buf=>{const u=new Uint8Array(buf);let t='';try{t=new TextDecoder('utf-8',{fatal:true}).decode(u)}catch(e){}
+ if(t&&/^[\s0-9a-fx,;]+$/i.test(t)){$('#meta').value=t;try{meImport(t)}catch(e){$('#mem_').textContent='✖ '+e.message}}
+ else{const w=[];if(ME.c.p.w<=8)u.forEach(b=>w.push(b));else for(let i=0;i<u.length;i+=2)w.push(u[i]|(u[i+1]||0)<<8);meSetWords(w,'Loaded '+u.length+' bytes from file')}})};
+setInterval(()=>{if(!ME||$('#me').hidden)return;const c=ME.c;if(sim.map[c.id]!==c){meClose();return}
+ const ad=m4Info(c,c.iv||[]).ad,pg=Math.floor(ad/256);if($('#mef').checked&&ME.n>256&&pg!==ME.page){ME.page=pg;meBuild();meSel(ME.sel)}
+ const act=document.activeElement;document.querySelectorAll('#megrid .mc').forEach(i=>{const a=+i.dataset.a;if(i!==act){const t=meFmt(c.mem[a]||0);if(i.value!==t)i.value=t}i.classList.toggle('mlive',a==ad);i.classList.toggle('msel',a==ME.sel)});
+ if((c.mem[ME.sel]||0)!==ME.lastv)meSel(ME.sel)},200);
+$('#main').addEventListener('dblclick',e=>{if(e.target!==cv)return;const c=hitComp(W2(e));if(c&&c.t=='M'&&MEMK.test(c.k)){e.stopPropagation();e.preventDefault();openMem(c)}},true);
+$('#main').addEventListener('pointerdown',e=>{if(e.button||e.target!==cv||PK||drag)return;const p=W2(e);if(hitPin(p))return;const c=hitComp(p);if(c&&c.t=='M'&&KS[c.k].click){const pre=snapState();if(KS[c.k].click(c,p)){e.stopPropagation();e.preventDefault();sel=c;sels=new Set([c]);rec(pre)}}},true);
+
+/* ---- graphical editor for values held inside registers / counters / number inputs ---- */
+function stOf(c){if(!c)return null;const t=c.t;if(t=='DFF'||t=='JK')return{n:1,get:()=>c.q|0,set:v=>c.q=v&1};if(t=='REG4')return{n:4,get:()=>c.q|0,set:v=>c.q=v&15};if(t!='M')return null;const k=c.k,p=c.p||{};
+ if(/^(reg|regen|shr|ushr|piso)$/.test(k))return{n:p.n,get:()=>c.st|0,set:v=>c.st=v%2**p.n};
+ if(k=='cnt')return{n:p.n,get:()=>c.st|0,set:v=>c.st=v%(p.mod||2**p.n)};
+ if(/^(tff|dl|srl)$/.test(k))return{n:1,get:()=>c.st|0,set:v=>c.st=v&1};
+ if(KS[k].nin){const n=KS[k].nin,m=2**n;return{n,nin:1,get:()=>(((c.val|0)%m)+m)%m,set:v=>c.val=v}}return null}
+let VQC=null,VQS=null,VQV=null;
+function vqSet(v,quiet){const S=VQS,m=2**S.n,pre=snapState();S.set(((Math.trunc(v)%m)+m)%m);if(quiet)save();else rec(pre)}
+function vqUpd(){const P=$('#vq'),c=(sel&&sels.size<=1&&sim.map[sel.id]===sel)?sel:null,S=stOf(c),isM=!!(c&&c.t=='M'&&MEMK.test(c.k));
+ if(!S&&!isM){if(!P.hidden)P.hidden=true;VQC=null;return}
+ if(VQC!==c){VQC=c;VQS=S;VQV=null;let h='<b>'+esc(c.t=='M'?m4t(c):c.t)+'</b>';
+  if(S){const mx=2**S.n-1;h+=`<div class="row"><span>${S.nin?'Value':'Stored value'}</span><input id="vqn" type="number" min="0" max="${mx}" style="width:92px"><b id="vqh"></b></div>`;if(mx>1)h+=`<input id="vqs" type="range" min="0" max="${mx}" step="1" style="width:100%;padding:0">`;
+   h+='<div class="row vqb" id="vqb">'+Array.from({length:S.n},(_,k)=>`<button data-i="${S.n-1-k}" title="bit ${S.n-1-k}">0</button>`).join('')+'</div><div class="row"><button data-act="z">0</button><button data-act="d">−1</button><button data-act="u">+1</button><button data-act="m">max</button></div><small>'+(S.nin?'You can also click the bit boxes on the part itself.':'Sets the value held inside the part right now; it carries on from there.')+'</small>'}
+  if(isM)h+='<div class="row"><button class="pri" data-act="edit">✎ Edit contents…</button><button data-act="clr">Clear</button></div><small id="vqm"></small>';
+  P.innerHTML=h;P.hidden=false}
+ if(S){const v=S.get();if(VQV!==v){VQV=v;const n=$('#vqn'),s=$('#vqs'),ae=document.activeElement;if(n&&ae!==n)n.value=v;if(s&&ae!==s)s.value=v;$('#vqh').textContent='0x'+h4(v,Math.ceil(S.n/4));$('#vqb').querySelectorAll('button').forEach(b=>{const on=v>>b.dataset.i&1;b.textContent=on;b.classList.toggle('on',!!on)})}}
+ if(isM){const m=$('#vqm');if(m){const p=c.p,s=c.st||{};let t=c.mem.reduce((k,x)=>k+(x?1:0),0)+' non-zero words';if(c.k=='stack')t+=' · stack size '+(s.sp|0);if(c.k=='fifo')t+=' · queue count '+(s.n|0);if(m.textContent!==t)m.textContent=t}}
+ const vp=$('#vp');P.style.bottom=(vp.hidden?34:vp.offsetHeight+44)+'px'}
+$('#vq').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!VQC)return;const S=VQS;if(b.dataset.i!=null&&S)vqSet(S.get()^(1<<+b.dataset.i));else if(b.dataset.act){const a=b.dataset.act;if(a=='z'&&S)vqSet(0);else if(a=='m'&&S)vqSet(2**S.n-1);else if(a=='u'&&S)vqSet(S.get()+1);else if(a=='d'&&S)vqSet(S.get()-1);else if(a=='edit')openMem(VQC);else if(a=='clr')memClear(VQC)}});
+$('#vq').addEventListener('input',e=>{if(!VQC||!VQS)return;if(e.target.id=='vqn'||e.target.id=='vqs'){const v=parseInt(e.target.value);if(!isNaN(v))vqSet(v,1)}});
+{const _vp=vpUpd;vpUpd=function(){_vp();try{vqUpd()}catch(e){}}}
+
+/* ---- AI documentation addendum ---- */
+const V4DOC=`
+## Storage devices and graphical parts (v4)
+M:regen n=8        register with enable: D0.. EN CK RST -> Q0..   (EN defaults to 1 when unwired)
+M:stack a=4 w=8    LIFO stack, 2^a entries: D0.. PUSH POP CK RST -> Q0.. (top of stack) EMPTY FULL. PUSH+POP together replace the top.
+M:fifo a=4 w=8     FIFO queue, 2^a entries: D0.. WR RD CK RST -> Q0.. (front) EMPTY FULL. A rising CK with RD=1 removes the front, with WR=1 appends D.
+M:nin4 | nin8 | nin12 | nin16   number input (no input pins, outputs Q0..): click the bit boxes on the board or use the side panel slider. Script: set <id> val=<number>  (or part n1 M:nin8 val=165)
+M:dd4 | dd8 | dd12 | dd16       decimal display (inputs D0..) shows unsigned, signed and hex
+M:ascd             ASCII character display (inputs D0..D7)
+rom/ram/rf/stack/fifo also accept: mem <id> v0,v1,... to preload the storage array. Double-click one of these parts on the board to open the graphical memory editor (grid, bit toggles, presets, import/export). Selecting a register, counter or number input shows a panel to edit its stored value.
+`;
+{const _ad=aiDocs;aiDocs=function(){return _ad()+V4DOC};window.LL.docs=aiDocs}
+
+/* ---- extra prebuilt circuits ---- */
+PRE.push({n:'Memory lab (RAM + number inputs)',d:'Number inputs set address and data, WE writes. Double-click the RAM to edit its contents graphically.',s:()=>`part clk CLK
+part adr M:nin4 val=3
+part din M:nin8 val=165
+part we SW name=WE
+part ram M:ram a=4 w=8
+part dd M:dd8
+part hl "Hex display"
+part hh "Hex display"
+wire clk.Q -> ram.CK
+wire adr.Q0..3 -> ram.A0..3
+wire din.Q0..7 -> ram.D0..7
+wire we.Q -> ram.WE
+wire ram.Q0..7 -> dd.D0..7
+wire ram.Q0..3 -> hl.D0..3
+wire ram.Q4..7 -> hh.D0..3
+mem ram 1,2,4,8,16,32,64,128,255,0,170,85,15,240,7,9
+label adr "ADDRESS: click the bit boxes" above
+label din "DATA to write" above
+label we "WE: 1 = write DATA at ADDRESS on each clock edge" below
+label dd "value read from RAM[address]" right`});
+PRE.push({n:'Stack and FIFO demo',d:'Push/pop a LIFO stack and a FIFO queue with the same data input. Turn PUSH or POP on for one clock tick (pause + Step is easiest).',s:()=>`part clk CLK
+part din M:nin8 val=42
+part push SW name=PUSH_WR
+part pop SW name=POP_RD
+part stk M:stack a=3 w=8
+part q M:fifo a=3 w=8
+part ds M:dd8
+part dq M:dd8
+part se "Green LED"
+part sf "Red LED"
+part qe "Green LED"
+part qf "Red LED"
+wire clk.Q -> stk.CK q.CK
+wire din.Q0..7 -> stk.D0..7
+wire din.Q0..7 -> q.D0..7
+wire push.Q -> stk.PUSH q.WR
+wire pop.Q -> stk.POP q.RD
+wire stk.Q0..7 -> ds.D0..7
+wire q.Q0..7 -> dq.D0..7
+wire stk.EMPTY -> se.D
+wire stk.FULL -> sf.D
+wire q.EMPTY -> qe.D
+wire q.FULL -> qf.D
+label stk "STACK (last in, first out)" above
+label q "FIFO (first in, first out)" above
+label ds "stack top" right
+label dq "queue front" right
+label se "stack empty" right
+label sf "stack full" right
+label qe "queue empty" right
+label qf "queue full" right`});
+
+/* ================= v5: display controllers, matrices, framebuffer, keypad ================= */
+const SEGD=['1111110','0110000','1101101','1111001','0110011','1011011','1011111','1110000','1111111','1111011','0000001','1001111','0110111','0001110','1100111','0000000'];/* MAX7219 code B: 0-9 - E H L P blank */
+function seg7Draw(x,y,sc,b,dp,al){const t=3*sc,L=11*sc,R=[[t,0,L,t],[t+L,t,t,L],[t+L,2*t+L,t,L],[t,2*t+2*L,L,t],[0,2*t+L,t,L],[0,t,t,L],[t,t+L,L,t]],col=v=>v>.04?`rgba(255,59,59,${(.3+.7*Math.min(1,v)).toFixed(2)})`:'rgba(128,128,128,.2)';
+ R.forEach((r,i)=>{ctx.fillStyle=col((b[i]||0)*al);ctx.fillRect(x+r[0],y+r[1],r[2],r[3])});ctx.beginPath();ctx.arc(x+L+2*t+t*.9,y+3*t+2*L-t*.2,t*.7,0,7);ctx.fillStyle=col((dp||0)*al);ctx.fill()}
+const m5txt=(t,x,y,f,col)=>{ctx.fillStyle=col||C.t;ctx.font=f||'10px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,x,y)};
+
+/* ---- edge hooks: second clock (LOAD) and clocked parts driven by a microcontroller ---- */
+{const _l=latch;latch=function(s){const U=[];for(const c of s.cs){if(c.t=='M'){const K=KS[c.k];if(K.ck2){const ck=iv(s,c,K.ck2(c.p)),v=c.iv;if(ck&&!c.pc2)U.push(()=>K.nx2(v,c,c.p));c.pc2=ck}}}_l(s);U.forEach(f=>f())}}
+{const _pa=povAdd,_pf=povFin;
+ povAdd=function(s){_pa(s);let cl=false;for(const c of s.cs){if(c.t=='M'){const K=KS[c.k];if(K.lv&&c.iv){const a=K.lv(c.iv,c,c.p);c.pa2=c.pa2||a.map(()=>0);a.forEach((x,i)=>c.pa2[i]+=x);c.pn2=(c.pn2||0)+1}if(K.ck||K.ck2)cl=true}}if(cl&&s===sim){latch(s);settle(s)}};
+ povFin=function(s){_pf(s);for(const c of s.cs){if(c.t=='M'&&KS[c.k].lv){if(c.pn2){const g=KS[c.k].gain||3;c.pv2=c.pa2.map(x=>Math.min(1,x/c.pn2*g));c.pa2=null;c.pn2=0}else c.pv2=null}}}}
+const m5lv=(c,K)=>{const t=c.pv2||K.lv(c.iv||[],c,c.p);c.sm=c.sm||[];return t.map((x,i)=>c.sm[i]=Math.max(x,(c.sm[i]||0)*.85))};
+
+/* ---- LED matrix 8x8 (row / column pins) ---- */
+KS.mat8={lb:p=>'LED matrix 8×8'+(p&&p.inv?' (cols active-low)':''),nolab:1,gain:4,i:()=>[...Bn(8,'R'),...Bn(8,'C')],o:()=>[],out:()=>[],sz:()=>[200,282],
+ lv:(v,c,p)=>{const a=[];for(let r=0;r<8;r++)for(let k=0;k<8;k++)a.push(v[r]&&(p.inv?!v[8+k]:v[8+k])?1:0);return a},
+ draw:(c,x,y,w,h)=>{const K=KS.mat8,a=m5lv(c,K);m5txt('LED matrix 8×8',x+w/2,y+9,'bold 10px system-ui');const s=17,x0=x+(w-8*s)/2,y0=y+(h-8*s)/2;ctx.fillStyle='#14181f';ctx.fillRect(x0-4,y0-4,8*s+8,8*s+8);
+  for(let r=0;r<8;r++)for(let k=0;k<8;k++){const b=a[r*8+k];ctx.beginPath();ctx.arc(x0+k*s+s/2,y0+r*s+s/2,6,0,7);ctx.fillStyle=b>.04?`rgba(255,59,59,${(.3+.7*Math.min(1,b)).toFixed(2)})`:'rgba(128,128,128,.22)';ctx.fill()}
+  m5txt('rows R0-R7 (top→bottom) · columns C0-C7 (left→right)',x+w/2,y+h-9,'8px system-ui')}};
+/* ---- 4-digit multiplexed 7-segment ---- */
+KS.mseg4={lb:()=>'4-digit 7-seg (multiplexed)',nolab:1,gain:3,i:()=>[...'abcdefg','dp','D1','D2','D3','D4'],o:()=>[],out:()=>[],sz:()=>[230,216],
+ lv:(v)=>{const a=[];for(let d=0;d<4;d++)for(let s=0;s<8;s++)a.push(v[s]&&v[8+d]?1:0);return a},
+ draw:(c,x,y,w,h)=>{const a=m5lv(c,KS.mseg4);m5txt('4-digit 7-seg (common cathode, multiplexed)',x+w/2,y+9,'bold 9px system-ui');const sc=1.6,pitch=44,x0=x+(w-4*pitch)/2+4,y0=y+h/2-26;ctx.fillStyle='#14181f';ctx.fillRect(x0-12,y0-10,4*pitch+14,3*3*sc+2*11*sc+20);
+  for(let d=0;d<4;d++)seg7Draw(x0+d*pitch,y0,sc,a.slice(d*8,d*8+7),a[d*8+7],1);m5txt('segments a-g, dp · digit selects D1 (left) … D4 · selected = 1',x+w/2,y+h-9,'8px system-ui')}};
+
+/* ---- MAX7219-style serial display driver (DIN / CLK / LOAD) ---- */
+const MX0=()=>({sh:0,reg:Array(16).fill(0)});
+function maxInfo(s){return{on:s.reg[12]&1,test:s.reg[15]&1,lim:s.reg[11]&7,al:.35+.65*((s.reg[10]&15)/15),dec:s.reg[9]}}
+const maxBase={i:()=>['DIN','CLK','LOAD'],o:()=>[],out:()=>[],ck:()=>1,ck2:()=>2,init:MX0,nolab:1,
+ nx:(v,c)=>{c.st.sh=((c.st.sh<<1)|(v[0]?1:0))&0xFFFF;return c.st},nx2:(v,c)=>{const s=c.st,a=(s.sh>>8)&15;if(a>0)s.reg[a]=s.sh&255}};
+KS.max7seg={...maxBase,lb:()=>'MAX7219 8-digit',sz:()=>[340,130],draw:(c,x,y,w,h)=>{const s=c.st||MX0(),I=maxInfo(s);m5txt('MAX7219 8-digit 7-segment driver',x+w/2,y+9,'bold 10px system-ui');const sc=1.4,pitch=34,x0=x+(w-8*pitch)/2+2,y0=y+30;ctx.fillStyle='#14181f';ctx.fillRect(x0-8,y0-8,8*pitch+10,3*3*sc+2*11*sc+16);
+  for(let d=0;d<8;d++){const data=s.reg[d+1],vis=I.test||(I.on&&d<=I.lim);let b=Array(7).fill(0),dp=0;if(vis){if(I.test){b=Array(7).fill(1);dp=1}else{if(I.dec>>d&1)b=[...SEGD[data&15]].map(Number);else b=[6,5,4,3,2,1,0].map(i=>data>>i&1);dp=data>>7&1}}seg7Draw(x0+(7-d)*pitch,y0,sc,b,dp,I.al)}
+  m5txt(I.on?'normal operation · scan limit '+(I.lim+1)+' digits · intensity '+(s.reg[10]&15):'SHUTDOWN – write 0x0C01 to wake it',x+w/2,y+h-22,'9px system-ui');m5txt('send 16 bits MSB first on DIN; CLK rising = shift, LOAD rising = latch',x+w/2,y+h-9,'8px system-ui')}};
+KS.maxmat={...maxBase,lb:()=>'MAX7219 8×8',sz:()=>[220,196],draw:(c,x,y,w,h)=>{const s=c.st||MX0(),I=maxInfo(s);m5txt('MAX7219 8×8 matrix driver',x+w/2,y+9,'bold 10px system-ui');const q=15,x0=x+(w-8*q)/2,y0=y+24;ctx.fillStyle='#14181f';ctx.fillRect(x0-4,y0-4,8*q+8,8*q+8);
+  for(let r=0;r<8;r++){const data=s.reg[r+1],vis=I.test||(I.on&&r<=I.lim);for(let k=0;k<8;k++){const lit=vis&&(I.test||(data>>(7-k)&1));ctx.beginPath();ctx.arc(x0+k*q+q/2,y0+r*q+q/2,5.5,0,7);ctx.fillStyle=lit?`rgba(255,59,59,${I.al.toFixed(2)})`:'rgba(128,128,128,.22)';ctx.fill()}}
+  m5txt(I.on?'rows = digit registers 1-8, bit 7 = left column':'SHUTDOWN – write 0x0C01 to wake it',x+w/2,y+h-9,'8px system-ui')}};
+
+/* ---- HD44780 character LCD controller (8-bit parallel bus, write only) ---- */
+const LCD0=()=>({dd:Array(128).fill(32),cg:Array(64).fill(0),addr:0,inc:1,shift:0,sh:0,on:0,cur:0,blink:0,cgm:0});
+function lcdcNx(v,c){const s=c.st,rs=v[0],d=bv(v,2,8);
+ if(!rs){if(d==1){s.dd.fill(32);s.addr=0;s.shift=0;s.inc=1;s.cgm=0}else if(d<4){s.addr=0;s.shift=0;s.cgm=0}else if(d<8){s.inc=d>>1&1;s.sh=d&1}else if(d<16){s.on=d>>2&1;s.cur=d>>1&1;s.blink=d&1}
+  else if(d<32){const r=d>>2&1?1:-1;if(d>>3&1)s.shift+=r;else s.addr=(s.addr+r+128)%128}else if(d<64){}else if(d<128){s.cgm=1;s.addr=d&63}else{s.cgm=0;s.addr=d&127}}
+ else{if(s.cgm){s.cg[s.addr&63]=d&31;s.addr=(s.addr+(s.inc?1:-1)+64)%64}else{s.dd[s.addr&127]=d;s.addr=(s.addr+(s.inc?1:-1)+128)%128;if(s.sh)s.shift+=s.inc?-1:1}}return s}
+function lcdcAddr(p,r,i,s){const rows=p.rows||2,base=rows==4?[0,0x40,0x14,0x54]:[0,0x40],m=rows==4?20:40;return base[r]+((((i+s.shift)%m)+m)%m)}
+KS.lcdc={lb:p=>'LCD '+(p.cols||16)+'×'+(p.rows||2)+' controller',nolab:1,i:()=>['RS','E',...Bn(8,'D'),'RST'],o:()=>[],out:()=>[],ck:()=>1,rs:()=>10,init:LCD0,nx:lcdcNx,
+ sz:p=>[Math.max(270,(p.cols||16)*13+102),Math.max(214,(p.rows||2)*20+112)],
+ draw:(c,x,y,w,h)=>{const p=c.p,s=c.st||LCD0(),cols=p.cols||16,rows=p.rows||2,cw=13,ch=20,pw=cols*cw+14,ph=rows*ch+14,px=x+(w-pw)/2,py=y+24;m5txt('HD44780 LCD '+cols+'×'+rows+' controller',x+w/2,y+9,'bold 10px system-ui');
+  ctx.fillStyle=s.on?'#2f7d3a':'#22402a';ctx.fillRect(px,py,pw,ph);
+  if(!s.on)m5txt('display OFF – send command 0x0C',x+w/2,py+ph/2,'10px system-ui','rgba(255,255,255,.6)');
+  else{let cur=null;for(let r=0;r<rows;r++)for(let i=0;i<cols;i++){const a=lcdcAddr(p,r,i,s),code=s.dd[a]||32,cx=px+7+i*cw,cy=py+7+r*ch;if(a==s.addr&&!s.cgm)cur={cx,cy};
+    if(code<16){ctx.fillStyle='#0d170d';for(let row=0;row<8;row++){const bits=s.cg[(code&7)*8+row]||0;for(let b=0;b<5;b++)if(bits>>(4-b)&1)ctx.fillRect(cx+1+b*2,cy+2+row*2,1.7,1.7)}}
+    else{const t=code>=32&&code<127?String.fromCharCode(code):'?';m5txt(t,cx+cw/2-1,cy+ch/2-1,'bold 15px ui-monospace,Menlo,monospace','#0d170d')}}
+   if(cur&&s.cur){ctx.fillStyle='#0d170d';ctx.fillRect(cur.cx,cur.cy+ch-6,cw-2,2)}if(cur&&s.blink&&Math.floor(T/500)%2){ctx.fillStyle='rgba(13,23,13,.8)';ctx.fillRect(cur.cx,cur.cy,cw-2,ch-4)}}
+  m5txt((s.cgm?'CGRAM':'DDRAM')+' address 0x'+h4(s.addr,2)+' · '+(s.inc?'increment':'decrement')+' · RS=0 command / RS=1 data, latched on E rising',x+w/2,y+h-9,'8px system-ui')}};
+
+/* ---- pixel framebuffer display ---- */
+const fbN=p=>[p.bx||5,p.by||5];
+function fbGeom(c){const sp=spec(c),[bx,by]=fbN(c.p),W=2**bx,H=2**by,sc=Math.min((sp.w-90)/W,(sp.h-64)/H);return{W,H,sc,px:c.x+(sp.w-W*sc)/2,py:c.y+26}}
+KS.fbuf={lb:p=>{const[a,b]=fbN(p);return`Pixel display ${2**a}×${2**b}`},nolab:1,i:p=>{const[a,b]=fbN(p);return[...Bn(a,'X'),...Bn(b,'Y'),'D','WE','CK','CLR']},o:()=>[],out:()=>[],
+ ck:p=>{const[a,b]=fbN(p);return a+b+2},rs:p=>{const[a,b]=fbN(p);return a+b+3},init:p=>{const[a,b]=fbN(p);return{fb:new Uint8Array(2**(a+b))}},
+ nx:(v,c,p)=>{const[a,b]=fbN(p);if(v[a+b+1]){const x=bv(v,0,a),y=bv(v,a,b);c.st.fb[(y<<a)+x]=v[a+b]?1:0}return c.st},
+ sz:p=>{const[a,b]=fbN(p),H=Math.max(a+b+4)*16+30;return[300,Math.max(250,H)]},
+ click:(c,p)=>{const g=fbGeom(c),x=Math.floor((p.x-g.px)/g.sc),y=Math.floor((p.y-g.py)/g.sc);if(x<0||y<0||x>=g.W||y>=g.H)return false;const f=c.st.fb,i=y*g.W+x;f[i]=f[i]?0:1;return true},
+ draw:(c,x,y,w,h)=>{const g=fbGeom(c),f=c.st&&c.st.fb;m5txt(KS.fbuf.lb(c.p),x+w/2,y+9,'bold 10px system-ui');ctx.fillStyle='#0b1118';ctx.fillRect(g.px-2,g.py-2,g.W*g.sc+4,g.H*g.sc+4);
+  if(f){ctx.fillStyle='#38d96a';const q=Math.max(.6,g.sc-(g.sc>3?1:0));for(let i=0;i<f.length;i++)if(f[i])ctx.fillRect(g.px+(i%g.W)*g.sc,g.py+Math.floor(i/g.W)*g.sc,q,q)}
+  m5txt('write X,Y,D with WE on CK rising · CLR clears · click a pixel to toggle it',x+w/2,y+h-9,'8px system-ui')}};
+
+/* ---- 4x4 matrix keypad ---- */
+const KPL='123A456B789C*0#D';
+KS.kpad={lb:()=>'Keypad 4×4',nolab:1,i:()=>Bn(4,'R'),o:()=>Bn(4,'C'),out:(v,c)=>{const k=c.keys|0;return[0,1,2,3].map(col=>{for(let r=0;r<4;r++)if((k>>(r*4+col)&1)&&v[r])return 1;return 0})},sz:()=>[160,150],
+ click:(c,p)=>{const sp=spec(c),x0=c.x+(sp.w-4*28)/2,y0=c.y+22,col=Math.floor((p.x-x0)/28),r=Math.floor((p.y-y0)/28);if(col<0||col>3||r<0||r>3)return false;c.keys=(c.keys|0)^(1<<(r*4+col));return true},
+ draw:(c,x,y,w,h)=>{m5txt('Keypad 4×4',x+w/2,y+9,'bold 10px system-ui');const x0=x+(w-4*28)/2,y0=y+22,k=c.keys|0;for(let r=0;r<4;r++)for(let col=0;col<4;col++){const on=k>>(r*4+col)&1;ctx.fillStyle=on?'#ffd23f':'rgba(128,128,128,.25)';ctx.fillRect(x0+col*28+1,y0+r*28+1,26,26);m5txt(KPL[r*4+col],x0+col*28+14,y0+r*28+14,'bold 12px system-ui',on?'#111':C.t)}
+  m5txt('click = press / release (latched)',x+w/2,y+h-8,'8px system-ui')}};
+
+/* ---- catalogue ---- */
+const DG='Outputs / Displays';
+EM(DG,'LED matrix 8×8 (row/column pins)','mat8',{});EM(DG,'LED matrix 8×8 (columns active-low)','mat8',{inv:1});EM(DG,'4-digit 7-seg (multiplexed)','mseg4',{});
+EM(DG,'MAX7219 8-digit 7-seg driver + display','max7seg',{});EM(DG,'MAX7219 8×8 matrix driver + display','maxmat',{});
+EM(DG,'LCD 16×2 controller (HD44780, 8-bit bus)','lcdc',{cols:16,rows:2});EM(DG,'LCD 20×4 controller (HD44780, 8-bit bus)','lcdc',{cols:20,rows:4});
+EM(DG,'Pixel display 32×32 (framebuffer)','fbuf',{bx:5,by:5});EM(DG,'Pixel display 64×64 (framebuffer)','fbuf',{bx:6,by:6});EM(DG,'Pixel display 128×64 (framebuffer)','fbuf',{bx:7,by:6});
+EM('Inputs','Keypad 4×4 (matrix, click keys)','kpad',{});
+
+/* ---- example sketches for microcontrollers (Arduino Uno wiring) ---- */
+EXS['LCD controller (HD44780 raw bus)']=`// Uno -> LCD controller: D0..D7 on pins 2..9, RS on pin 10, E on pin 11
+void lcdSend(int rs, int data) {
+  digitalWrite(10, rs);
+  for (int i = 0; i < 8; i++) digitalWrite(2 + i, (data >> i) & 1);
+  digitalWrite(11, HIGH);
+  delay(1);
+  digitalWrite(11, LOW);
+  delay(1);
+}
+
+void lcdText(String t) {
+  for (int i = 0; i < t.length; i++) lcdSend(1, t.charCodeAt(i));
+}
+
+int n = 0;
+
+void setup() {
+  for (int p = 2; p <= 11; p++) pinMode(p, OUTPUT);
+  lcdSend(0, 0x38);   // function set: 8-bit bus, 2 lines
+  lcdSend(0, 0x0C);   // display on, cursor off
+  lcdSend(0, 0x06);   // entry mode: increment address
+  lcdSend(0, 0x01);   // clear display
+  lcdSend(0, 0x40);   // CGRAM address 0: define a heart as character 0
+  lcdSend(1, 0x00); lcdSend(1, 0x0A); lcdSend(1, 0x1F); lcdSend(1, 0x1F);
+  lcdSend(1, 0x0E); lcdSend(1, 0x04); lcdSend(1, 0x00); lcdSend(1, 0x00);
+  lcdSend(0, 0x80);   // DDRAM address 0 = line 1
+  lcdText("Hello LogicLab ");
+  lcdSend(1, 0);      // the heart
+  lcdSend(0, 0xC0);   // line 2
+  lcdText("Count: ");
+}
+
+void loop() {
+  int tens = (n / 10) % 10;
+  int ones = n % 10;
+  lcdSend(0, 0xC7);
+  lcdSend(1, 48 + tens);
+  lcdSend(1, 48 + ones);
+  n = n + 1;
+  delay(400);
+}`;
+EXS['MAX7219 8-digit counter']=`// Uno -> MAX7219: DIN = pin 2, CLK = pin 3, LOAD = pin 4
+void maxSend(int addr, int data) {
+  int w = (addr << 8) | data;
+  digitalWrite(4, LOW);
+  for (int i = 15; i >= 0; i--) {
+    digitalWrite(2, (w >> i) & 1);
+    digitalWrite(3, HIGH);
+    delay(1);
+    digitalWrite(3, LOW);
+    delay(1);
+  }
+  digitalWrite(4, HIGH);
+  delay(1);
+  digitalWrite(4, LOW);
+  delay(1);
+}
+
+long n = 0;
+
+void setup() {
+  pinMode(2, OUTPUT);
+  pinMode(3, OUTPUT);
+  pinMode(4, OUTPUT);
+  maxSend(0x0F, 0);     // display test off
+  maxSend(0x0B, 7);     // scan all 8 digits
+  maxSend(0x09, 0xFF);  // BCD decode on every digit
+  maxSend(0x0A, 8);     // medium brightness
+  maxSend(0x0C, 1);     // leave shutdown
+}
+
+void loop() {
+  long v = n;
+  for (int d = 1; d <= 8; d++) {
+    maxSend(d, v % 10);
+    v = int(v / 10);
+  }
+  n = n + 1;
+  delay(50);
+}`;
+EXS['MAX7219 8x8 matrix animation']=`// Uno -> MAX7219 matrix: DIN = pin 2, CLK = pin 3, LOAD = pin 4. Rows are digit registers 1-8.
+void maxSend(int addr, int data) {
+  int w = (addr << 8) | data;
+  digitalWrite(4, LOW);
+  for (int i = 15; i >= 0; i--) {
+    digitalWrite(2, (w >> i) & 1);
+    digitalWrite(3, HIGH);
+    delay(1);
+    digitalWrite(3, LOW);
+    delay(1);
+  }
+  digitalWrite(4, HIGH);
+  delay(1);
+  digitalWrite(4, LOW);
+  delay(1);
+}
+
+int smile[8] = {0x3C, 0x42, 0xA5, 0x81, 0xA5, 0x99, 0x42, 0x3C};
+int heart[8] = {0x00, 0x66, 0xFF, 0xFF, 0xFF, 0x7E, 0x3C, 0x18};
+int frame = 0;
+
+void setup() {
+  pinMode(2, OUTPUT);
+  pinMode(3, OUTPUT);
+  pinMode(4, OUTPUT);
+  maxSend(0x0F, 0);
+  maxSend(0x0B, 7);
+  maxSend(0x09, 0);     // no BCD decode: raw bits
+  maxSend(0x0A, 10);
+  maxSend(0x0C, 1);
+}
+
+void loop() {
+  for (int r = 0; r < 8; r++) {
+    if (frame % 2 == 0) maxSend(r + 1, smile[r]);
+    else maxSend(r + 1, heart[r]);
+  }
+  frame = frame + 1;
+  delay(700);
+}`;
+
+/* ---- prebuilt circuits ---- */
+const unoBus=(dst,n,first)=>Array.from({length:n},(_,i)=>`wire u.D${first+i} -> ${dst}.D${i}`).join('\n');
+PRE.push({n:'Arduino + HD44780 LCD controller',d:'Uno drives the raw 8-bit bus: init commands, a custom heart character, a live counter. Double-click the Uno to read the code.',s:()=>`part u M:mcu b=uno
+part lc M:lcdc cols=16 rows=2
+${unoBus('lc',8,2)}
+wire u.D10 -> lc.RS
+wire u.D11 -> lc.E
+sketch u "LCD controller (HD44780 raw bus)"`});
+PRE.push({n:'Arduino + MAX7219 8-digit display',d:'Bit-banged serial driver counting up on eight 7-segment digits.',s:()=>`part u M:mcu b=uno
+part mx M:max7seg
+wire u.D2 -> mx.DIN
+wire u.D3 -> mx.CLK
+wire u.D4 -> mx.LOAD
+sketch u "MAX7219 8-digit counter"`});
+PRE.push({n:'Arduino + MAX7219 8×8 matrix',d:'Smiley and heart bitmaps sent to the matrix driver.',s:()=>`part u M:mcu b=uno
+part mx M:maxmat
+wire u.D2 -> mx.DIN
+wire u.D3 -> mx.CLK
+wire u.D4 -> mx.LOAD
+sketch u "MAX7219 8x8 matrix animation"`});
+PRE.push({n:'Multiplexed 4-digit display (hardware scanner)',d:'2-bit counter + decoder + mux scan four digits. Set the 4 hex digits with the number inputs; slow the clock slider to see the scanning.',s:()=>`part clk CLK
+part cnt "Up counter 2-bit"
+part dc "Decoder 2:4"
+part mx M:mux k=2 w=4
+part h M:h7
+part ds M:mseg4
+${[0,1,2,3].map(d=>`part n${d} M:nin4 val=${[1,2,3,4][d]}`).join('\n')}
+wire clk.Q -> cnt.CK
+wire cnt.Q0 -> mx.S0 dc.A0
+wire cnt.Q1 -> mx.S1 dc.A1
+${[0,1,2,3].map(d=>[0,1,2,3].map(b=>`wire n${d}.Q${b} -> mx.I${d}.${b}`).join('\n')).join('\n')}
+${[0,1,2,3].map(b=>`wire mx.Y${b} -> h.D${b}`).join('\n')}
+${[...'abcdefg'].map(s=>`wire h.${s} -> ds.${s}`).join('\n')}
+${[0,1,2,3].map(d=>`wire dc.Y${d} -> ds.D${d+1}`).join('\n')}
+label n0 "digit 1 (left)" above
+label n3 "digit 4 (right)" above`});
+PRE.push({n:'Pixel display + keypad',d:'Draw on the framebuffer by clicking pixels, or write X, Y, D with WE and CK. Keypad keys are clickable.',s:()=>`part clk CLK
+part xs M:nin8 val=0
+part ys M:nin8 val=0
+part we SW name=WE
+part d SW name=D s=1
+part f M:fbuf bx=5 by=5
+part kp M:kpad
+part rr M:nin4 val=15
+wire clk.Q -> f.CK
+wire xs.Q0..4 -> f.X0..4
+wire ys.Q0..4 -> f.Y0..4
+wire we.Q -> f.WE
+wire d.Q -> f.D
+wire rr.Q0..3 -> kp.R0..3
+label xs "X (0-31)" above
+label ys "Y (0-31)" above
+label kp "rows driven high by the number input" below`});
+
+/* ---- documentation addendum ---- */
+const V5DOC=`
+## Display controllers and input devices (v5)
+M:lcdc cols=16 rows=2 | cols=20 rows=4   HD44780 character LCD controller, 8-bit write-only bus. Pins: RS E D0..D7 RST. RS=0 command, RS=1 data, latched on the rising edge of E. Commands: 01 clear, 02 home, 04-07 entry mode, 08-0F display on/off (bit2 display, bit1 cursor, bit0 blink; the display starts OFF), 10-1F shift, 38 function set, 40-7F CGRAM address (custom characters 0-7, 8 bytes each), 80+ DDRAM address (line 1 = 0x00, line 2 = 0x40, 20x4 lines 3/4 = 0x14 / 0x54).
+M:max7seg / M:maxmat   MAX7219-style serial driver with built-in display (8 digits of 7-segment / 8x8 matrix). Pins: DIN CLK LOAD. Send 16 bits MSB first (4 bit address, 8 bit data); CLK rising shifts, LOAD rising latches. Registers: 1-8 digits (matrix rows), 9 decode mode, A intensity (0-15), B scan limit (0-7), C shutdown (1 = run; chip starts shut down), F display test.
+M:mat8 [inv=1]    8x8 LED matrix, pins R0..R7 (row select) and C0..C7; a LED is lit when row=1 and column=1 (inv=1: column active-low). Multiplexing from a microcontroller or counters shows persistence.
+M:mseg4           4-digit multiplexed 7-segment, pins a b c d e f g dp D1 D2 D3 D4 (digit select active-high).
+M:fbuf bx=5 by=5  pixel framebuffer display (2^bx by 2^by pixels). Pins X0.. Y0.. D WE CK CLR. A rising CK with WE=1 writes pixel (X,Y)=D. Click pixels on the board to toggle them.
+M:kpad            4x4 matrix keypad: inputs R0..R3, outputs C0..C3. Key (row r, column c) connects R(r) to C(c) while latched pressed (click keys on the board).
+Microcontroller timing note: clocked parts react to pin changes the program makes, but a pin must stay at a level for at least 0.5 ms of program time (use delay(1)) so the circuit sees the edge.
+`;
+{const _ad2=aiDocs;aiDocs=function(){return _ad2()+V5DOC};window.LL.docs=aiDocs}
+
+/* ================= v6: NeoPixel (WS2812) LED strip ================= */
+var MCUT=0;
+const NEO0=p=>({px:Array.from({length:p.n||8},()=>[0,0,0]),bits:[],tp:null,lv:0,run:0,fr:0});
+KS.neo={lb:p=>'NeoPixel strip ('+(p.n||8)+' LEDs)',nolab:1,neo:1,i:()=>['DIN'],o:()=>[],out:()=>[],init:p=>NEO0(p),
+ sz:p=>{const n=p.n||8,cl=Math.min(n,15),rw=Math.ceil(n/cl);return[Math.max(260,cl*26+44),84+rw*26]},
+ /* decoder: called once per microcontroller sample (MCUT = program time in ms). High pulse >= 2 ms = bit 1, shorter = bit 0, low >= 5 ms = latch (reset). */
+ tk:(v,c,t)=>{const n=c.p.n||8,s=c.st;if(!s||!s.px)return;const L=v[0]?1:0;
+  if(s.tp==null||t<s.tp){s.tp=t;s.lv=L;s.run=0;return}
+  const dt=t-s.tp;s.tp=t;
+  if(L==s.lv)s.run+=dt;else{if(s.lv==1&&s.run>0&&s.bits.length<24*n)s.bits.push(s.run>=2?1:0);s.lv=L;s.run=dt}
+  if(L==0&&s.run>=5&&s.bits.length){const k=Math.min(n,Math.floor(s.bits.length/24));
+   for(let i=0;i<k;i++){const B=s.bits.slice(i*24,i*24+24),by=j=>{let x=0;for(let q=0;q<8;q++)x=x*2+B[j*8+q];return x};s.px[i]=[by(1),by(0),by(2)]}
+   s.bits=[];s.fr=(s.fr|0)+1}},
+ draw:(c,x,y,w,h)=>{const n=c.p.n||8,s=c.st;m5txt('NeoPixel LED strip (WS2812) · '+n+' LEDs',x+w/2,y+9,'bold 10px system-ui');
+  const cl=Math.min(n,15),rw=Math.ceil(n/cl),sp=26,x0=x+(w-cl*sp)/2,y0=y+30;ctx.fillStyle='#14181f';ctx.fillRect(x0-6,y0-6,cl*sp+12,rw*sp+12);
+  for(let i=0;i<n;i++){const px=(s&&s.px&&s.px[i])||[0,0,0],cx=x0+(i%cl)*sp+sp/2,cy=y0+Math.floor(i/cl)*sp+sp/2,on=px[0]+px[1]+px[2]>8,col='rgb('+px[0]+','+px[1]+','+px[2]+')';
+   ctx.beginPath();ctx.arc(cx,cy,9,0,7);ctx.fillStyle=on?col:'rgba(128,128,128,.25)';if(on){ctx.shadowColor=col;ctx.shadowBlur=16}ctx.fill();ctx.shadowBlur=0}
+  m5txt('ONE data wire DIN · 24 bits per LED (G,R,B) · 1 pulse ≥2 ms, 0 pulse <2 ms · low ≥5 ms = latch',x+w/2,y+h-21,'8px system-ui');
+  m5txt('frames received: '+(s?s.fr|0:0)+(s&&s.bits&&s.bits.length?' · receiving '+s.bits.length+' bits':''),x+w/2,y+h-9,'8px system-ui')}};
+{const _pn=povAdd;povAdd=function(s){_pn(s);for(const c of s.cs)if(c.t=='M'){const K=KS[c.k];if(K.tk&&c.iv)K.tk(c.iv,c,MCUT)}}}
+EM(DG,'LED strip – NeoPixel WS2812 (8 LEDs, 1 data wire)','neo',{n:8});EM(DG,'LED strip – NeoPixel WS2812 (16 LEDs)','neo',{n:16});EM(DG,'LED strip – NeoPixel WS2812 (30 LEDs)','neo',{n:30});
+
+/* ---- Adafruit_NeoPixel library for sketches (writes the strip on the pin's net) ---- */
+{const _mk=mkApi;mkApi=function(c,B,cp){const api=_mk(c,B,cp);Object.assign(api,{NEO_GRB:1,NEO_RGB:2,NEO_BRG:3,NEO_KHZ800:0,NEO_KHZ400:256});
+ api.Adafruit_NeoPixel=(n,pin)=>{let i=typeof pin=='number'?B.n2i[pin]:B.nm2i[String(pin)];if(i==null&&typeof pin=='string'&&pin!==''&&!isNaN(pin))i=B.n2i[+pin];if(i==null)i=-1;
+  const buf=Array.from({length:n||8},()=>[0,0,0]),Co=(r,g,b)=>((r&255)<<16|(g&255)<<8|(b&255))>>>0;
+  return{n:n||8,br:255,buf,Color:Co,begin(){if(i>=0)cp.md[i]=1},setBrightness(b){this.br=Math.max(0,Math.min(255,b))},numPixels(){return this.n},
+   setPixelColor(k,a,g,b){if(k<0||k>=this.n)return;buf[k]=g===undefined?[(a>>16)&255,(a>>8)&255,a&255]:[a&255,g&255,b&255]},
+   getPixelColor(k){const q=buf[k]||[0,0,0];return Co(q[0],q[1],q[2])},
+   fill(col,first,count){first=first||0;const e=count?Math.min(this.n,first+count):this.n;for(let k=first;k<e;k++)buf[k]=[(col>>16)&255,(col>>8)&255,col&255]},
+   clear(){for(let k=0;k<this.n;k++)buf[k]=[0,0,0]},
+   show(){const s=c.sim_;if(!s||i<0)return;const rt=netRoot(s),mine=new Set([rt(pk(c.id,0,i)),rt(pk(c.id,1,i))]),f=this.br/255;
+    for(const m of s.cs)if(m.t=='M'&&KS[m.k].neo&&m.st&&m.st.px&&mine.has(rt(pk(m.id,0,0)))){for(let k=0;k<m.st.px.length&&k<this.n;k++)m.st.px[k]=buf[k].map(x=>Math.round(x*f));m.st.fr=(m.st.fr|0)+1}}}};
+ return api}}
+
+EXS['NeoPixel strip - raw single wire (3 colours + on/off)']=`// Uno -> NeoPixel strip: ONE data wire on pin 6 controls all 8 LEDs.
+// Switches: POWER = pin 2, RED = pin 3, GREEN = pin 4, BLUE = pin 5.
+// Scaled-up WS2812 timing (the simulator samples every 0.5 ms):
+//   bit 1 = HIGH 3 ms, LOW 1 ms     bit 0 = HIGH 1 ms, LOW 3 ms     reset/latch = LOW >= 5 ms
+// Each LED takes 24 bits, MSB first, in the order Green, Red, Blue.
+#define DATA 6
+#define NUM 8
+
+void sendBit(int bit) {
+  digitalWrite(DATA, HIGH);
+  if (bit == 1) { delayMicroseconds(3000); } else { delayMicroseconds(1000); }
+  digitalWrite(DATA, LOW);
+  if (bit == 1) { delayMicroseconds(1000); } else { delayMicroseconds(3000); }
+}
+
+void sendByte(int v) {
+  for (int i = 7; i >= 0; i--) sendBit((v >> i) & 1);
+}
+
+void showAll(int red, int green, int blue) {
+  for (int p = 0; p < NUM; p++) {
+    sendByte(green);
+    sendByte(red);
+    sendByte(blue);
+  }
+  digitalWrite(DATA, LOW);
+  delayMicroseconds(8000);   // reset: strip latches the colours
+}
+
+int last = -1;
+
+void setup() {
+  pinMode(DATA, OUTPUT);
+  digitalWrite(DATA, LOW);
+  for (int p = 2; p <= 5; p++) pinMode(p, INPUT);
+}
+
+void loop() {
+  int red = digitalRead(3) * 255;
+  int green = digitalRead(4) * 255;
+  int blue = digitalRead(5) * 255;
+  if (digitalRead(2) == 0) { red = 0; green = 0; blue = 0; }   // POWER off = all LEDs dark
+  int state = red * 65536 + green * 256 + blue;
+  if (state != last) {          // only talk to the strip when something changed
+    showAll(red, green, blue);
+    last = state;
+  }
+  delay(20);
+}`;
+EXS['NeoPixel strip - Adafruit_NeoPixel library']=`// Uno + Adafruit_NeoPixel: DATA = pin 6 (8 LEDs). POWER = pin 2, RED = 3, GREEN = 4, BLUE = 5.
+#include <Adafruit_NeoPixel.h>
+Adafruit_NeoPixel strip(8, 6, NEO_GRB + NEO_KHZ800);
+
+void setup() {
+  strip.begin();
+  strip.setBrightness(255);
+  strip.show();                       // all LEDs off
+  for (int p = 2; p <= 5; p++) pinMode(p, INPUT);
+}
+
+void loop() {
+  int red = digitalRead(3) * 255;
+  int green = digitalRead(4) * 255;
+  int blue = digitalRead(5) * 255;
+  if (digitalRead(2) == 0) { red = 0; green = 0; blue = 0; }
+  strip.fill(strip.Color(red, green, blue));   // same colour on every LED
+  // strip.setPixelColor(index, r, g, b) sets a single LED
+  strip.show();                       // send the frame down the single data line
+  delay(20);
+}`;
+const neoSw=`part pw SW name=POWER s=1\npart cr SW name=RED s=1\npart cg SW name=GREEN\npart cb SW name=BLUE\nwire pw.Q -> u.D2\nwire cr.Q -> u.D3\nwire cg.Q -> u.D4\nwire cb.Q -> u.D5\nwire u.D6 -> st.DIN\nlabel st "ONE wire (D6) controls every LED" above\nlabel pw "ON / OFF for the whole strip" left\nlabel cr "colour: red" left\nlabel cg "colour: green" left\nlabel cb "colour: blue (mix them!)" left`;
+PRE.push({n:'NeoPixel LED strip – 1 wire, 3 colours, on/off',d:'Complete strip: Uno bit-bangs the WS2812-style frame (24 bits per LED) on ONE data line. POWER switch + RED/GREEN/BLUE switches set the colour of all 8 LEDs. Double-click the Uno to read the code.',s:()=>`part u M:mcu b=uno\npart st M:neo n=8\n${neoSw}\nsketch u "NeoPixel strip - raw single wire (3 colours + on/off)"`});
+PRE.push({n:'NeoPixel LED strip – Adafruit_NeoPixel library',d:'Same controls written with the familiar library (strip.fill / strip.show). One data pin drives all LEDs.',s:()=>`part u M:mcu b=uno\npart st M:neo n=8\n${neoSw}\nsketch u "NeoPixel strip - Adafruit_NeoPixel library"`});
+const V6DOC=`
+## NeoPixel LED strip (v6)
+M:neo n=8 | 16 | 30   WS2812-style addressable LED strip, ONE input pin DIN. 24 bits per LED, MSB first, order G R B, first LED first. Because the simulator samples microcontroller pins every 0.5 ms the timing is scaled up: HIGH >= 2 ms = bit 1, shorter HIGH = bit 0 (bit 1: 3 ms high + 1 ms low, bit 0: 1 ms high + 3 ms low), LOW >= 5 ms = latch (reset) and the LEDs show the colours. Driven from a microcontroller sketch (digitalWrite + delayMicroseconds).
+Sketches can also use Adafruit_NeoPixel strip(n, pin, NEO_GRB + NEO_KHZ800): begin, setBrightness, setPixelColor(i, color | r,g,b), fill(color, first, count), clear, Color(r,g,b), numPixels, show. show() updates every strip wired to that pin.
+`;
+{const _ad3=aiDocs;aiDocs=function(){return _ad3()+V6DOC};window.LL.docs=aiDocs}
 
 /* ---------- boot ---------- */
 try{lib=JSON.parse(localStorage.getItem('ll_lib')||'null')||{}}catch(e){lib={}}
