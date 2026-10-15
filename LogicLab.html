@@ -725,7 +725,7 @@ function delSel(){if(!sels.size)return;const pre=snapState();sels.forEach(c=>del
 /* ---------- UI ---------- */
 function place(c,pos){const pre=snapState();c.id=uid++;c.x=pos?snap(pos.x-30):snap((W/2-ox)/z-30+Math.random()*60);c.y=pos?snap(pos.y-20):snap((H/2-oy)/z-20+Math.random()*60);c.src=[];init(c);sim.cs.push(c);sim.map[c.id]=c;rec(pre)}
 function add(t,def,pos){const c={t};if(def)c.def=def;if(t=='LED')c.color=LC[0];place(c,pos)}
-function addE(i,pos){const e=CAT[i];if(e.ic){if(!lib[e.n]){lib[e.n]=e.ic();saveLib();renderLib()}add('IC',e.n,pos);return}const c={t:e.t,lab:e.n};if(e.gn)c.n=e.gn;['color','k'].forEach(f=>e[f]!=null&&(c[f]=e[f]));if(e.p)c.p={...e.p};place(c,pos)}
+function addE(i,pos){const e=CAT[i];if(e.ic){if(!lib[e.n]){lib[e.n]=e.ic();saveLib();renderLib()}add('IC',e.n,pos);return}const c={t:e.t};if(!e.fam)c.lab=e.n;if(e.gn)c.n=e.gn;['color','k'].forEach(f=>e[f]!=null&&(c[f]=e[f]));if(e.p)c.p={...e.p};place(c,pos)}
 let GR={},fh;
 function dp(e){if(e.ic)return'Built from gates – drop it, then zoom in to see inside';if(e.t!='M')return e.n;const K=KS[e.k],p=e.p||{},op=K.op||[];return('in: '+K.i(p).filter(n=>!op.includes(n)).join(' ')+' | out: '+K.o(p).filter(n=>!op.includes(n)).join(' ')+(op.length?' | optional (double-click part): '+op.join(' '):'')).slice(0,300)}
 function pal(q){q=(q||'').toLowerCase();GR={};CAT.forEach((e,i)=>{if(q&&!(e.n+' '+e.g).toLowerCase().includes(q))return;(GR[e.g]=GR[e.g]||[]).push(`<button draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${i}')" ondragend="$('#fly').hidden=true" onclick="addE(${i})" title="${dp(e)}">${e.n}</button>`)});
@@ -885,7 +885,7 @@ function mkComp(type,kv){let c,p={};const T=type.toUpperCase();
 if(/^m:/i.test(type)){const k=type.slice(2);if(!KS[k])throw new Error('unknown macro kind "'+k+'". Kinds: '+Object.keys(KS).join(', '));Object.keys(kv).forEach(a=>{if((!RES.includes(a)||(a=='w'&&/^(mux|rom|ram|rf|stack|fifo)$/.test(k)))&&a!='n_')p[a]=kv[a]});c={t:'M',k,p}}
 else if(lib[type])c={t:'IC',def:type};
 else if(G[T]||RAW.includes(T)){c={t:T};if(G[T]&&kv.n!=null)c.n=kv.n}
-else{const q=nm1(type),e=CAT.find(e=>nm1(e.n)==q);if(!e)throw new Error('unknown component "'+type+'". Similar: '+(CAT.filter(e=>nm1(e.n).includes(q.slice(0,4))||q.includes(nm1(e.n))).slice(0,6).map(e=>'"'+e.n+'"').join(', ')||'(none – see the documentation list)'));
+else{const q=nm1(type),e=CAT.concat(CAT_ALL).find(e=>nm1(e.n)==q);if(!e)throw new Error('unknown component "'+type+'". Similar: '+(CAT.filter(e=>nm1(e.n).includes(q.slice(0,4))||q.includes(nm1(e.n))).slice(0,6).map(e=>'"'+e.n+'"').join(', ')||'(none – see the documentation list)'));
 if(e.ic){if(!lib[e.n])lib[e.n]=e.ic();c={t:'IC',def:e.n}}else{c={t:e.t};if(e.gn)c.n=e.gn;['color','k'].forEach(f=>e[f]!=null&&(c[f]=e[f]));if(e.p)c.p={...e.p};c.lab=e.n;if(c.t=='M')Object.keys(kv).forEach(a=>{if(!RES.includes(a))c.p[a]=kv[a]});else if(G[c.t]&&kv.n!=null)c.n=kv.n}}
 ['name','lab','color','w','h','val','val2','th'].forEach(a=>{if(kv[a]!=null&&!(a=='w'&&c.t=='M'&&c.p&&'w' in c.p))c[a]=kv[a]});if(kv.s!=null)c.s=kv.s?1:0;return c}
 const nctx=d=>({ids:{},map:{},pend:[],def:d}),allC=ctx=>ctx.def?ctx.pend:[...sim.cs,...ctx.pend];
@@ -2031,6 +2031,318 @@ M:neo n=8 | 16 | 30   WS2812-style addressable LED strip, ONE input pin DIN. 24 
 Sketches can also use Adafruit_NeoPixel strip(n, pin, NEO_GRB + NEO_KHZ800): begin, setBrightness, setPixelColor(i, color | r,g,b), fill(color, first, count), clear, Color(r,g,b), numPixels, show. show() updates every strip wired to that pin.
 `;
 {const _ad3=aiDocs;aiDocs=function(){return _ad3()+V6DOC};window.LL.docs=aiDocs}
+
+/* ================= v9: ONE resizable part per family + C compiler ================= */
+/* ---------- 1. settings per component family (bits, inputs, mode …) ---------- */
+const cfN=(k,n,min,max,x)=>Object.assign({k,n,type:'num',min,max},x||{}),
+ cfS=(k,n,opts,x)=>Object.assign({k,n,type:'sel',opts},x||{}),
+ cfB=(k,n,x)=>Object.assign({k,n,type:'bool'},x||{}),
+ cfBits=(a,b,l)=>cfN('n',l||'Bits',a,b);
+const CNTM=[['up','Up'],['down','Down'],['ud','Up / Down (DIR pin)'],['gray','Gray code'],['john','Johnson (twisted ring)'],['ring','Ring (one-hot)'],['lfsr','LFSR (pseudo-random)']];
+const FAM={
+ add:{pn:'Adder',def:{n:4},f:[cfBits(1,16)],lb:p=>p.n+'-bit adder'},
+ sub:{pn:'Subtractor',def:{n:4},f:[cfBits(1,16)],lb:p=>p.n+'-bit subtractor'},
+ asub:{pn:'Add / Subtract',def:{n:8},f:[cfBits(1,16)],lb:p=>p.n+'-bit add/sub'},
+ incr:{pn:'Incrementer (+1)',def:{n:8},f:[cfBits(1,16)],lb:p=>p.n+'-bit incrementer'},
+ decr:{pn:'Decrementer (−1)',def:{n:8},f:[cfBits(1,16)],lb:p=>p.n+'-bit decrementer'},
+ neg:{pn:'Negate (two’s complement)',def:{n:8},f:[cfBits(1,16)],lb:p=>p.n+'-bit negate'},
+ alu:{pn:'ALU',def:{n:8},f:[cfBits(1,16)],lb:p=>p.n+'-bit ALU'},
+ sh:{pn:'Barrel shifter',def:{n:8},f:[cfS('n','Bits',[[2,'2'],[4,'4'],[8,'8'],[16,'16']],{num:1})],lb:p=>p.n+'-bit barrel shifter'},
+ mul:{pn:'Multiplier',def:{n:4},f:[cfBits(1,8,'Bits (each input)')],lb:p=>p.n+'×'+p.n+' multiplier'},
+ cmp:{pn:'Comparator',def:{n:4},f:[cfBits(1,16)],lb:p=>p.n+'-bit comparator'},
+ b2g:{pn:'Binary → Gray',def:{n:4},f:[cfBits(2,16)],lb:p=>'Binary→Gray '+p.n+'-bit'},
+ g2b:{pn:'Gray → Binary',def:{n:4},f:[cfBits(2,16)],lb:p=>'Gray→Binary '+p.n+'-bit'},
+ par:{pn:'Parity generator',def:{n:4},f:[cfBits(2,16),cfB('odd','Odd parity')],lb:p=>(p.odd?'Odd':'Even')+' parity '+p.n+'-bit'},
+ reg:{pn:'Register',def:{n:4},f:[cfBits(1,16)],lb:p=>p.n+'-bit register'},
+ regen:{pn:'Register with enable',def:{n:8},f:[cfBits(1,16)]},
+ shr:{pn:'Shift register (serial in)',def:{n:4},f:[cfBits(2,16),cfS('left','Direction',[[0,'Right →'],[1,'Left ←']],{num:1})],lb:p=>'Shift reg '+p.n+'-bit ('+(p.left?'←':'→')+')'},
+ piso:{pn:'PISO shift register',def:{n:8},f:[cfBits(2,16)],lb:p=>'PISO '+p.n+'-bit'},
+ ushr:{pn:'Universal shift register',def:{n:8},f:[cfBits(2,16)],lb:p=>'Universal shift '+p.n+'-bit'},
+ cnt:{pn:'Counter / sequencer',pal:'Counter – up/down/Gray/ring/Johnson/LFSR/mod-N/program counter',def:{n:4,m:'up'},
+  f:[cfBits(2,16),cfS('m','Mode',CNTM),cfN('mod','Count to (0 = full range)',0,65535,{show:p=>['up','down','ud','gray'].includes(p.m)}),cfB('ld','Parallel load (program counter)')],
+  fix:(p,ch)=>{if(p.m=='lfsr')p.n=cl(p.n,3,8);if(p.mod&&['up','down','ud','gray'].includes(p.m)){if(ch=='mod'&&p.mod>2**p.n)p.n=cl(Math.ceil(Math.log2(p.mod)),2,16);if(p.mod>=2**p.n||p.mod<2)p.mod=0}else if(!['up','down','ud','gray'].includes(p.m))delete p.mod;if(!p.ld)delete p.ld},
+  lb:p=>{const m=(CNTM.find(x=>x[0]==p.m)||CNTM[0])[1].replace(/ \(.*/,'');return(p.ld?'Program counter ':p.mod?'Mod-'+p.mod+' ':m+' counter ')+p.n+'-bit'+(p.ld&&p.m!='up'?' ('+m+')':'')}},
+ mux:{pn:'Multiplexer',def:{k:2,w:1},f:[cfN('k','Select bits (2^k inputs)',1,4),cfN('w','Bus width',1,8)],fix:(p,ch)=>{if(ch=='k')p.w=Math.min(p.w,Math.floor(64/2**p.k));else while(2**p.k*p.w>64)p.k--},lb:p=>`Mux ${2**p.k}:1 × ${p.w}-bit`},
+ dmx:{pn:'Demultiplexer',def:{k:2},f:[cfN('k','Select bits',1,4)],lb:p=>`Demux 1:${2**p.k}`},
+ dcd:{pn:'Decoder',def:{k:2},f:[cfN('k','Input bits',1,5)],lb:p=>`Decoder ${p.k}:${2**p.k}`},
+ enc:{pn:'Priority encoder',def:{k:2},f:[cfN('k','Output bits',2,4)],lb:p=>`Priority encoder ${2**p.k}:${p.k}`},
+ rom:{pn:'ROM (programmable)',def:{a:4,w:8},f:[cfN('a','Address bits',1,12),cfN('w','Data bits',1,16)],mem:1,lb:p=>`ROM ${2**p.a}×${p.w}`},
+ ram:{pn:'RAM',def:{a:4,w:8},f:[cfN('a','Address bits',1,12),cfN('w','Data bits',1,16)],mem:1,lb:p=>`RAM ${2**p.a}×${p.w}`},
+ rf:{pn:'Register file',def:{k:2,w:8},f:[cfN('k','Address bits',1,4),cfN('w','Data bits',1,16)],mem:1,lb:p=>`Register file ${2**p.k}×${p.w}`},
+ stack:{pn:'Stack (LIFO)',def:{a:4,w:8},f:[cfN('a','Depth bits',1,8),cfN('w','Data bits',1,16)],mem:1},
+ fifo:{pn:'FIFO queue',def:{a:4,w:8},f:[cfN('a','Depth bits',1,8),cfN('w','Data bits',1,16)],mem:1},
+ bar:{pn:'LED bar',def:{n:8},f:[cfN('n','LEDs',2,16)],lb:p=>'LED bar '+p.n},
+ nin:{pn:'Number input',def:{},f:[cfBits(1,16)],kind:'nin'},
+ dd:{pn:'Decimal display',def:{},f:[cfBits(1,16)],kind:'dd'},
+ ccomp:{pn:'C Compiler',def:{a:8,w:13},f:[cfN('a','Address bits (A pins)',4,12),cfN('w','Data bits (D pins)',13,16)],cc:1}
+};
+const GATEF=[cfN('n','Inputs',2,16)];
+/* nin / dd exist for every width 1..16 (they are separate kinds in the engine) */
+for(let n=1;n<=16;n++){
+ if(!KS['nin'+n])KS['nin'+n]={lb:()=>'Number input '+n+'-bit',nin:n,nolab:1,i:()=>[],o:()=>Bn(n,'Q'),out:(v,c)=>nb((((c.val|0)%2**n)+2**n)%2**n,n),sz:()=>[120,n*18+40],draw:ninDraw,click:(c,p)=>{const i=ninHit(c,p);if(i<0)return false;const m=2**n;c.val=((((c.val|0)%m)+m)%m)^(1<<i);return true}};
+ if(!KS['dd'+n])KS['dd'+n]={lb:()=>'Decimal display '+n+'-bit',dd:n,nolab:1,i:()=>Bn(n,'D'),o:()=>[],out:()=>[],sz:()=>[130,n*18+40],draw:ddDraw}}
+Object.entries(FAM).forEach(([k,f])=>{if(KS[k]&&!KS[k].lb&&f.lb)KS[k].lb=f.lb});
+/* ---------- palette: collapse the families into one entry each (old names still work in scripts) ---------- */
+const CAT_ALL=CAT.slice();
+function catMerge(pred,entry){const ix=[];CAT.forEach((e,i)=>pred(e)&&ix.push(i));if(!ix.length){CAT.push(entry);return}entry.g=entry.g||CAT[ix[0]].g;CAT[ix[0]]=entry;for(let j=ix.length-1;j>0;j--)CAT.splice(ix[j],1)}
+Object.entries(FAM).forEach(([k,f])=>{if(k=='ccomp')return;const pr=f.kind?e=>e.t=='M'&&new RegExp('^'+f.kind+'\\d+$').test(e.k):e=>e.t=='M'&&e.k==k;
+ catMerge(pr,{n:(f.pal||f.pn)+' – set size on click',t:'M',k:f.kind?f.kind+'8':k,p:{...f.def},fam:1})});
+['AND','OR','NAND','NOR','XOR','XNOR'].forEach(t=>catMerge(e=>e.t==t&&e.gn,{g:'Gates',n:t+' – set number of inputs on click',t,fam:1}));
+CAT.push({g:'Compiler',n:'C Compiler → memory (write C, it loads LL-8 machine code)',t:'M',k:'ccomp',p:{a:8,w:13},fam:1});
+/* ROM can be programmed through optional pins DI*, WE, CK (hidden until wired / "Show all pins") */
+{const o=['WE','CK','DI*'];o.includes=n=>n=='WE'||n=='CK'||/^DI\d+$/.test(n);
+ KS.rom.i=p=>[...Bn(p.a,'A'),...Bn(p.w,'DI'),'WE','CK'];KS.rom.ck=p=>p.a+p.w+1;KS.rom.op=o;
+ KS.rom.nx=(v,c,p)=>{if(v[p.a+p.w])c.mem[bv(v,0,p.a)]=bv(v,p.a,p.w);return c.st}}
+/* ---------- reading / writing settings of a placed part ---------- */
+function famOf(c){if(!c)return null;if(c.t=='M'){const m=c.k.match(/^(nin|dd)(\d+)$/);if(m)return{f:FAM[m[1]],get:()=>({n:+m[2]}),pn:FAM[m[1]].pn};const f=FAM[c.k];return f?{f,get:()=>({...c.p}),pn:f.pn}:null}
+ if(G[c.t]&&c.t!='NOT'&&c.t!='BUF')return{f:{f:GATEF},get:()=>({n:c.n||2}),pn:c.t+' gate',gate:1};return null}
+function cfgFix(F,np,ch){const pass=()=>F.f.f.forEach(d=>{const k=d.k;if(d.type=='bool'){if(np[k])np[k]=1;else delete np[k]}else if(d.type=='num')np[k]=cl(Math.round(+np[k]||0),d.min,d.max);else if(d.num)np[k]=+np[k]||0});pass();if(F.f.fix){F.f.fix(np,ch);pass()}return np}
+function cfgSet(key,val){const c=CFGC;if(!c||!sim.map[c.id])return;const F=famOf(c);if(!F)return;const d=F.f.f.find(x=>x.k==key);let v=d.type=='bool'?(val?1:0):d.type=='sel'&&!d.num?val:+val;if(isNaN(v)&&d.type!='sel')return;
+ const old=F.get(),np=cfgFix(F,{...old,[key]:v},key);if(JSON.stringify(old)==JSON.stringify(np)){CFGKEY='';return}reconf(c,np)}
+function cfgStep(key,dl){const c=CFGC,F=famOf(c);if(!F)return;const d=F.f.f.find(x=>x.k==key),cur=F.get()[key]||0;cfgSet(key,cur+dl)}
+function cfgShowAll(on){const c=CFGC;if(!c)return;const pre=snapState();setVis(c,!!on,sim);rec(pre);CFGKEY=''}
+/* change the settings and keep every wire that still has a pin with the same name */
+function reconf(c,np){const pre=snapState(),F=famOf(c);if(ME&&ME.c===c)meClose();
+ if(c.t!='M'){c.n=np.n;const n=c.n;c.src=c.src.slice(0,n);c.lk=(c.lk||[]).filter(l=>!(l.k==0&&l.i>=n));sim.cs.forEach(q=>{if(q!==c&&q.lk)q.lk=q.lk.filter(l=>!(l.id==c.id&&l.k2==0&&l.j>=n))});rec(pre);return}
+ const oi=c.nm[0].slice(),oo=c.nm[1].slice(),m=c.k.match(/^(nin|dd)\d+$/);if(m){c.k=m[1]+np.n;c.p={}}else c.p=np;
+ const K=KS[c.k],ni=K.i(c.p),no=K.o(c.p),mi=oi.map(n=>ni.indexOf(n)),mo=oo.map(n=>no.indexOf(n));
+ const ns=ni.map(()=>null);c.src.forEach((r,i)=>{if(r&&mi[i]>=0)ns[mi[i]]=r});c.src=ns;
+ sim.cs.forEach(q=>{if(q===c)return;q.src.forEach((r,i)=>{if(r&&r.id==c.id){if(mo[r.o]>=0)r.o=mo[r.o];else q.src[i]=null}})});
+ sim.cs.forEach(q=>{if(!q.lk)return;q.lk=q.lk.filter(l=>{if(q===c){const t=l.k?mo:mi;if(t[l.i]==null||t[l.i]<0)return false;l.i=t[l.i]}if(l.id==c.id){const t=l.k2?mo:mi;if(t[l.j]==null||t[l.j]<0)return false;l.j=t[l.j]}return true})});
+ c.nm=[ni,no];c.lab=undefined;c.st=K.init?K.init(c.p):0;c.o=new Array(64).fill(0);c.pc=0;setVis(c,c.full,sim);sim.cs.forEach(q=>q.t=='M'&&q!==c&&KS[q.k].op&&setVis(q,q.full,sim));rec(pre)}
+/* ---------- the settings panel ---------- */
+let CFGC=null,CFGKEY='';
+document.head.insertAdjacentHTML('beforeend','<style>#cfg{position:absolute;right:192px;top:76px;width:248px;background:var(--p);border:1px solid var(--b);border-radius:10px;padding:8px;z-index:3;box-shadow:0 6px 24px #0005}#cfg[hidden]{display:none}#cfg small{display:block;opacity:.7;margin-top:4px}#cfg .row span{width:96px;font-size:12px}#cfg input[type=number]{width:56px;text-align:center}#cfg select{max-width:150px}#cfg button.sq{padding:2px 9px}</style>');
+$('#main').insertAdjacentHTML('beforeend','<div id="cfg" hidden></div>');
+function cfgUpd(){const P=$('#cfg'),c=(sel&&sels.size<=1&&sim.map[sel.id]===sel)?sel:null,F=famOf(c);
+ if(!F){if(!P.hidden)P.hidden=true;CFGC=null;CFGKEY='';return}
+ const key=c.id+'|'+c.k+'|'+JSON.stringify(c.p)+'|'+c.n+'|'+c.full+'|'+(c.nm?c.nm[0].length+'/'+c.nm[1].length:'');
+ if(key===CFGKEY&&CFGC===c)return;
+ CFGC=c;CFGKEY=key;const p=F.get(),K=c.t=='M'&&KS[c.k];let h=`<b>⚙ ${esc(F.pn)}</b>`;
+ F.f.f.forEach(d=>{if(d.show&&!d.show(p))return;const v=p[d.k];
+  if(d.type=='num')h+=`<div class="row"><span>${esc(d.n)}</span><button class="sq" onclick="cfgStep('${d.k}',-1)">−</button><input type="number" min="${d.min}" max="${d.max}" value="${v||0}" onchange="cfgSet('${d.k}',this.value)"><button class="sq" onclick="cfgStep('${d.k}',1)">+</button></div>`;
+  else if(d.type=='sel')h+=`<div class="row"><span>${esc(d.n)}</span><select onchange="cfgSet('${d.k}',this.value)">${d.opts.map(o=>`<option value="${o[0]}"${String(o[0])==String(v??(d.num?0:''))?' selected':''}>${esc(o[1])}</option>`).join('')}</select></div>`;
+  else h+=`<div class="row"><label><input type="checkbox" ${v?'checked':''} onchange="cfgSet('${d.k}',this.checked)"> ${esc(d.n)}</label></div>`});
+ if(K){h+=`<small>${c.nm[0].length} input pins · ${c.nm[1].length} output pins. Wires stay connected to pins that keep their name.</small>`;
+  if(K.op&&K.op.length)h+=`<div class="row"><label><input type="checkbox" ${c.full?'checked':''} onchange="cfgShowAll(this.checked)"> Show all pins (${K.op.join(' ')})</label></div>`;
+  if(F.f.mem)h+=`<div class="row"><button onclick="openMem(CFGC)">✎ Edit contents</button></div>`;
+  if(F.f.cc)h+=`<div class="row"><button class="pri" onclick="openCC(CFGC)">💻 Open C editor</button></div><small>Double-click the part to open the editor. Wire A/D (and WE, CK) to a memory, write C, press “Compile &amp; load”.</small>`}
+ P.innerHTML=h;P.hidden=false}
+{const _vp=vpUpd;vpUpd=function(){_vp();cfgUpd()}}
+
+/* ---------- 2. C compiler → LL-8 machine code ---------- */
+const LLC=(()=>{
+const TYPES=/^(int|char|unsigned|signed|short|long|byte|bool|uint8_t|int8_t|uint16_t|int16_t|const|static|volatile|void|float|double)$/;
+class CErr extends Error{constructor(m,ln){super(m);this.ln=ln}}
+const W8=v=>((v%256)+256)%256;
+function lex(src){src=String(src).replace(/\r/g,'');let out='',i=0;
+ while(i<src.length){const ch=src[i],nx=src[i+1];
+  if(ch=='/'&&nx=='/'){while(i<src.length&&src[i]!='\n')i++;continue}
+  if(ch=='/'&&nx=='*'){i+=2;while(i<src.length&&!(src[i]=='*'&&src[i+1]=='/')){if(src[i]=='\n')out+='\n';i++}i+=2;continue}
+  if(ch=='"'){let j=i+1;out+='"';while(j<src.length&&src[j]!='"'&&src[j]!='\n'){if(src[j]=='\\')out+=src[j++];out+=src[j++]}out+='"';i=j+1;continue}
+  out+=ch;i++}
+ const defs=new Map(),T=[];
+ const lines=out.split('\n').map((l,k)=>{const m=l.match(/^\s*#\s*(\w+)\s*(.*)$/);if(!m)return l;if(m[1]=='define'){const d=m[2].match(/^([A-Za-z_]\w*)(\(?)\s*(.*)$/);if(!d)throw new CErr('bad #define',k+1);if(d[2]=='(')throw new CErr('#define with arguments is not supported',k+1);defs.set(d[1],d[3])}return''});
+ const RX=/\s+|0[xX][0-9a-fA-F]+|0[bB][01]+|\d+|[A-Za-z_]\w*|'(\\?.)'|"[^"]*"|<<=|>>=|==|!=|<=|>=|&&|\|\||\+\+|--|\+=|-=|\*=|\/=|%=|&=|\|=|\^=|<<|>>|[-+*\/%&|^~!<>=?:;,(){}\[\]]|[^]/y;
+ const ESC={n:10,t:9,r:13,0:0,'\\':92,"'":39,'"':34};
+ const scan=(text,ln,depth)=>{RX.lastIndex=0;let m;while(RX.lastIndex<text.length&&(m=RX.exec(text))){const t=m[0];
+  if(/^\s/.test(t))continue;
+  if(/^\d|^0[xXbB]/.test(t)){let v=/^0[xX]/.test(t)?parseInt(t,16):/^0[bB]/.test(t)?parseInt(t.slice(2),2):parseInt(t,10);if(v>255)throw new CErr(`the number ${t} does not fit in 8 bits (0-255)`,ln);T.push({t:'num',v,ln});continue}
+  if(t[0]=="'"){const c=m[1];T.push({t:'num',v:c[0]=='\\'?(ESC[c[1]]??c.charCodeAt(1)):c.charCodeAt(0),ln});continue}
+  if(t[0]=='"'){T.push({t:'str',v:t.slice(1,-1),ln});continue}
+  if(/^[A-Za-z_]/.test(t)){if(defs.has(t)&&depth<8){const sv=RX.lastIndex;scan(defs.get(t),ln,depth+1);RX.lastIndex=sv}else T.push({t:'id',v:t,ln});continue}
+  if(t.length==1&&!/[-+*\/%&|^~!<>=?:;,(){}\[\]]/.test(t))throw new CErr(`unexpected character '${t}'`,ln);
+  T.push({t:'op',v:t,ln})}};
+ lines.forEach((l,k)=>{const sv=RX.lastIndex;scan(l,k+1,0);RX.lastIndex=sv});
+ T.push({t:'eof',v:'',ln:lines.length});return T}
+function compile(src){try{return compile_(src)}catch(e){if(e instanceof CErr)return{error:{msg:e.message,ln:e.ln}};if(/^asm:/.test(e.message))return{error:{msg:e.message.replace(/^asm:\s*/,'assembler: ')}};throw e}}
+function compile_(src){
+ const T=lex(src);let p=0,curLn=1;const err=(m,ln)=>{throw new CErr(m,ln||curLn)};
+ const peek=()=>T[p],next=()=>T[p++],isOp=v=>T[p].t=='op'&&T[p].v==v,eat=v=>isOp(v)?(p++,true):false,
+  tk=t=>t.t=='eof'?'end of file':t.t=='str'?'"'+t.v+'"':String(t.v),want=v=>{if(!eat(v))err(`expected '${v}' but found '${tk(T[p])}'`,T[p].ln)};
+ const isType=()=>T[p].t=='id'&&TYPES.test(T[p].v);
+ const BP={'||':1,'&&':2,'|':3,'^':4,'&':5,'==':6,'!=':6,'<':7,'>':7,'<=':7,'>=':7,'<<':8,'>>':8,'+':9,'-':9,'*':10,'/':10,'%':10};
+ const ASG=new Set(['=','+=','-=','*=','/=','%=','&=','|=','^=','<<=','>>=']);
+ /* ----- parser ----- */
+ const expr=()=>asg();
+ function asg(){const l=tern(),t=peek();if(t.t=='op'&&ASG.has(t.v)){if(l.k!='var')err('the left side of '+t.v+' must be a variable',t.ln);p++;const r=asg();return{k:'asg',op:t.v.slice(0,-1),name:l.name,e:r,ln:t.ln}}return l}
+ function tern(){const c=bin(1);if(eat('?')){const a=asg();want(':');const b=tern();return{k:'tern',c,a,b,ln:c.ln}}return c}
+ function bin(min){let l=unary();for(;;){const t=peek();if(t.t!='op'||!Object.prototype.hasOwnProperty.call(BP,t.v)||BP[t.v]<min)return l;p++;const r=bin(BP[t.v]+1);l={k:'bin',op:t.v,a:l,b:r,ln:t.ln}}}
+ function unary(){const t=peek();if(t.t=='op'){
+   if('-+!~'.includes(t.v)&&t.v.length==1){p++;return{k:'un',op:t.v,a:unary(),ln:t.ln}}
+   if(t.v=='++'||t.v=='--'){p++;const v=unary();if(v.k!='var')err('++/-- needs a variable',t.ln);return{k:'inc',pre:1,op:t.v[0],name:v.name,ln:t.ln}}
+   if(t.v=='('&&T[p+1].t=='id'&&TYPES.test(T[p+1].v)){p++;while(!isOp(')')){if(peek().t=='eof')err('missing )',t.ln);p++}p++;return unary()}}
+  let e=primary();while(isOp('++')||isOp('--')){const o=next();if(e.k!='var')err('++/-- needs a variable',o.ln);e={k:'inc',pre:0,op:o.v[0],name:e.name,ln:o.ln}}return e}
+ function primary(){const t=next();
+  if(t.t=='num')return{k:'num',v:t.v,ln:t.ln};
+  if(t.t=='id'){if(isOp('(')){p++;const args=[];if(!isOp(')')){do args.push(asg());while(eat(','))}want(')');return{k:'call',name:t.v,args,ln:t.ln}}if(isOp('['))err('arrays are not supported (the LL-8 has only 16 bytes of RAM)',t.ln);return{k:'var',name:t.v,ln:t.ln}}
+  if(t.t=='op'&&t.v=='('){const e=expr();want(')');return e}
+  err(`unexpected '${tk(t)}'`,t.ln)}
+ function decl(){const ln=peek().ln;while(isType())p++;const list=[];do{const t=next();if(t.t!='id')err(`expected a variable name but found '${tk(t)}'`,t.ln);if(isOp('['))err('arrays are not supported (the LL-8 has only 16 bytes of RAM)',t.ln);if(isOp('('))err('function declarations inside code are not supported',t.ln);let init=null;if(eat('='))init=asg();list.push({name:t.v,init,ln:t.ln})}while(eat(','));want(';');return{k:'decl',list,ln}}
+ function block(){const t=peek();want('{');const list=[];while(!isOp('}')){if(peek().t=='eof')err("missing '}' – the block opened here is never closed",t.ln);list.push(stmt())}p++;return{k:'block',list}}
+ function stmt(){const t=peek();
+  if(t.t=='op'){if(t.v=='{')return block();if(t.v==';'){p++;return{k:'nop'}}}
+  if(t.t=='id'){if(isType())return decl();
+   switch(t.v){
+    case'if':{p++;want('(');const c=expr();want(')');const a=stmt();let e=null;if(peek().t=='id'&&peek().v=='else'){p++;e=stmt()}return{k:'if',c,a,e,ln:t.ln}}
+    case'while':{p++;want('(');const c=expr();want(')');return{k:'while',c,body:stmt(),ln:t.ln}}
+    case'do':{p++;const body=stmt();if(!(peek().t=='id'&&peek().v=='while'))err("expected 'while' after the do-block",peek().ln);p++;want('(');const c=expr();want(')');want(';');return{k:'do',c,body,ln:t.ln}}
+    case'for':{p++;want('(');let init=null,c=null,step=null;if(!eat(';')){init=isType()?decl():(()=>{const e=expr();want(';');return{k:'expr',e,ln:t.ln}})()}if(!eat(';')){c=expr();want(';')}if(!isOp(')'))step=expr();want(')');return{k:'for',init,c,step,body:stmt(),ln:t.ln}}
+    case'break':case'continue':p++;want(';');return{k:t.v,ln:t.ln};
+    case'return':{p++;if(!isOp(';'))expr();want(';');return{k:'return',ln:t.ln}}
+    case'asm':if(T[p+1].t=='op'&&T[p+1].v=='('){p+=2;const s=next();if(s.t!='str')err('asm("…") needs a string',t.ln);want(')');want(';');return{k:'asm',v:s.v,ln:t.ln}}}}
+  const e=expr();want(';');return{k:'expr',e,ln:t.ln}}
+ const top=[],funcs={};
+ while(peek().t!='eof'){
+  if(isType()){let q=p;while(T[q].t=='id'&&TYPES.test(T[q].v))q++;
+   if(T[q].t=='id'&&T[q+1].t=='op'&&T[q+1].v=='('){const name=T[q].v;p=q+2;if(!isOp(')')){if(peek().t=='id'&&peek().v=='void'&&T[p+1].v==')')p++;else err(`function parameters are not supported (function ${name}); use global variables or #define`,T[q].ln)}want(')');if(eat(';'))continue;funcs[name]={body:block(),ln:T[q].ln};continue}}
+  if(isOp('}'))err("unexpected '}'",peek().ln);top.push(stmt())}
+ /* ----- code generator (accumulator machine, variables in RAM[0..15]) ----- */
+ const code=[],used=Array(16).fill(0),scopes=[new Map()],loops=[],vmap=[];let nL=0,retL=null;
+ const emit=(t,ln)=>{const last=code[code.length-1];if(last&&!last.lab&&/^LDA /.test(t)&&last.t=='STA '+t.slice(4))return;code.push({t,ln:ln||curLn})},
+  nl=()=>'L'+(++nL),place=l=>code.push({t:l+':',lab:1,ln:curLn});
+ const allocV=()=>{for(let i=0;i<16;i++)if(!used[i]){used[i]=1;return i}err('out of RAM: the LL-8 has only 16 bytes for variables and temporary values')},
+  allocT=()=>{for(let i=15;i>=0;i--)if(!used[i]){used[i]=1;return i}err('out of RAM: the LL-8 has only 16 bytes – use fewer variables or simpler expressions')},
+  free=r=>{used[r]=0},rel=s=>{if(s[1])free(s[0])};
+ const lookup=(n,ln)=>{for(let i=scopes.length-1;i>=0;i--)if(scopes[i].has(n))return scopes[i].get(n);err(`'${n}' is not declared`,ln)};
+ function fold(e){switch(e.k){
+  case'un':{const a=fold(e.a);if(a.k=='num')return{k:'num',v:e.op=='-'?W8(-a.v):e.op=='~'?W8(~a.v):e.op=='!'?+!a.v:a.v,ln:e.ln};return{...e,a}}
+  case'bin':{const a=fold(e.a),b=fold(e.b);if(a.k=='num'&&b.k=='num'){const x=a.v,y=b.v;let r;switch(e.op){case'+':r=W8(x+y);break;case'-':r=W8(x-y);break;case'*':r=W8(x*y);break;case'&':r=x&y;break;case'|':r=x|y;break;case'^':r=x^y;break;
+     case'/':if(!y)err('division by zero',e.ln);r=Math.floor(x/y);break;case'%':if(!y)err('division by zero',e.ln);r=x%y;break;case'<<':r=y>=8?0:W8(x<<y);break;case'>>':r=y>=8?0:x>>y;break;
+     case'==':r=+(x==y);break;case'!=':r=+(x!=y);break;case'<':r=+(x<y);break;case'>':r=+(x>y);break;case'<=':r=+(x<=y);break;case'>=':r=+(x>=y);break;case'&&':r=+(x&&y);break;case'||':r=+(x||y);break}return{k:'num',v:r,ln:e.ln}}return{...e,a,b}}
+  case'tern':{const c=fold(e.c);if(c.k=='num')return fold(c.v?e.a:e.b);return{...e,c,a:fold(e.a),b:fold(e.b)}}
+  default:return e}}
+ function opnd(e){e=fold(e);if(e.k=='var')return[lookup(e.name,e.ln),0];if(e.k=='slot')return[e.s,0];const t=allocT();g(e);emit('STA '+t);return[t,1]}
+ function ltU(x,y){const sx=opnd(x),sy=opnd(y),d=allocT(),t=allocT();   /* unsigned x<y without a carry flag: borrow = MSB of (~x&y)|(~(x^y)&(x-y)); leaves A=128 / Z=0 when x<y */
+  emit('LDA '+sx[0]);emit('SUB '+sy[0]);emit('STA '+d);emit('LDA '+sx[0]);emit('NOT');emit('AND '+sy[0]);emit('STA '+t);
+  emit('LDA '+sx[0]);emit('XOR '+sy[0]);emit('NOT');emit('AND '+d);emit('OR '+t);emit('STA '+t);emit('LDI 128');emit('AND '+t);free(t);free(d);rel(sy);rel(sx)}
+ function eqTest(a,b){a=fold(a);b=fold(b);if(a.k=='num'&&b.k!='num')[a,b]=[b,a];if(b.k=='num'){g(a);emit(b.v?'SUBI '+b.v:'TST');return}const s=opnd(b);g(a);emit('SUB '+s[0]);rel(s)}
+ function jump(e,L,on){e=fold(e);curLn=e.ln||curLn;
+  if(e.k=='num'){if(!!e.v===on)emit('JMP '+L);return}
+  if(e.k=='un'&&e.op=='!')return jump(e.a,L,!on);
+  if(e.k=='bin'){const op=e.op;
+   if(op=='&&'){if(!on){jump(e.a,L,false);jump(e.b,L,false)}else{const sk=nl();jump(e.a,sk,false);jump(e.b,L,true);place(sk)}return}
+   if(op=='||'){if(on){jump(e.a,L,true);jump(e.b,L,true)}else{const sk=nl();jump(e.a,sk,true);jump(e.b,L,false);place(sk)}return}
+   if(op=='=='||op=='!='){eqTest(e.a,e.b);emit(((op=='==')===on?'JZ ':'JNZ ')+L);return}
+   if(op=='<'||op=='>'||op=='<='||op=='>='){const[x,y,inv]=op=='<'?[e.a,e.b,0]:op=='>'?[e.b,e.a,0]:op=='<='?[e.b,e.a,1]:[e.a,e.b,1];ltU(x,y);emit(((inv?!on:on)?'JNZ ':'JZ ')+L);return}}
+  g(e);emit('TST');emit((on?'JNZ ':'JZ ')+L)}
+ function boolVal(e){const Lf=nl(),Le=nl();jump(e,Lf,false);emit('LDI 1');emit('JMP '+Le);place(Lf);emit('LDI 0');place(Le)}
+ const ar=(O,a,b)=>{const s=opnd(b);g(a);emit(O+' '+s[0]);rel(s)};
+ function mul(a,b,e){a=fold(a);b=fold(b);if(a.k=='num'&&b.k!='num')[a,b]=[b,a];
+  if(b.k=='num'){const k=b.v;if(k==0){g(a);emit('LDI 0');return}if(k==1){g(a);return}if((k&(k-1))==0){g(a);for(let i=0;i<Math.log2(k);i++)emit('SHL');return}if(k<=4){const s=opnd(a);emit('LDA '+s[0]);for(let i=1;i<k;i++)emit('ADD '+s[0]);rel(s);return}}
+  const ta=allocT(),tb=allocT(),tr=allocT(),L1=nl(),L2=nl();g(a);emit('STA '+ta);g(b);emit('STA '+tb);emit('LDI 0');emit('STA '+tr);
+  emit('LDA '+tb);emit('TST');emit('JZ '+L2);place(L1);emit('LDA '+tr);emit('ADD '+ta);emit('STA '+tr);emit('LDA '+tb);emit('SUBI 1');emit('STA '+tb);emit('JNZ '+L1);place(L2);emit('LDA '+tr);free(tr);free(tb);free(ta)}
+ function div(op,a,b,e){a=fold(a);b=fold(b);
+  if(b.k=='num'){const k=b.v;if(!k)err('division by zero',e.ln);if(k==1){g(a);if(op=='%')emit('LDI 0');return}
+   if((k&(k-1))==0){if(op=='/'){g(a);for(let i=0;i<Math.log2(k);i++)emit('SHR');return}const t=allocT();emit('LDI '+(k-1));emit('STA '+t);g(a);emit('AND '+t);free(t);return}}
+  const tr=allocT(),td=allocT(),tq=allocT(),Ll=nl(),Ld=nl();g(a);emit('STA '+tr);g(b);emit('STA '+td);emit('LDI 0');emit('STA '+tq);
+  emit('LDA '+td);emit('TST');emit('JZ '+Ld);place(Ll);ltU({k:'slot',s:tr},{k:'slot',s:td});emit('JNZ '+Ld);
+  emit('LDA '+tr);emit('SUB '+td);emit('STA '+tr);emit('LDA '+tq);emit('ADDI 1');emit('STA '+tq);emit('JMP '+Ll);place(Ld);emit('LDA '+(op=='/'?tq:tr));free(tq);free(td);free(tr)}
+ function genBin(e){const{op,a,b}=e;switch(op){
+  case'+':if(b.k=='num'){g(a);if(b.v)emit('ADDI '+b.v);return}if(a.k=='num')return genBin({...e,a:b,b:a});return ar('ADD',a,b);
+  case'-':if(b.k=='num'){g(a);if(b.v)emit('SUBI '+b.v);return}return ar('SUB',a,b);
+  case'&':return ar('AND',a,b);case'|':return ar('OR',a,b);case'^':return ar('XOR',a,b);
+  case'<<':case'>>':{if(b.k!='num')err('the shift amount must be a constant (the LL-8 shifts one bit per instruction)',e.ln);g(a);if(b.v>=8){emit('LDI 0');return}for(let i=0;i<b.v;i++)emit(op=='<<'?'SHL':'SHR');return}
+  case'*':return mul(a,b,e);case'/':case'%':return div(op,a,b,e);
+  default:return boolVal(e)}}
+ function g(e,unused){e=fold(e);curLn=e.ln||curLn;switch(e.k){
+  case'num':emit('LDI '+e.v);return;
+  case'var':emit('LDA '+lookup(e.name,e.ln));return;
+  case'slot':emit('LDA '+e.s);return;
+  case'asg':{const r=lookup(e.name,e.ln);g(e.op?{k:'bin',op:e.op,a:{k:'var',name:e.name,ln:e.ln},b:e.e,ln:e.ln}:e.e);emit('STA '+r);return}
+  case'inc':{const r=lookup(e.name,e.ln);if(e.pre||unused){emit('LDA '+r);emit(e.op=='+'?'ADDI 1':'SUBI 1');emit('STA '+r)}else{emit('LDA '+r);const t=allocT();emit('STA '+t);emit(e.op=='+'?'ADDI 1':'SUBI 1');emit('STA '+r);emit('LDA '+t);free(t)}return}
+  case'un':if(e.op=='-'){g(e.a);emit('NOT');emit('ADDI 1')}else if(e.op=='~'){g(e.a);emit('NOT')}else if(e.op=='+')g(e.a);else boolVal(e);return;
+  case'tern':{const Lf=nl(),Le=nl();jump(e.c,Lf,false);g(e.a);emit('JMP '+Le);place(Lf);g(e.b);place(Le);return}
+  case'call':{const n=e.name;
+   if(n=='input'||n=='in'||n=='IN'){if(e.args.length)err(n+'() takes no arguments',e.ln);emit('IN')}
+   else if(n=='output'||n=='out'||n=='OUT'){if(e.args.length!=1)err(n+'(x) takes exactly one value',e.ln);g(e.args[0]);emit('OUT')}
+   else if(n=='halt'||n=='HLT'){emit('HLT')}
+   else err(`unknown function '${n}'. Built-in: input(), output(x), halt().`+(funcs[n]?' User functions are not supported – put the code in main() or use #define.':''),e.ln);return}
+  case'bin':return genBin(e)}}
+ function s(st){curLn=st.ln||curLn;switch(st.k){
+  case'nop':return;
+  case'block':{scopes.push(new Map());st.list.forEach(s);scopes.pop().forEach(r=>used[r]=0);return}
+  case'decl':{const sc=scopes[scopes.length-1];for(const d of st.list){curLn=d.ln;if(sc.has(d.name))err(`'${d.name}' is already declared`,d.ln);const r=allocV();if(d.init)g(d.init);else emit('LDI 0');emit('STA '+r);sc.set(d.name,r);vmap.push({name:d.name,slot:r,ln:d.ln})}return}
+  case'expr':g(st.e,true);return;
+  case'if':{const Le=nl();if(st.e){const Lx=nl();jump(st.c,Le,false);s(st.a);emit('JMP '+Lx);place(Le);s(st.e);place(Lx)}else{jump(st.c,Le,false);s(st.a);place(Le)}return}
+  case'while':{const Lt=nl(),Le=nl();loops.push({b:Le,c:Lt});place(Lt);jump(st.c,Le,false);s(st.body);emit('JMP '+Lt);place(Le);loops.pop();return}
+  case'do':{const Lt=nl(),Lc=nl(),Le=nl();loops.push({b:Le,c:Lc});place(Lt);s(st.body);place(Lc);jump(st.c,Lt,true);place(Le);loops.pop();return}
+  case'for':{scopes.push(new Map());if(st.init)s(st.init);const Lt=nl(),Lc=nl(),Le=nl();loops.push({b:Le,c:Lc});place(Lt);if(st.c)jump(st.c,Le,false);s(st.body);place(Lc);if(st.step)g(st.step,true);emit('JMP '+Lt);place(Le);loops.pop();scopes.pop().forEach(r=>used[r]=0);return}
+  case'break':if(!loops.length)err("'break' outside a loop",st.ln);emit('JMP '+loops[loops.length-1].b);return;
+  case'continue':if(!loops.length)err("'continue' outside a loop",st.ln);emit('JMP '+loops[loops.length-1].c);return;
+  case'return':emit(retL?'JMP '+retL:'HLT');return;
+  case'asm':st.v.split(/[;\n]/).map(x=>x.trim()).filter(Boolean).forEach(x=>code.push({t:x,ln:st.ln,raw:1}));return}}
+ top.forEach(s);
+ if(funcs.main){retL=null;s(funcs.main.body)}
+ else if(funcs.setup||funcs.loop){if(funcs.setup){const Le=nl();retL=Le;s(funcs.setup.body);place(Le)}
+  const Lt=nl(),Lr=nl();place(Lt);retL=Lr;if(funcs.loop)s(funcs.loop.body);place(Lr);emit('JMP '+Lt)}
+ curLn=T[T.length-1].ln;emit('HLT');
+ const text=code.map(c=>c.t).join('\n'),words=asm(text);
+ const list=[];let a=0;code.forEach(c=>{if(c.lab)return;list.push({addr:a,word:words[a],asm:c.t,ln:c.ln});a++});
+ return{words,asm:text,list,vars:vmap.filter(v=>true)}}
+return{compile}})();
+/* ---------- the compiler part ---------- */
+const CC_SAMPLE=`// LL-8 C compiler – 8-bit unsigned variables, 16 bytes of RAM.
+// input() reads the P0-P7 switches, output(x) writes the output port.
+int n = 10;
+while (n != 0) {
+  output(n);
+  n--;
+}
+halt();`;
+const CC_EX={
+'Count down 10 → 1':CC_SAMPLE,
+'Echo the input switches':'while (1) {\n  output(input());\n}',
+'Free-running counter':'int x = 0;\nwhile (1) {\n  x++;\n  output(x);\n}',
+'Fibonacci':'int a = 0, b = 1, t;\nwhile (1) {\n  output(a);\n  t = a + b;\n  a = b;\n  b = t;\n}',
+'Sum of 1..10':'int i, sum = 0;\nfor (i = 1; i <= 10; i++) {\n  sum += i;\n}\noutput(sum);   // 55\nhalt();',
+'Input × 3, input / 10, input % 10':'int x = input();\noutput(x * 3);\noutput(x / 10);\noutput(x % 10);\nhalt();',
+'Larger of two samples':'int a = input();\nint b = input();\nif (a > b) output(a);\nelse output(b);\nhalt();',
+'Blink all LEDs':'int x = 0;\nwhile (1) {\n  x = ~x;\n  output(x);\n}',
+'Count the switches that are ON':'int v = input(), n = 0;\nwhile (v != 0) {\n  n += v & 1;\n  v >>= 1;\n}\noutput(n);\nhalt();',
+'Arduino style: setup() / loop()':'int count;\nvoid setup() { count = 0; }\nvoid loop() {\n  count = count + 2;\n  output(count);\n}',
+'Knight-rider':'int x = 1;\nwhile (1) {\n  while (x != 128) { output(x); x <<= 1; }\n  while (x != 1)   { output(x); x >>= 1; }\n}'};
+function ccWords(c){if(c.code==null)c.code=CC_SAMPLE;if(c.cw===undefined){const r=LLC.compile(c.code);c.cw=r.words||[];c.cerr=r.error||null}return c.cw}
+KS.ccomp={lb:()=>'C Compiler',i:()=>['CK','RST'],o:p=>[...Bn(p.a,'A'),...Bn(p.w,'D'),'WE','DONE'],ck:()=>0,rs:()=>1,init:()=>0,
+ nx:(v,c)=>{const W=ccWords(c);return c.st<W.length?c.st+1:c.st},
+ out:(v,c,p)=>{const W=ccWords(c),z=Array(p.a+p.w).fill(0);if(!W.length||!(c.sim_&&wired(c.sim_,c,0)))return[...z,0,0];const s=c.st;return s<W.length?[...nb(s,p.a),...nb(W[s],p.w),1,0]:[...z,0,1]},
+ sz:p=>[170,(p.a+p.w+2)*16+22],txt:c=>c.cerr?'error in code':(c.cw||[]).length+' words · dbl-click'};
+FAM.ccomp.f[1].min=13;
+document.head.insertAdjacentHTML('beforeend','<style>#cc table{font:11px ui-monospace,Menlo,monospace;margin:0;width:100%}#cc td,#cc th{padding:1px 6px;text-align:left;border-color:rgba(128,128,128,.35)}#cc td.ln{opacity:.5}#ccsrc{width:100%;box-sizing:border-box;font:12px ui-monospace,Menlo,monospace;tab-size:2}#cch{font-size:12px;max-height:48vh;overflow:auto;margin-top:6px}#cch[hidden]{display:none}#cch table{font:12px system-ui}</style>');
+document.body.insertAdjacentHTML('beforeend',`<div id="cc" class="box" style="position:fixed;z-index:9;top:3%;left:50%;transform:translateX(-50%);width:min(1080px,96vw)" hidden>
+<div class="row"><b>C Compiler → LL-8 machine code</b><select id="ccx" onchange="if(this.value){$('#ccsrc').value=CC_EX[this.value];this.value='';ccRun(0)}"></select><button onclick="ccRun(0)" title="Check the code and show the machine code">⚙ Compile</button><button class="pri" onclick="ccRun(1)" title="Compile, then write the machine code into every ROM / RAM wired to this compiler and restart the circuit">⬇ Compile &amp; load into memory</button><button onclick="const h=$('#cch');h.hidden=!h.hidden;if(!h.hidden)h.innerHTML=CC_HELP">Help</button><button onclick="$('#cc').hidden=true;CCC=null" style="margin-left:auto">Close</button></div>
+<div style="display:flex;gap:10px;flex-wrap:wrap"><div style="flex:1;min-width:300px"><textarea id="ccsrc" rows="22" spellcheck="false"></textarea><pre id="ccmsg" style="margin:4px 0"></pre></div><div style="flex:1.05;min-width:320px;max-height:62vh;overflow:auto" id="cclist"></div></div><div id="cch" hidden></div></div>`);
+const CC_HELP=`<b>Language</b>: a C subset. All variables are <b>8-bit unsigned</b> (<code>int char byte unsigned bool</code> are all the same). <code>int a = 1, b;</code> · <code>= += -= *= /= %= &= |= ^= &lt;&lt;= &gt;&gt;=</code> · <code>++ --</code> · <code>+ - * / % &amp; | ^ ~ ! &lt;&lt; &gt;&gt; == != &lt; &gt; &lt;= &gt;= &amp;&amp; || ?:</code> (shift amounts must be constants) · <code>if/else while do-while for break continue</code> · <code>#define NAME 5</code> · comments · <code>main()</code> or <code>setup()/loop()</code> or just statements. No arrays / functions with parameters (RAM = 16 bytes: variables <i>and</i> temporaries share it).<br>
+<b>Built-ins</b>: <code>input()</code> reads the P0–P7 switches · <code>output(x)</code> writes the output port (LED bar / hex) · <code>halt()</code> stops · <code>asm("LDI 5; OUT")</code> inserts raw LL-8 instructions.<br>
+<b>Machine code</b>: each instruction is one 13-bit word = <b>5-bit opcode · 8-bit operand</b> (exactly what the LL-8 <i>Program ROM</i> + <i>Control ROM</i> decode; the opcode selects the ALU function, so the words run directly on the LL-8's ALU). Up to 256 instructions.<br>
+<b>Wiring</b>: place a ROM (or RAM). Drag from the compiler's <b>D0…D12</b> to the memory's <b>DI0…DI12</b> (ROM: tick “Show all pins” in the ⚙ panel) – or to a RAM's <b>D</b> pins – and <b>A0…A7</b> to the memory's <b>A</b> pins. Press <b>Compile &amp; load</b>: every memory that has a pin driven by this compiler is filled instantly. <b>Hardware mode</b>: also wire <b>WE</b> → memory WE and the clock → both <b>CK</b> pins: the compiler then writes its program word by word after each reset, and <b>DONE</b> goes high when it is finished.<br>
+<b>Quick start</b>: Prebuilt circuits → <i>Microcontroller LL-8</i> → add a C Compiler, wire D0–D12 → Program-ROM DI0–DI12 (the LL-8's ROM has 13 data bits, 8 address bits), press Compile &amp; load, flip P0–P7.`;
+let CCC=null;
+function openCC(c){if(!c||c.k!='ccomp')return;CCC=c;ccWords(c);$('#ccx').innerHTML='<option value="">Examples…</option>'+Object.keys(CC_EX).map(k=>`<option>${esc(k)}</option>`).join('');$('#ccsrc').value=c.code;$('#ccmsg').textContent='';$('#cclist').innerHTML='';$('#cc').hidden=false;ccRun(0,1)}
+function ccTargets(c){const L=[];for(const m of sim.cs){if(m.t!='M'||!/^(rom|ram)$/.test(m.k))continue;let hit=false;for(let i=0;i<m.nm[0].length&&!hit;i++)for(const d of netDrivers(sim,m,i))if(d.m===c){hit=true;break}if(hit)L.push(m)}return L}
+function ccRun(load,quiet){const c=CCC;if(!c||!sim.map[c.id])return toast('That compiler is no longer on the board');
+ const src=$('#ccsrc').value,pre=snapState(),r=LLC.compile(src),M=$('#ccmsg'),L=$('#cclist'),bad=m=>{M.innerHTML=`<span style="color:#ff5a5a">✖ ${m}</span>`};
+ c.code=src;
+ if(r.error){c.cerr=r.error;c.cw=c.cw||[];L.innerHTML='';bad((r.error.ln?'line '+r.error.ln+': ':'')+esc(r.error.msg));rec(pre);return}
+ const cap=2**c.p.a;if(r.words.length>cap){c.cerr={msg:'too big'};bad(`the program has ${r.words.length} instructions but ${c.p.a} address bits reach only ${cap}. Raise “Address bits” in the ⚙ panel.`);rec(pre);return}
+ c.cerr=null;c.cw=r.words;c.st=0;
+ const bin=w=>{const s=w.toString(2).padStart(13,'0');return s.slice(0,5)+' '+s.slice(5)};
+ L.innerHTML='<table><tr><th>addr</th><th>opcode·operand</th><th>hex</th><th>instruction</th><th>C line</th></tr>'+r.list.map(x=>`<tr><td>${x.addr}</td><td>${bin(x.word)}</td><td>${x.word.toString(16).toUpperCase().padStart(4,'0')}</td><td>${esc(x.asm)}</td><td class="ln">${x.ln||''}</td></tr>`).join('')+'</table>'+(r.vars.length?'<small>RAM map: '+r.vars.map(v=>esc(v.name)+'→'+v.slot).join(', ')+'</small>':'');
+ let msg=`<span style="color:#38d96a">✔ ${r.words.length} instruction${r.words.length==1?'':'s'} (13-bit words)</span>`;
+ if(load){const T=ccTargets(c);
+  if(!T.length)msg+='<br>No memory is wired to this compiler yet. Connect D0–D12 → ROM <b>DI</b> pins (or a RAM’s D pins) and A0–A7 → the memory’s A pins, then press again.';
+  else{T.forEach((m,i)=>{const nm=(m.k.toUpperCase())+' #'+m.id,sz=2**m.p.a;
+    if(r.words.length>sz){msg+=`<br><span style="color:#ff5a5a">✖ ${nm}: needs ${r.words.length} words but has ${sz}</span>`;return}
+    const mk=2**m.p.w,cut=r.words.some(w=>w>=mk);m.mem=r.words.map(w=>w%mk);if(m.p.a==8&&m.p.w==13)m.asm=r.asm;
+    msg+=`<br>✔ loaded into ${nm} (${sz}×${m.p.w})`+(cut?`<br><span style="color:#ffb020">⚠ ${nm} is only ${m.p.w} bits wide – instructions need 13 bits, the upper bits were cut off</span>`:'')});
+   rstS(sim);stepSim()}}
+ M.innerHTML=msg;rec(pre)}
+$('#main').addEventListener('dblclick',e=>{if(e.target!==cv)return;const c=hitComp(W2(e));if(c&&c.t=='M'&&c.k=='ccomp'){e.stopPropagation();e.preventDefault();openCC(c)}},true);
+{const _ad9=aiDocs;aiDocs=function(){return _ad9()+`
+## v9: resizable parts + C compiler
+Every family is ONE part whose size is set in the settings panel (select the part): adder/sub/ALU/register/shifter/comparator/etc (n bits), counter (n bits + mode up|down|ud|gray|john|ring|lfsr, mod=N, ld=1), mux (k,w), decoder (k), ROM/RAM (a,w), gates (n inputs). Script: part c1 M:cnt n=12 m=ud mod=0  ·  nin1..nin16 / dd1..dd16 exist for every width. Changing a part's size keeps wires on pins with the same name.
+M:ccomp a=8 w=13   C compiler (inputs CK,RST; outputs A0..,D0..,WE,DONE). Source in "code". Compiles a C subset to LL-8 words (13 bit: 5-bit opcode, 8-bit operand). Memories wired to its A/D pins are loaded by the "Compile & load" button. ROM has optional programming pins DI0..,WE,CK.
+`};window.LL.docs=aiDocs}
 
 /* ---------- boot ---------- */
 try{lib=JSON.parse(localStorage.getItem('ll_lib')||'null')||{}}catch(e){lib={}}
