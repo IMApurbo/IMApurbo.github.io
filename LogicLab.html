@@ -2209,7 +2209,7 @@ function compile_(src){
   case'un':{const a=fold(e.a);if(a.k=='num')return{k:'num',v:e.op=='-'?W8(-a.v):e.op=='~'?W8(~a.v):e.op=='!'?+!a.v:a.v,ln:e.ln};return{...e,a}}
   case'bin':{const a=fold(e.a),b=fold(e.b);if(a.k=='num'&&b.k=='num'){const x=a.v,y=b.v;let r;switch(e.op){case'+':r=W8(x+y);break;case'-':r=W8(x-y);break;case'*':r=W8(x*y);break;case'&':r=x&y;break;case'|':r=x|y;break;case'^':r=x^y;break;
      case'/':if(!y)err('division by zero',e.ln);r=Math.floor(x/y);break;case'%':if(!y)err('division by zero',e.ln);r=x%y;break;case'<<':r=y>=8?0:W8(x<<y);break;case'>>':r=y>=8?0:x>>y;break;
-     case'==':r=+(x==y);break;case'!=':r=+(x!=y);break;case'<':r=+(x<y);break;case'>':r=+(x>y);break;case'<=':r=+(x<=y);break;case'>=':r=+(x>=y);break;case'&&':r=+(x&&y);break;case'||':r=+(x||y);break}return{k:'num',v:r,ln:e.ln}}return{...e,a,b}}
+     case'==':r=+(x==y);break;case'!=':r=+(x!=y);break;case'<':r=+(x<y);break;case'>':r=+(x>y);break;case'<=':r=+(x<=y);break;case'>=':r=+(x>=y);break;case'&&':r=(x&&y)?1:0;break;case'||':r=(x||y)?1:0;break}return{k:'num',v:r,ln:e.ln}}return{...e,a,b}}
   case'tern':{const c=fold(e.c);if(c.k=='num')return fold(c.v?e.a:e.b);return{...e,c,a:fold(e.a),b:fold(e.b)}}
   default:return e}}
  function opnd(e){e=fold(e);if(e.k=='var')return[lookup(e.name,e.ln),0];if(e.k=='slot')return[e.s,0];const t=allocT();g(e);emit('STA '+t);return[t,1]}
