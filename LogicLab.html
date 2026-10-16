@@ -125,7 +125,7 @@ d.outIds.forEach((id,j)=>{const x=+!!c.sub.map[id].iv[0];if(c.o[j]!==x){c.o[j]=x
 return false}
 function settle(s){bn(s);for(let p=0;p<20;p++){let ch=false;for(const c of s.cs)ch=ev(s,c)||ch;if(!ch)break}}
 function latch(s){const U=[];for(const c of s.cs){const t=c.t;if(t=='DFF'||t=='JK'||t=='REG4'){const ck=iv(s,c,t=='DFF'?1:t=='JK'?2:4),v=c.iv;
-if(ck&&!c.pc)U.push(()=>{if(t=='DFF')c.q=v[0];else if(t=='JK'){c.q=v[0]&&v[1]?+!c.q:v[0]?1:v[1]?0:c.q}else c.q=v[0]|v[1]<<1|v[2]<<2|v[3]<<3});c.pc=ck}else if(t=='M'){const K=KS[c.k];if(K.ck){const ck=iv(s,c,K.ck(c.p)),v=c.iv;if(ck&&!c.pc)U.push(()=>{c.st=K.nx(v,c,c.p)});c.pc=ck}}else if(t=='IC')latch(c.sub)}U.forEach(f=>f())}
+if(ck&&!c.pc)U.push(()=>{if(t=='DFF')c.q=v[0];else if(t=='JK'){c.q=v[0]&&v[1]?+!c.q:v[0]?1:v[1]?0:c.q}else c.q=v[0]|v[1]<<1|v[2]<<2|v[3]<<3});c.pc=ck}else if(t=='M'){const K=KS[c.k];if(K.ck){const ck=iv(s,c,K.ck(c.p)),v=c.iv;if(ck&&!c.pc&&!(K.rs&&v[K.rs(c.p)]))U.push(()=>{c.st=K.nx(v,c,c.p)});c.pc=ck}}else if(t=='IC')latch(c.sub)}U.forEach(f=>f())}
 /* ---------- truth table → simplified gates ---------- */
 function qm(n,on,dc){let cur=new Map(),pr=[];[...on,...dc].forEach(m=>cur.set(m+',0',{v:m,m:0}));
 while(cur.size){const a=[...cur.values()],used=new Set(),nx=new Map();
@@ -193,7 +193,27 @@ ram:{i:p=>[...Bn(p.a,'A'),...Bn(p.w,'D'),'WE','CK'],o:p=>Bn(p.w,'Q'),ck:p=>p.a+p
 rf:{i:p=>[...Bn(p.k,'WA'),...Bn(p.k,'RA'),...Bn(p.w,'D'),'WE','CK'],o:p=>Bn(p.w,'Q'),ck:p=>2*p.k+p.w+1,nx:(v,c,p)=>{if(v[2*p.k+p.w])c.mem[bv(v,0,p.k)]=bv(v,2*p.k,p.w);return c.st},out:(v,c,p)=>nb(c.mem[bv(v,p.k,p.k)]||0,p.w)},
 bar:{i:p=>Bn(p.n,'L'),o:()=>[],out:()=>[],sz:p=>[44,p.n*20+14],nolab:1},
 hexd:{i:()=>Bn(4,'D'),o:()=>[],out:()=>[],sz:()=>[80,140],nolab:1}};
-Object.entries({cnt:['TC'],alu:['ZERO'],enc:['V'],tff:['Q̄'],dl:['Q̄'],srl:['Q̄']}).forEach(([k,o])=>KS[k].op=o);KS.cnt.dv=KS.dcd.dv={EN:1};
+Object.entries({cnt:['TC'],alu:['ZERO'],enc:['V']}).forEach(([k,o])=>KS[k].op=o);KS.cnt.dv=KS.dcd.dv={EN:1};
+['tff','dl','srl'].forEach(k=>KS[k].sz=()=>[124,56]);
+/* ---- Advanced ALU: executes the compiler's 13-bit words (5-bit opcode + n-bit operand) ---- */
+const AXN=['NOP','LDI','LDA','STA','ADD','SUB','ADDI','OUT','JMP','JZ','JNZ','AND','SHL','SUBI','SHR','HLT','IN','OR','XOR','NOT','MUL','DIV','MOD','NAND','NOR','ROL','ROR','ASR','CMP','ADC','SBC','JC'];
+const AXF=new Set([4,5,6,11,12,13,14,17,18,19,20,21,22,23,24,25,26,27,28,29,30]);
+KS.alux={lb:p=>'Advanced ALU ('+(p.n+5)+'-bit instruction)',
+i:p=>[...Bn(p.n+5,'I'),...Bn(p.n,'A'),...Bn(p.n,'M'),...Bn(p.n,'P'),'ZF','CF'],
+o:p=>[...Bn(p.n,'F'),'ZN','CN','NF','VF','MW','OW','JMP','HLT'],
+sz:p=>[170,(4*p.n+7)*15+30],
+out:(v,c,p)=>{const n=p.n,m=2**n,mk=m-1,hb=m>>1,L=n+5,imm=bv(v,0,n),op=bv(v,n,5),A=bv(v,L,n),M=bv(v,L+n,n),P=bv(v,L+2*n,n),ZF=v[L+3*n],CF=v[L+3*n+1];
+ let r=A,cy=0,ov=0,MW=0,OW=0,J=0,H=0,zr=null;
+ const add=(a,b,ci)=>{const t=a+b+ci;r=t%m;cy=+(t>=m);ov=+!!((a^r)&(b^r)&hb)},sub=(a,b,ci)=>{const t=a-b-ci;r=md(t,m);cy=+(t<0);ov=+!!((a^b)&(a^r)&hb)};
+ switch(op){case 1:r=imm;break;case 2:r=M;break;case 3:MW=1;break;case 4:add(A,M,0);break;case 5:sub(A,M,0);break;case 6:add(A,imm,0);break;case 7:OW=1;break;
+ case 8:J=1;break;case 9:J=ZF;break;case 10:J=+!ZF;break;case 11:r=A&M;break;case 12:r=(A*2)%m;cy=+!!(A&hb);break;case 13:sub(A,imm,0);break;case 14:r=A>>1;cy=A&1;break;
+ case 15:H=1;break;case 16:r=P;break;case 17:r=A|M;break;case 18:r=A^M;break;case 19:r=mk^A;break;
+ case 20:{const t=A*M;r=t%m;cy=+(t>=m);break}case 21:r=M?Math.floor(A/M):mk;cy=+!M;break;case 22:r=M?A%M:A;break;
+ case 23:r=mk^(A&M);break;case 24:r=mk^(A|M);break;case 25:r=((A<<1)|(A>>(n-1)))&mk;cy=(A>>(n-1))&1;break;case 26:r=(A>>1)|((A&1)<<(n-1));cy=A&1;break;case 27:r=(A>>1)|(A&hb);cy=A&1;break;
+ case 28:{sub(A,M,0);zr=+(r==0);r=A;break}case 29:add(A,M,CF);break;case 30:sub(A,M,CF);break;case 31:J=CF;break}
+ const fw=AXF.has(op),z=fw?(zr!=null?zr:+(r==0)):ZF;
+ return[...nb(r,n),z,fw?cy:CF,+!!(r&hb),fw?ov:0,MW,OW,J,H]}};
+
 /* ---------- catalogue (palette) ---------- */
 const CAT=[],E=(g,n,o)=>CAT.push({g,n,...o}),EM=(g,n,k,p)=>E(g,n,{t:'M',k,p});
 E('Inputs','Switch',{t:'SW'});E('Inputs','Clock',{t:'CLK'});E('Inputs','High (1)',{t:'HI'});E('Inputs','Low (0)',{t:'LO'});E('Inputs','IC input pin',{t:'IN'});
@@ -214,7 +234,7 @@ for(let M=3;M<=16;M++)EM(CN,`Mod-${M} counter${M==10?' (BCD decade)':''}`,'cnt',
 const AR='Arithmetic';[1,2,3,4,5,6,7,8,12,16].forEach(n=>EM(AR,n+'-bit adder','add',{n}));
 [2,4,8,16].forEach(n=>EM(AR,n+'-bit subtractor','sub',{n}));
 [4,8,16].forEach(n=>{EM(AR,n+'-bit add/sub','asub',{n});EM(AR,n+'-bit incrementer','incr',{n});EM(AR,n+'-bit decrementer','decr',{n});EM(AR,n+'-bit ALU','alu',{n});EM(AR,n+'-bit barrel shifter','sh',{n})});
-[4,8].forEach(n=>EM(AR,n+'-bit negate','neg',{n}));[2,3,4,6,8].forEach(n=>EM(AR,`${n}×${n} multiplier`,'mul',{n}));
+[4,8].forEach(n=>EM(AR,n+'-bit negate','neg',{n}));EM(AR,'Advanced ALU (13-bit instruction)','alux',{n:8});[2,3,4,6,8].forEach(n=>EM(AR,`${n}×${n} multiplier`,'mul',{n}));
 [1,2,3,4,5,6,7,8,16].forEach(n=>EM('Comparators',n+'-bit comparator','cmp',{n}));
 const MX='Mux / Demux / Decoders';for(let k=1;k<=4;k++)[1,2,4,8].forEach(w=>{if(2**k*w<=64)EM(MX,`Mux ${2**k}:1 × ${w}-bit`,'mux',{k,w})});
 for(let k=1;k<=4;k++)EM(MX,`Demux 1:${2**k}`,'dmx',{k});for(let k=1;k<=5;k++)EM(MX,`Decoder ${k}:${2**k}`,'dcd',{k});for(let k=2;k<=4;k++)EM(MX,`Priority encoder ${2**k}:${k}`,'enc',{k});
@@ -778,6 +798,7 @@ if(inside){let a=1e9,b=1e9,A=-1e9,B=-1e9;c.sub.cs.forEach(q=>{const s2=spec(q);a
 const bw=A-a||1,bh=B-b||1,k=Math.min((w-24)/bw,(h-30)/bh);ctx.save();ctx.beginPath();ctx.rect(c.x+2,c.y+22,w-4,h-24);ctx.clip();ctx.translate(c.x+12+((w-24)-bw*k)/2-a*k,c.y+26-b*k);ctx.scale(k,k);draw(c.sub);ctx.restore()}}
 if(t=='M'&&c.k=='hexd'){const sg=HEX[bv(v,0,4)];SEG.forEach((r,i)=>{ctx.fillStyle=sg[i]=='1'?'#ff3b3b':'rgba(128,128,128,.25)';ctx.fillRect(c.x+r[0]*w/80,c.y+r[1]*h/140,r[2]*w/80,r[3]*h/140)})}
 if(t=='M'&&c.k=='bar'){for(let i=0;i<c.p.n;i++){const p=pin(c,0,i);ctx.beginPath();ctx.arc(c.x+w/2+6,p.y,6,0,7);ctx.fillStyle=v[i]?'#ff3b3b':'rgba(128,128,128,.3)';if(v[i]){ctx.shadowColor='#ff3b3b';ctx.shadowBlur=12}ctx.fill();ctx.shadowBlur=0}}
+if(t=='DFF'||t=='JK'||(t=='M'&&/^(tff|dl|srl)$/.test(c.k))){ctx.save();ctx.font='bold 10px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=c.o[0]?'#1fa64a':'#c0392b';ctx.fillText('Q='+(c.o[0]?1:0)+'  Q̄='+(c.o[1]?1:0),c.x+w/2,c.y+h-8);ctx.restore()}
 if(t=='M'&&KS[c.k].draw){ctx.save();KS[c.k].draw(c,c.x,c.y,w,h,v);ctx.restore()}
 if(sels.has(c)){ctx.strokeStyle='#4aa3ff';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.strokeRect(c.x-4,c.y-4,w+8,h+8);ctx.setLineDash([])}
 if(c===hov||c===sel){const q=8/S;ctx.fillStyle='#4aa3ff';ctx.fillRect(c.x+w-q/2,c.y+h-q/2,q,q)}
@@ -882,7 +903,7 @@ function rpin(c,k,tk,id){const L=pinNames(c)[k],n=np(tk),sp=spec(c);let i=L.find
 function ex(tk){const j=tk.indexOf('.'),id=j<0?tk:tk.slice(0,j);if(j<0)return[{id,pin:null}];const pn=tk.slice(j+1),m=pn.match(/^([A-Za-z_]*)(\d+)\.\.(\d+)$/);if(!m)return[{id,pin:pn}];const a=+m[2],b=+m[3],o=[];for(let k=a;a<=b?k<=b:k>=b;k+=a<=b?1:-1)o.push({id,pin:m[1]+k});return o}
 const RES=['x','y','name','lab','color','s','w','h','val','val2','th'];
 function mkComp(type,kv){let c,p={};const T=type.toUpperCase();
-if(/^m:/i.test(type)){const k=type.slice(2);if(!KS[k])throw new Error('unknown macro kind "'+k+'". Kinds: '+Object.keys(KS).join(', '));Object.keys(kv).forEach(a=>{if((!RES.includes(a)||(a=='w'&&/^(mux|rom|ram|rf|stack|fifo)$/.test(k)))&&a!='n_')p[a]=kv[a]});c={t:'M',k,p}}
+if(/^m:/i.test(type)){const k=type.slice(2);if(!KS[k])throw new Error('unknown macro kind "'+k+'". Kinds: '+Object.keys(KS).join(', '));Object.keys(kv).forEach(a=>{if((!RES.includes(a)||(a=='w'&&/^(mux|rom|ram|rf|stack|fifo|ccomp)$/.test(k)))&&a!='n_')p[a]=kv[a]});c={t:'M',k,p}}
 else if(lib[type])c={t:'IC',def:type};
 else if(G[T]||RAW.includes(T)){c={t:T};if(G[T]&&kv.n!=null)c.n=kv.n}
 else{const q=nm1(type),e=CAT.concat(CAT_ALL).find(e=>nm1(e.n)==q);if(!e)throw new Error('unknown component "'+type+'". Similar: '+(CAT.filter(e=>nm1(e.n).includes(q.slice(0,4))||q.includes(nm1(e.n))).slice(0,6).map(e=>'"'+e.n+'"').join(', ')||'(none – see the documentation list)'));
@@ -914,6 +935,7 @@ else if(cmd=='asm'){const c=g(t[1]);if(!c.mem||c.k!='rom'&&c.k!='ram')throw new 
 else if(cmd=='mem'){const c=g(t[1]);if(!c.mem)throw new Error(t[1]+' is not a ROM/RAM/register file');c.mem=t.slice(2).join(',').split(/[,\s]+/).filter(Boolean).map(x=>parseInt(x)||0)}
 else if(cmd=='link'){const P=[t[1],t[2]].map(r=>{if(!r||r.indexOf('.')<0)throw new Error('usage: link <id>.<pin> <id>.<pin>   (prefix a pin with out: or in: if needed)');const j=r.indexOf('.'),c=g(r.slice(0,j));let pn=r.slice(j+1),side=null;const mm=pn.match(/^(in|out):(.*)$/i);if(mm){side=mm[1].toLowerCase()=='out'?1:0;pn=mm[2]}const nz=pinNames(c),find=kk=>nz[kk].findIndex(x=>np(x)==np(pn));let k=side,i=-1;if(k==null){k=1;i=find(1);if(i<0){k=0;i=find(0)}}else i=find(k);if(i<0&&/^[io]\d+$/.test(np(pn))){k=np(pn)[0]=='o'?1:0;i=+np(pn).slice(1)}if(i<0)throw new Error(r.slice(0,j)+' has no pin "'+pn+'". Inputs: '+nz[0].join(' ')+' | outputs: '+nz[1].join(' '));return{c,k,i}});P[0].c.lk=P[0].c.lk||[];P[0].c.lk.push({k:P[0].k,i:P[0].i,id:P[1].c.id,k2:P[1].k,j:P[1].i});SC_nw++}
 else if(cmd=='sketch'){const c=g(t[1]);if(!c.p||!KS[c.k]||!KS[c.k].cpu)throw new Error(t[1]+' is not a microcontroller');if(!EXS[t[2]])throw new Error('unknown sketch "'+t[2]+'". Available: '+Object.keys(EXS).join(' | '));c.code=sketchFor(t[2],c.p.b)}
+else if(cmd=='ccode'){const c=g(t[1]);if(c.k!='ccomp')throw new Error(t[1]+' is not a C compiler part');c.code=t.slice(2).join(' ').replace(/¶/g,'\n');c.cw=undefined}
 else if(cmd=='code'){const c=g(t[1]);if(!c.p||!KS[c.k]||!KS[c.k].cpu)throw new Error(t[1]+' is not a microcontroller');c.code=t.slice(2).join(' ').replace(/¶|\\n/g,'\n')}
 else return false;return true}
 function finishDef(d){const ctx=d.ctx,name=d.name;if(!name)throw new Error('define needs a name');layout(ctx,0,0);ctx.pend.forEach(c=>c.t=='M'&&setVis(c,c.full,{cs:ctx.pend}));
@@ -937,6 +959,7 @@ const tt=rows.map(r=>{if(r.length!=m)throw new Error(`row "${r}" must have ${m} 
 else if(cmd=='ic'){flush(ctx);const name=t[1],fi=t.indexOf('from'),ai=t.indexOf('as'),circ=t.includes('circuit');if(fi<0)throw new Error('usage: ic <name> from <id> <id> ... [circuit] [as <instanceId>]');const ids=t.slice(fi+1,ai>0?ai:undefined).filter(x=>x!='circuit'),P=ids.map(i=>{if(!ctx.ids[i])throw new Error('unknown part "'+i+'"');return ctx.ids[i]});compressSel(name,P,circ);if(ai>0)ctx.ids[t[ai+1]]=sel;log.push(`compressed ${ids.length} parts into IC ${name}`)}
 else if(cmd=='clock'){flush(ctx);const k=t[1]?+t[1]:1;clk=0;stepSim();for(let i=0;i<k;i++){clk=1;stepSim();clk=0;stepSim()}}
 else if(cmd=='settle'){flush(ctx);stepSim()}
+else if(cmd=='ccload'){flush(ctx);const c=ctx.ids[t[1]];if(!c||c.k!='ccomp')throw new Error('ccload: '+t[1]+' is not a C compiler part');const r=ccLoadNow(c);log.push('compiler: '+r.words.length+' words loaded into '+r.n+' memory block(s)')}
 else if(cmd=='reset'){flush(ctx);rstS(sim);stepSim()}
 else if(cmd=='expect'){flush(ctx);stepSim();const ref=t[1],want=pv(t[t.length-1]),got=rd(ctx,ref);if(got!=want){fails++;log.push(`FAIL line ${n+1}: ${ref} = ${got}, expected ${want}`)}else log.push(`ok   line ${n+1}: ${ref} = ${got}`)}
 else if(cmd=='print'){flush(ctx);stepSim();if(t.length>1)t.slice(1).forEach(r=>log.push(r+' = '+rd(ctx,r)));else Object.keys(ctx.ids).forEach(k=>{const c=ctx.ids[k];if(c.t=='LED'||c.t=='OUT')log.push(k+' = '+rd(ctx,k))})}
@@ -1128,8 +1151,8 @@ if(usesName(name,cs))return toast('An IC cannot contain itself');const had=!!lib
 lib[name]={name,ni:inIds.length,no:outIds.length,comps:cs,inIds,outIds,inN:ins.map(nms),outN:outs.map(nms)};saveLib();endDesigner();renderLib();if(had)sim=mk(JSON.parse(snapState()));add('IC',name);toast('IC "'+name+'" created and placed on the board (click it to look inside)')}
 
 /* ---- assembler for the LL-8 microcontroller ---- */
-const OPS='NOP LDI LDA STA ADD SUB ADDI OUT JMP JZ JNZ AND SHL SUBI SHR HLT IN OR XOR NOT'.split(' '),NOARG=['NOP','OUT','SHL','SHR','HLT','IN','NOT'];
-const RAMOP=['LDA','STA','ADD','SUB','AND','OR','XOR'],JOPS=['JMP','JZ','JNZ'],PSEUDO={INC:['ADDI','1'],DEC:['SUBI','1'],CLR:['LDI','0'],TST:['ADDI','0']};
+const OPS='NOP LDI LDA STA ADD SUB ADDI OUT JMP JZ JNZ AND SHL SUBI SHR HLT IN OR XOR NOT MUL DIV MOD NAND NOR ROL ROR ASR CMP ADC SBC JC'.split(' '),NOARG=['NOP','OUT','SHL','SHR','HLT','IN','NOT','ROL','ROR','ASR'];
+const RAMOP=['LDA','STA','ADD','SUB','AND','OR','XOR','MUL','DIV','MOD','NAND','NOR','CMP','ADC','SBC'],JOPS=['JMP','JZ','JNZ','JC'],PSEUDO={INC:['ADDI','1'],DEC:['SUBI','1'],CLR:['LDI','0'],TST:['ADDI','0']};
 function asmNum(s){s=String(s).trim();let m;if(/^-?(\d+|0x[0-9a-f]+|0b[01]+)$/i.test(s)){const ng=s[0]=='-',b=ng?s.slice(1):s,v=/^0b/i.test(b)?parseInt(b.slice(2),2):Number(b);return ng?-v:v}if(m=s.match(/^'(.)'$/))return m[1].charCodeAt(0);return NaN}
 function asm(src){const L=[],lab=Object.create(null),K=Object.create(null);
 String(src).split(/[\n;]/).forEach(l=>{l=l.replace(/#.*/,'').trim();let m;while(m=l.match(/^([A-Za-z_]\w*):\s*(.*)$/)){if(m[1] in lab)throw new Error('asm: label "'+m[1]+'" is defined twice');lab[m[1]]=L.length;l=m[2]}
@@ -1150,7 +1173,7 @@ const o=[];for(let i=0;i<n;i++){const v=mem[i]||0,op=OPS[v>>8]||'NOP';if(T.has(i
 function ctlRom(){const J=1,JZ=2,JNZ=4,WM=8,WO=16,WZ=32,SB=64,HL=128,A=n=>n<<8,F=n=>n<<11,R=[];
 R[0]=0;R[1]=A(2);R[2]=A(3);R[3]=WM;R[4]=A(1)|WZ;R[5]=A(1)|WZ|F(1);R[6]=A(1)|WZ|SB;R[7]=WO;R[8]=J;R[9]=JZ;R[10]=JNZ;R[11]=A(1)|WZ|F(2);R[12]=A(1)|WZ|F(6);R[13]=A(1)|WZ|SB|F(1);R[14]=A(1)|WZ|F(7);R[15]=HL;R[16]=A(4);R[17]=A(1)|WZ|F(3);R[18]=A(1)|WZ|F(4);R[19]=A(1)|WZ|F(5);return R}
 function mcu(prog){const S=['# LL-8: 8-bit microcontroller. Inputs: P0-P7 switches (IN instruction), RST, CLK. Outputs: output port (OUT instruction) shown on LED bar + 2 hex digits. 1 instruction per clock.'],P=x=>S.push(x),W=(a,b)=>S.push('wire '+a+' -> '+b);
-['clk CLK','rst SW name=RST','pc M:cnt n=8 m=up ld=1 lab="Program counter"','rom M:rom a=8 w=13 lab="Program ROM"','ctl M:rom a=5 w=14 lab="Control ROM"','ram M:ram a=4 w=8 lab="RAM 16x8"','alu M:alu n=8 lab=ALU','mb M:mux k=1 w=8 lab="B select"','ma M:mux k=3 w=8 lab="A source select"','acc M:reg n=8 lab=Accumulator','mo M:mux k=1 w=8 lab="Port hold"','outr M:reg n=8 lab="Output port"','zm M:mux k=1 w=1 lab="Z hold"','z M:reg n=1 lab="Z flag"','nh NOT','zn NOT','jz AND2','jn AND2','jr OR n=3','ob "LED bar 8"','hl "Hex display"','hh "Hex display"','ab "LED bar 8"','zl "Green LED"','hlt "Red LED"','n1 NOTE name="INPUT PORT: switches P0-P7 (read with IN)"','n2 NOTE name="OUTPUT PORT: LED bar + hex (written by OUT)"','n3 NOTE name="ACCUMULATOR LEDs / Z flag / HALT"'].forEach(x=>P('part '+x));
+['clk CLK','rst SW name=RST','pc M:cnt n=8 m=up ld=1 lab="Program counter"','rom M:rom a=8 w=13 lab="Program ROM"','ctl M:rom a=5 w=14 lab="Control ROM"','ram M:ram a=4 w=8 lab="RAM 16x8"','alu M:alu n=8 lab=ALU','mb M:mux k=1 w=8 lab="B select"','ma M:mux k=3 w=8 lab="A source select"','acc M:reg n=8 lab=Accumulator','mo M:mux k=1 w=8 lab="Port hold"','outr M:reg n=8 lab="Output port"','zm M:mux k=1 w=1 lab="Z hold"','z M:reg n=1 lab="Z flag"','nh NOT','zn NOT','jz AND2','jn AND2','jr OR n=3','ob "LED bar 8"','hl "Hex display"','hh "Hex display"','zl "Green LED"','hlt "Red LED"','n1 NOTE name="INPUT PORT: switches P0-P7 (read with IN)"','n2 NOTE name="OUTPUT PORT: LED bar + hex (written by OUT)"','n3 NOTE name="Z flag / HALT"'].forEach(x=>P('part '+x));
 for(let b=0;b<8;b++)P('part p'+b+' SW name=P'+b);
 W('clk.Q','pc.CK acc.CK z.CK outr.CK ram.CK');W('rst.Q','pc.RST acc.RST outr.RST');W('pc.Q0..7','rom.A0..7');W('rom.D8..12','ctl.A0..4');W('rom.D0..7','pc.D0..7');W('rom.D0..3','ram.A0..3');
 W('acc.Q0..7','ram.D0..7 alu.A0..7');W('ctl.D3','ram.WE');W('mb.Y0..7','alu.B0..7');W('ctl.D6','mb.S0');W('ctl.D11','alu.OP0');W('ctl.D12','alu.OP1');W('ctl.D13','alu.OP2');
@@ -1158,9 +1181,9 @@ for(let b=0;b<8;b++){W('ram.Q'+b,'mb.I0.'+b+' ma.I3.'+b);W('rom.D'+b,'mb.I1.'+b+
 W('ctl.D8','ma.S0');W('ctl.D9','ma.S1');W('ctl.D10','ma.S2');W('ma.Y0..7','acc.D0..7');W('ctl.D4','mo.S0');W('mo.Y0..7','outr.D0..7');
 W('z.Q0','zm.I0');W('alu.ZERO','zm.I1');W('ctl.D5','zm.S0');W('zm.Y','z.D0');W('rst.Q','z.RST');
 W('ctl.D1','jz.A');W('z.Q0','jz.B');W('ctl.D2','jn.A');W('z.Q0','zn.A');W('zn.Y','jn.B');W('ctl.D0','jr.A');W('jz.Y','jr.B');W('jn.Y','jr.C');W('jr.Y','pc.LD');W('ctl.D7','nh.A hlt.D');W('nh.Y','pc.EN');
-W('outr.Q0..7','ob.L0..7');W('outr.Q0..3','hl.D0..3');W('outr.Q4..7','hh.D0..3');W('acc.Q0..7','ab.L0..7');W('z.Q0','zl.D');
+W('outr.Q0..7','ob.L0..7');W('outr.Q0..3','hl.D0..3');W('outr.Q4..7','hh.D0..3');W('z.Q0','zl.D');
 P('label clk \"CLK: 1 instruction per rising edge\"');P('label rst \"RST: switch on then off = restart\"');for(let b=0;b<8;b++)P('label p'+b+' \"input bit '+b+(b==0?' (LSB)':b==7?' (MSB)':'')+' - read by IN\"');
-P('label ob \"OUTPUT PORT bits - written by OUT\"');P('label hl \"output port: low hex digit\"');P('label hh \"output port: high hex digit\"');P('label ab \"ACCUMULATOR A (live value)\"');P('label zl \"Z flag (1 = last result was 0)\"');P('label hlt \"HALT lamp (HLT executed)\"');
+P('label ob \"OUTPUT PORT bits - written by OUT\"');P('label hl \"output port: low hex digit\"');P('label hh \"output port: high hex digit\"');P('label zl \"Z flag (1 = last result was 0)\"');P('label hlt \"HALT lamp (HLT executed)\"');
 P('mem ctl '+ctlRom().join(','));P('asm rom "'+prog+'"');return S.join('\n')}
 const FIB='LDI 0; STA 0; LDI 1; STA 1; loop: LDA 0; ADD 1; STA 2; LDA 1; STA 0; LDA 2; STA 1; OUT; JMP loop',CNT='LDI 10; loop: OUT; SUBI 1; JNZ loop; HLT',ECHO='loop: IN; OUT; JMP loop';
 const MEX={'Echo input to output':ECHO,'Input + 1':'loop: IN; ADDI 1; OUT; JMP loop','Invert input (NOT)':'loop: IN; NOT; OUT; JMP loop','Free-running counter':'LDI 0\nloop: ADDI 1\nOUT\nJMP loop','Countdown 10 to 1':CNT.replace(/; /g,'\n'),'Fibonacci':FIB.replace(/; /g,'\n'),
@@ -1171,7 +1194,7 @@ const MCUDOC=`<b>What the LL-8 does</b><br>A small 8-bit computer. The program s
 <tr><td><b>RST</b> switch</td><td>Turn on, then off: restarts at address 0 and clears PC, A, the output port and the Z flag (RAM keeps its contents).</td></tr>
 <tr><td><b>CLK</b> + Clock slider</td><td>Speed. <b>Step</b> (while paused ⏸) = one full clock pulse = one instruction.</td></tr>
 <tr><td><b>Output port</b></td><td>Written by <code>OUT</code> (port = A). Read it on the <b>LED bar</b> (bit 0 = top) and the two <b>hex digits</b> (low / high nibble).</td></tr>
-<tr><td>Accumulator bar, green Z LED, red LED</td><td>Live value of A, the zero flag, and HALT.</td></tr></table>
+<tr><td>Green Z LED, red LED</td><td>The zero flag and HALT.</td></tr></table>
 <b>Registers &amp; memory</b>: A (accumulator, 8 bit) · Z (zero flag) · RAM[0..15] (16 bytes) · PC (0..255). Only A is used for arithmetic. There is no carry flag: results wrap around (255 + 1 = 0).
 <table><tr><th>Instruction</th><th>Does</th></tr>
 <tr><td>NOP</td><td>nothing</td></tr><tr><td>LDI n</td><td>A = n (-128…255)</td></tr><tr><td>LDA r / STA r</td><td>A = RAM[r] / RAM[r] = A (r = 0…15)</td></tr>
@@ -2047,6 +2070,7 @@ const FAM={
  decr:{pn:'Decrementer (−1)',def:{n:8},f:[cfBits(1,16)],lb:p=>p.n+'-bit decrementer'},
  neg:{pn:'Negate (two’s complement)',def:{n:8},f:[cfBits(1,16)],lb:p=>p.n+'-bit negate'},
  alu:{pn:'ALU',def:{n:8},f:[cfBits(1,16)],lb:p=>p.n+'-bit ALU'},
+ alux:{pn:'Advanced ALU',def:{n:8},f:[cfN('n','Data bits (instruction = n+5 pins)',4,11)],lb:p=>'Advanced ALU ('+(p.n+5)+'-bit instruction)'},
  sh:{pn:'Barrel shifter',def:{n:8},f:[cfS('n','Bits',[[2,'2'],[4,'4'],[8,'8'],[16,'16']],{num:1})],lb:p=>p.n+'-bit barrel shifter'},
  mul:{pn:'Multiplier',def:{n:4},f:[cfBits(1,8,'Bits (each input)')],lb:p=>p.n+'×'+p.n+' multiplier'},
  cmp:{pn:'Comparator',def:{n:4},f:[cfBits(1,16)],lb:p=>p.n+'-bit comparator'},
@@ -2343,6 +2367,33 @@ $('#main').addEventListener('dblclick',e=>{if(e.target!==cv)return;const c=hitCo
 Every family is ONE part whose size is set in the settings panel (select the part): adder/sub/ALU/register/shifter/comparator/etc (n bits), counter (n bits + mode up|down|ud|gray|john|ring|lfsr, mod=N, ld=1), mux (k,w), decoder (k), ROM/RAM (a,w), gates (n inputs). Script: part c1 M:cnt n=12 m=ud mod=0  ·  nin1..nin16 / dd1..dd16 exist for every width. Changing a part's size keeps wires on pins with the same name.
 M:ccomp a=8 w=13   C compiler (inputs CK,RST; outputs A0..,D0..,WE,DONE). Source in "code". Compiles a C subset to LL-8 words (13 bit: 5-bit opcode, 8-bit operand). Memories wired to its A/D pins are loaded by the "Compile & load" button. ROM has optional programming pins DI0..,WE,CK.
 `};window.LL.docs=aiDocs}
+
+const FIBC='int a = 0, b = 1, t;¶while (1) {¶  output(a);¶  t = a + b;¶  a = b;¶  b = t;¶}';
+function ccLoadNow(c){c.cw=undefined;const r=LLC.compile(c.code==null?CC_SAMPLE:c.code);if(r.error)throw new Error('C compile error'+(r.error.ln?' (line '+r.error.ln+')':'')+': '+r.error.msg);c.cw=r.words;c.cerr=null;c.st=0;let n=0;
+ for(const m of ccTargets(c)){if(r.words.length>2**m.p.a)throw new Error('program has '+r.words.length+' words, memory holds '+2**m.p.a);m.mem=r.words.map(w=>w%2**m.p.w);if(m.p.a==8&&m.p.w==13)m.asm=r.asm;n++}
+ rstS(sim);stepSim();r.n=n;return r}
+{const _ad10=aiDocs;aiDocs=function(){return _ad10()+`
+## v10: Advanced ALU + complete computer
+M:alux n=8   Advanced ALU = execution unit for the compiler's words. Inputs: I0..I12 (instruction word = 5-bit opcode in I8..I12 + 8-bit operand in I0..I7; pins = n+5), A0..A7 (accumulator), M0..M7 (RAM data), P0..P7 (input port), ZF, CF (stored flags). Outputs: F0..F7 (new accumulator value – equals A when the instruction does not write A), ZN, CN (next Z / carry flag – hold when unchanged), NF (sign), VF (overflow), MW (RAM write), OW (output-port write), JMP (load program counter), HLT.
+Opcodes: 0 NOP 1 LDI 2 LDA 3 STA 4 ADD 5 SUB 6 ADDI 7 OUT 8 JMP 9 JZ 10 JNZ 11 AND 12 SHL 13 SUBI 14 SHR 15 HLT 16 IN 17 OR 18 XOR 19 NOT 20 MUL 21 DIV 22 MOD 23 NAND 24 NOR 25 ROL 26 ROR 27 ASR 28 CMP 29 ADC 30 SBC 31 JC  (20-31 are new; the LL-8's built-in ALU treats them as NOP).
+ccode <id> "<C source, ¶ = newline>"   set the source of a C compiler part  |  ccload <id>   compile it and load every ROM/RAM wired to its D pins.
+Prebuilt circuit "Complete computer": after RST the C compiler (CK, RST wired) writes its words into the ROM through DI/WE/A while DONE=0 (address mux + CPU held in reset), then DONE=1 hands the ROM to the program counter. Edit the C, press Compile, toggle RST.
+`};window.LL.docs=aiDocs}
+PRE.push({n:'Complete computer – C compiler + Advanced ALU + ROM + RAM + LEDs',d:'A full stored-program computer: the C compiler fills the Program ROM with 13-bit words, the Advanced ALU decodes and executes them (accumulator, Z/C flags, RAM, input switches, output LEDs). Double-click the compiler to change the program.',s:()=>{const S=[],P=x=>S.push(x),W=(a,b)=>S.push('wire '+a+' -> '+b),N=(id,x,y,t)=>P('part '+id+' NOTE name=\"'+t+'\" at '+x+' '+y);
+['clk CLK at 0 0','rst SW name=RST at 0 70','cc M:ccomp a=8 w=13 lab=\"C Compiler\" at 100 0','am M:mux k=1 w=8 lab=\"ROM addr\" at 290 0','ndn NOT at 300 330','ldr OR2 at 300 400','wg AND2 at 1010 300','rom M:rom a=8 w=13 lab=\"Program ROM 256x13\" at 420 0','pc M:cnt n=8 m=up ld=1 lab=\"Program counter\" at 420 430','alu M:alux n=8 lab=\"Advanced ALU\" at 800 0','acc M:reg n=8 lab=Accumulator at 1120 40','ram M:ram a=4 w=8 lab=\"RAM 16x8\" at 1120 270','zr M:reg n=1 lab=\"Z flag\" at 1120 560','cr M:reg n=1 lab=\"Carry flag\" at 1260 560','outr M:regen n=8 lab=\"Output port\" at 1400 40','nh NOT at 1010 640','ob \"LED bar 8\" at 1620 40','hl \"Hex display\" at 1700 40','hh \"Hex display\" at 1800 40','zl \"Green LED\" at 1120 680','cl \"Yellow LED\" at 1260 680','hlt \"Red LED\" at 1100 740'].forEach(x=>P('part '+x));
+for(let b=0;b<8;b++)P('part p'+b+' SW name=P'+b+' at 640 '+(470+b*38));
+N('n1',100,-40,'1) C COMPILER (double-click)');N('n2',420,-40,'2) PROGRAM ROM: written by the compiler after RST');N('n3',420,390,'3) PROGRAM COUNTER: 1 word per clock');N('n4',800,-40,'4) ADVANCED ALU: I0-I12 = opcode(5) + operand(8)');
+N('n5',640,430,'INPUT PORT: switches P0-P7 (input())');N('n6',1400,0,'OUTPUT PORT (output())');N('n8',1120,520,'FLAGS: Z and Carry');N('n9',1100,710,'HALT lamp');N('n10',0,-85,'RST on then off: compiler re-writes ROM, then CPU restarts');
+P('ccode cc \"'+FIBC+'\"');
+W('clk.Q','pc.CK acc.CK zr.CK cr.CK outr.CK ram.CK');W('ldr.Y','pc.RST acc.RST zr.RST cr.RST outr.RST');
+W('cc.D0..12','rom.DI0..12');W('cc.WE','rom.WE');W('clk.Q','cc.CK rom.CK');W('rst.Q','cc.RST ldr.A');W('cc.DONE','am.S0 ndn.A wg.B');W('ndn.Y','ldr.B');W('rom.D0..12','alu.I0..12');W('rom.D0..3','ram.A0..3');W('rom.D0..7','pc.D0..7');
+W('acc.Q0..7','alu.A0..7 ram.D0..7 outr.D0..7');W('ram.Q0..7','alu.M0..7');W('alu.F0..7','acc.D0..7');
+for(let b=0;b<8;b++){W('p'+b+'.Q','alu.P'+b);W('cc.A'+b,'am.I0.'+b);W('pc.Q'+b,'am.I1.'+b)}
+W('am.Y0..7','rom.A0..7');
+W('alu.MW','wg.A');W('wg.Y','ram.WE');W('alu.OW','outr.EN');W('alu.ZN','zr.D0');W('alu.CN','cr.D0');W('zr.Q0','alu.ZF zl.D');W('cr.Q0','alu.CF cl.D');
+W('alu.JMP','pc.LD');W('alu.HLT','nh.A hlt.D');W('nh.Y','pc.EN');
+W('outr.Q0..7','ob.L0..7');W('outr.Q0..3','hl.D0..3');W('outr.Q4..7','hh.D0..3');
+P('ccload cc');return S.join('\n')}});
 
 /* ---------- boot ---------- */
 try{lib=JSON.parse(localStorage.getItem('ll_lib')||'null')||{}}catch(e){lib={}}
