@@ -2370,9 +2370,11 @@ const CC_EX={
 'Arduino pins: AND / OR / XOR of two switches':'// switches on pins 0 and 1 -> LEDs on pin 5 (AND), 6 (OR), 7 (XOR)\nvoid setup() {\n  pinMode(5, OUTPUT);\n  pinMode(6, OUTPUT);\n  pinMode(7, OUTPUT);\n}\nvoid loop() {\n  int a = digitalRead(0);\n  int b = digitalRead(1);\n  digitalWrite(5, a && b);\n  digitalWrite(6, a || b);\n  digitalWrite(7, a != b);\n}',
 'Arduino pins: potentiometer turns servo':'#define POT 1\n#define SERVO 5\nvoid loop() {\n  analogWrite(SERVO, analogRead(POT));\n}'};
 function ccWords(c){if(c.code==null)c.code=CC_SAMPLE;if(c.cw===undefined){const r=LLC.compile(c.code);c.cw=r.words||[];c.cerr=r.error||null}return c.cw}
+/* Skip the boot-load pass when the ROM(s) wired to this compiler already hold the compiled program (e.g. after Compile & load) */
+function ccPre(c){const s=c.sim_,W=ccWords(c);if(!s||!W.length||c.cerr)return false;let n=0;for(const m of s.cs){if(m.t!='M'||m.k!='rom'||!m.mem)continue;let hit=false;for(let i=0;i<m.nm[0].length&&!hit;i++)for(const d of netDrivers(s,m,i))if(d.m===c){hit=true;break}if(!hit)continue;n++;const mk=2**m.p.w;for(let j=0;j<W.length;j++)if((m.mem[j]|0)!==W[j]%mk)return false}return n>0}
 KS.ccomp={lb:()=>'C Compiler',i:()=>['CK','RST'],o:p=>[...Bn(p.a,'A'),...Bn(p.w,'D'),'WE','DONE'],ck:()=>0,rs:()=>1,init:()=>0,
- nx:(v,c)=>{const W=ccWords(c);return c.st<W.length?c.st+1:c.st},
- out:(v,c,p)=>{const W=ccWords(c),z=Array(p.a+p.w).fill(0);if(!W.length||!(c.sim_&&wired(c.sim_,c,0)))return[...z,0,0];const s=c.st;return s<W.length?[...nb(s,p.a),...nb(W[s],p.w),1,0]:[...z,0,1]},
+ nx:(v,c)=>{const W=ccWords(c);return c.st<W.length?(ccPre(c)?W.length:c.st+1):c.st},
+ out:(v,c,p)=>{const W=ccWords(c),z=Array(p.a+p.w).fill(0);if(!W.length||!(c.sim_&&wired(c.sim_,c,0)))return[...z,0,0];const s=c.st;return s<W.length&&!ccPre(c)?[...nb(s,p.a),...nb(W[s],p.w),1,0]:[...z,0,1]},
  sz:p=>[170,(p.a+p.w+2)*16+22],txt:c=>c.cerr?'error in code':(c.cw||[]).length+' words · dbl-click'};
 FAM.ccomp.f[1].min=13;
 document.head.insertAdjacentHTML('beforeend','<style>#cc table{font:11px ui-monospace,Menlo,monospace;margin:0;width:100%}#cc td,#cc th{padding:1px 6px;text-align:left;border-color:rgba(128,128,128,.35)}#cc td.ln{opacity:.5}#ccsrc{width:100%;box-sizing:border-box;font:12px ui-monospace,Menlo,monospace;tab-size:2}#cch{font-size:12px;max-height:48vh;overflow:auto;margin-top:6px}#cch[hidden]{display:none}#cch table{font:12px system-ui}</style>');
