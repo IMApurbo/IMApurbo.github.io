@@ -329,7 +329,7 @@ s=s.replace(new RegExp('\\((?:\\s*)(?:'+TY+')\\s*\\*?\\s*\\)','g'),'');
 s=s.replace(new RegExp('\\b(?:const\\s+|volatile\\s+|static\\s+)*(?:'+INTT+')\\b\\s+(\\w+)\\s*=\\s*([^;]*\\/[^;]*);','g'),(m,nn,ex)=>{let d=0,top=false;for(const ch of ex){if(ch=='(')d++;else if(ch==')')d--;else if(ch==','&&!d)top=true}return top?'let '+nn+'='+ex+';':'let '+nn+'=Math.trunc('+ex+');'});
 s=s.replace(new RegExp('\\b(?:'+TY+')\\b[\\s*&]+(?=[A-Za-z_])','g'),'let ');
 s=s.replace(/\.length\s*\(\s*\)/g,'.length').replace(/\.c_str\s*\(\s*\)/g,'');
-s=wrapGen(s,new Set([...fns,'delay','delayMicroseconds']));
+s=wrapGen(s,new Set([...fns,'delay','delayMicroseconds','shiftOut','shiftIn','pulseInLong']));
 s=s.replace(/\bwhile\s*\(/g,'while((yield* __t()),').replace(/\bfor\s*\(\s*;\s*;\s*\)/g,'for(;;(yield* __t()))');
 return s.replace(/__S(\d+)__/g,(m,k)=>lits[+k])}
 function compile(src,api){const js=translate(src);return new Function('api','with(api){'+js+'\n;return{setup:typeof setup==="function"?setup:null,loop:typeof loop==="function"?loop:null}}')(api)}
@@ -729,7 +729,7 @@ function edRun(){if(!ED)return;const c=ED.c;if(!sim.map[c.id])return toast('That
 function edStop(){if(!ED)return;const cp=cpuOf(ED.c);cp.off=1;cp.gen=null;cp.md=[];cp.vl=[];cp.ap=[];cp.tn=[];$('#edm').textContent='stopped (press Upload & run to start again)'}
 function edClose(){ED=null;$('#ed').hidden=true}
 function edSend(){if(!ED)return;const i=$('#edi'),cp=cpuOf(ED.c);cp.rx+=i.value+'\n';cps(cp,'> '+i.value+'\n');i.value=''}
-function edHelp(t){const h=$('#edh');if(t==null)t=h.hidden?1:0;h.hidden=!t;h.innerHTML=`<b>Language</b>: Arduino C++ subset (or plain JavaScript) – setup() / loop(), int/float/long/bool/String/byte variables, arrays, functions, if/for/while, #define. Integer division of <code>int x = a / b;</code> is truncated.<br><b>Pins</b>: use the pin names shown on the board (D13, A0, GPIO2, GP15, PA8…) or Arduino numbers. <code>LED_BUILTIN</code> is the on-board LED.<br><b>API</b>: pinMode, digitalWrite, digitalRead, analogRead, analogWrite, tone, noTone, pulseIn, delay, delayMicroseconds, millis, micros, map, constrain, random, min, max, abs, sq, sqrt, pow, Serial.begin/print/println/available/read/readString/parseInt, Servo (attach/write), DHT (readTemperature/readHumidity), NewPing (ping_cm), LiquidCrystal_I2C / LiquidCrystal (init, backlight, setCursor, print, clear), WiFi (simulated), ledcSetup/ledcAttachPin/ledcWrite (ESP32).<br><b>Wiring</b>: output pins (right side) drive the circuit, input pins (left side) read it. Sensors with analog output (AO/OUT) work with analogRead; sliders appear when you click a sensor. Use <i>INPUT_PULLUP</i> with a Push button (A→B) wired to GND.`}
+function edHelp(t){const h=$('#edh');if(t==null)t=h.hidden?1:0;h.hidden=!t;h.innerHTML=`<b>Language</b>: Arduino C++ subset (or plain JavaScript) – setup() / loop(), int/float/long/bool/String/byte variables, arrays, functions, if/for/while, #define. Integer division of <code>int x = a / b;</code> is truncated.<br><b>Pins</b>: use the pin names shown on the board (D13, A0, GPIO2, GP15, PA8…) or Arduino numbers. <code>LED_BUILTIN</code> is the on-board LED.<br><b>API</b>: pinMode, digitalWrite, digitalRead, analogRead, analogWrite, tone, noTone, pulseIn, delay, delayMicroseconds, millis, micros, map, constrain, random, min, max, abs, sq, sqrt, pow, Serial.begin/print/println/available/read/readString/parseInt, Servo (attach/write), DHT (readTemperature/readHumidity), NewPing (ping_cm), LiquidCrystal_I2C / LiquidCrystal (init, backlight, setCursor, print, clear), WiFi (simulated), FastLED (CRGB, CHSV, addLeds, fill_rainbow, show), Adafruit_SSD1306 OLED (text, lines, rects, circles, bitmaps), Adafruit_NeoPixel (begin, setBrightness, setPixelColor, fill, clear, Color, ColorHSV, rainbow, show), Stepper, EEPROM, Wire, SPI, SoftwareSerial, shiftIn/shiftOut, bit*/is* helpers, F(), PROGMEM, enum, #define macros, 'c' chars, sizeof, switch/do-while, ledcSetup/ledcAttachPin/ledcWrite (ESP32).<br><b>Wiring</b>: output pins (right side) drive the circuit, input pins (left side) read it. Sensors with analog output (AO/OUT) work with analogRead; sliders appear when you click a sensor. Use <i>INPUT_PULLUP</i> with a Push button (A→B) wired to GND.`}
 setInterval(()=>{if(!ED||$('#ed').hidden)return;const cp=ED.c.cpu,pre=$('#eds_'),t=cp?cp.ser:'';if(pre._t!==t){pre._t=t;pre.textContent=t;pre.scrollTop=1e9}if(cp&&cp.err)$('#edm').textContent='✖ '+cp.err},250);
 $('#edc').addEventListener('keydown',e=>{if(e.key=='Tab'){e.preventDefault();const t=e.target,s=t.selectionStart;t.value=t.value.slice(0,s)+'  '+t.value.slice(t.selectionEnd);t.selectionStart=t.selectionEnd=s+2}});
 
@@ -1110,7 +1110,7 @@ clear                   empty the board
 link <id>.<pin> <id>.<pin>   join ANY two pins into one electrical net (input-to-input, output-to-output or output-to-input). Prefix a pin with out: or in: when needed, e.g. link l1.in:D l2.in:D. Two outputs driving different values show a red short-circuit wire.
 Microcontrollers: part u M:mcu b=uno | nano | esp32 | esp8266 | pico | tiny85 | bluepill. Output pins (right) are driven by the program, input pins (left) read the circuit. Pin names: D0..D13 A0..A5 (Uno/Nano), GPIO<n> (ESP32), D0..D8 A0 (NodeMCU), GP<n> (Pico), PB0..PB4 (ATtiny85), PA0..PB15 PC13 (Blue Pill), plus power pins 5V 3V3 GND. Example: wire u.D13 -> led.D   wire sensor.AO -> u.A0
 sketch <id> "<example name>"  loads a built-in example program; code <id> "<program>" sets the program (Arduino C++ subset or JavaScript; use the pilcrow character or backslash-n for line breaks, never use double quotes inside, use single quotes for strings). Programs use setup()/loop(), pinMode digitalWrite digitalRead analogRead analogWrite tone pulseIn delay millis map Serial.* Servo DHT LiquidCrystal_I2C WiFi(simulated).
-Sensors/actuators (M:<kind>): pot ldr lm35 tmp36 sound flame gas soil vsrc (pins AO/DO or OUT; set val=.. th=..), dht (DATA; val=temp val2=humidity), ultra (TRIG -> ECHO; val=cm), pir ir tilt reed touch joy, btn (OUT) sbt tgl (A->B switches), bz (buzzer IN), relay (IN COM -> NO NC), motor (A B), hbr (IN1 IN2 ENA -> OUT1 OUT2), servo (SIG), lcd (SDA SCL RS E D4..D7), vcc gnd res (A->B) pup pdn. Sliders: set <id> val=<n> [val2=<n>] [th=<pct>].
+Sensors/actuators (M:<kind>): pot ldr lm35 tmp36 sound flame gas soil vsrc (pins AO/DO or OUT; set val=.. th=..), dht (DATA; val=temp val2=humidity), ultra (TRIG -> ECHO; val=cm), pir ir tilt reed touch joy, btn (OUT) sbt tgl (A->B switches), bz (buzzer IN), relay (IN COM -> NO NC), motor (A B), hbr (IN1 IN2 ENA -> OUT1 OUT2), servo (SIG), lcd (SDA SCL RS E D4..D7), oled (SDA SCL; Adafruit_SSD1306 128x64), vcc gnd res (A->B) pup pdn. Sliders: set <id> val=<n> [val2=<n>] [th=<pct>].
 
 ## Pin names
 Gates: inputs A B C D E F G H, output Y (NOT/BUF: input A). SW IN CLK HI LO: output Q. LED / OUT: input D. RGB: R G B. SEG7: a b c d e f g. DFF: D CK -> Q QN. JK: J K CK -> Q QN. NMOS/PMOS: G D -> S. DIODE: A -> K. Macro/catalog parts use the pin names in the list below (Q0 Q1.., D0.., CK, RST, EN ...). Any pin can also be addressed as i0,i1.. (inputs) / o0,o1.. (outputs). Defined/tt ICs use their own pin names (tt ICs: inputs A B C.., outputs Y0 Y1..).
@@ -2517,4 +2517,177 @@ try{lib=JSON.parse(localStorage.getItem('ll_lib')||'null')||{}}catch(e){lib={}}
 let ws=[];try{ws=JSON.parse(localStorage.getItem('ll_ws')||'[]')}catch(e){}
 ws=ws.filter(c=>c.t!='IC'||lib[c.def]);sim=mk(ws);uid=Math.max(0,...ws.map(c=>c.id))+1;
 pal();renderLib();renderPre();rs();requestAnimationFrame(frame);
+
+/* ================= Arduino compatibility layer (macros, enums, chars, sizeof, more libraries) ================= */
+{const _tr=translate;
+ const TN='unsigned\\s+long|unsigned\\s+int|unsigned\\s+char|long\\s+long|uint8_t|uint16_t|uint32_t|uint64_t|int8_t|int16_t|int32_t|byte|word|long|short|float|double|bool|boolean|char|int',SZ={char:1,byte:1,bool:1,boolean:1,uint8_t:1,int8_t:1,int:2,short:2,word:2,uint16_t:2,int16_t:2,long:4,float:4,double:4,uint32_t:4,int32_t:4};
+ translate=function(src){let s=String(src).replace(/\r/g,'');
+  /* chars: 'A' -> 65 (kept as text when passed straight to print/write) */
+  s=s.replace(/("(?:\\.|[^"\\\n])*"|\/\/[^\n]*|\/\*[\s\S]*?\*\/)|'(\\.|[^'\\\n])'/g,(m,k,ch,off)=>{if(k)return k;if(/(print|println|write)\(\s*$/.test(s.slice(Math.max(0,off-14),off)))return m;
+   const e={n:10,t:9,r:13,0:0,'\\':92,"'":39,'"':34}[ch[ch.length-1]];return String(ch.length>1&&e!=null?e:ch.charCodeAt(ch.length-1))});
+  s=s.replace(/\b(PROGMEM|IRAM_ATTR|ICACHE_RAM_ATTR|RTC_DATA_ATTR|extern|static|register)\b/g,'').replace(/\bunsigned\s+(?=[a-z])/g,'unsigned ');
+  s=s.replace(/\bsizeof\s*\(\s*(unsigned\s+\w+|[A-Za-z_]\w*)\s*\)/g,(m,t)=>SZ[t.replace(/^unsigned\s+/,'')]!=null?SZ[t.replace(/^unsigned\s+/,'')]:m);
+  /* function-like macros */
+  s=s.replace(/^[ \t]*#define[ \t]+(\w+)\(([^)]*)\)[ \t]+(.+)$/gm,(m,n,a,b)=>'var '+n+'=('+a+')=>('+b.replace(/\\\s*$/,'')+');');
+  s=s.replace(/^[ \t]*#define[ \t]+(\w+)[ \t]*$/gm,'var $1=1;');
+  /* enums (named or anonymous) */
+  const en=[];s=s.replace(/\benum\s+(?:class\s+)?(\w+)?\s*(?::\s*\w+\s*)?\{([^}]*)\}\s*(\w+)?\s*;/g,(m,n,b,v)=>{if(n)en.push(n);let k=0;return b.split(',').map(x=>x.trim()).filter(Boolean).map(x=>{const q=x.split('=');if(q[1]!=null){return 'var '+q[0].trim()+'='+(k=q[1].trim())+';'+(k=Function('return ('+k+')')()+1,'')}return 'var '+x+'='+(k++)+';'}).join(' ')+(v?' var '+v+'=0;':'')});
+  en.forEach(n=>{s=s.replace(new RegExp('\\b'+n+'\\b(?=[\\s*&]+[A-Za-z_])','g'),'int')});
+  s=s.replace(/\btypedef\s+[^;]*;/g,'').replace(/\bnamespace\b/g,'');
+  /* stray 2-D arrays: int g[3][3] = {{..},{..}} */
+  s=s.replace(new RegExp('\\b(?:const\\s+)?(?:'+TN+')\\s+(\\w+)\\s*\\[[^\\]]*\\]\\s*\\[[^\\]]*\\]\\s*=\\s*(\\{[\\s\\S]*?\\})\\s*;','g'),(m,n,b)=>'let '+n+'='+b.replace(/\{/g,'[').replace(/\}/g,']')+';');
+  s=s.replace(new RegExp('\\b(?:'+TN+')\\s+(\\w+)\\s*\\[([^\\]]*)\\]\\s*\\[([^\\]]*)\\]\\s*;','g'),'let $1=Array.from({length:($2)||1},()=>new Array(($3)||1).fill(0));');
+  s=s.replace(/\bString\s*\(\s*(\d+)\s*\)/g,'String($1)');
+  return _tr(s)};
+}
+{const _mk=mkApi;mkApi=function(c,B,cp){const api=_mk(c,B,cp),I=x=>Math.trunc(x),ee=cp.ee=cp.ee||new Array(1024).fill(255),cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+ const idx=p=>{let i=typeof p=='number'?B.n2i[p]:B.nm2i[String(p)];return i==null?-1:i},ch=x=>typeof x=='number'?String.fromCharCode(x):String(x);
+ const wr=api.Serial.print;
+ Object.assign(api,{F:x=>x,PSTR:x=>x,P:x=>x,sizeof:x=>Array.isArray(x)?x.length:typeof x=='string'?x.length+1:1,
+  pgm_read_byte:x=>x,pgm_read_word:x=>x,pgm_read_dword:x=>x,pgm_read_float:x=>x,strlen_P:x=>String(x).length,
+  bit:n=>1<<n,_BV:n=>1<<n,bitClear:(x,n)=>x&~(1<<n),bitSet:(x,n)=>x|1<<n,bitToggle:(x,n)=>x^1<<n,word:(h,l)=>(h<<8)|l,makeWord:(h,l)=>(h<<8)|l,
+  cbrt:Math.cbrt,exp:Math.exp,fabs:Math.abs,fmod:(a,b)=>a%b,log10:Math.log10,asin:Math.asin,acos:Math.acos,atan:Math.atan,sinh:Math.sinh,cosh:Math.cosh,tanh:Math.tanh,hypot:Math.hypot,trunc:Math.trunc,radians:x=>x*Math.PI/180,degrees:x=>x*180/Math.PI,
+  isDigit:x=>/\d/.test(ch(x)),isAlpha:x=>/[A-Za-z]/.test(ch(x)),isAlphaNumeric:x=>/[A-Za-z0-9]/.test(ch(x)),isUpperCase:x=>/[A-Z]/.test(ch(x)),isLowerCase:x=>/[a-z]/.test(ch(x)),isSpace:x=>/\s/.test(ch(x)),isPunct:x=>/[!-\/:-@\[-`{-~]/.test(ch(x)),isHexadecimalDigit:x=>/[0-9a-fA-F]/.test(ch(x)),isAscii:x=>x<128,isWhitespace:x=>/[ \t]/.test(ch(x)),isControl:x=>x<32||x==127,isPrintable:x=>x>=32&&x<127,
+  toUpperCase:x=>ch(x).toUpperCase().charCodeAt(0),toLowerCase:x=>ch(x).toLowerCase().charCodeAt(0),toAscii:x=>x&127,
+  atoi:x=>parseInt(x)||0,atol:x=>parseInt(x)||0,atof:x=>parseFloat(x)||0,abs_:Math.abs,strcmp:(a,b)=>a<b?-1:a>b?1:0,strlen:x=>String(x).length,strcpy:(a,b)=>b,strcat:(a,b)=>a+b,
+  randomSeed(){},noInterrupts(){},interrupts(){},cli(){},sei(){},yield(){},NOT_AN_INTERRUPT:-1,RISING:3,FALLING:2,CHANGE:1,
+  A0:B.nm2i.A0!=null?'A0':api.A0,CHAR_BIT:8,INT_MAX:32767,LONG_MAX:2147483647,UINT_MAX:65535,NAN:NaN,INFINITY:Infinity,isinf:x=>!isFinite(x)&&!isNaN(x),
+  *shiftOut(d,k,o,v){for(let q=0;q<8;q++){api.digitalWrite(d,o==1?(v>>(7-q))&1:(v>>q)&1);api.digitalWrite(k,1);yield* api.delayMicroseconds(1);api.digitalWrite(k,0);yield* api.delayMicroseconds(1)}},
+  *shiftIn(d,k,o){let v=0;for(let q=0;q<8;q++){api.digitalWrite(k,1);yield* api.delayMicroseconds(1);const b=api.digitalRead(d);v=o==1?(v<<1)|b:v|(b<<q);api.digitalWrite(k,0);yield* api.delayMicroseconds(1)}return v},
+  *pulseInLong(p,s,t){return api.pulseIn(p,s,t)},
+  tone:(p,f,d)=>{const i=idx(p);if(i<0)return;cp.md[i]=1;cp.vl[i]=1;cp.ap[i]=null;cp.tn[i]=f;if(d>0)cp.tt.push({i,end:cp.vt+d})},
+  EEPROM:{length:()=>ee.length,read:a=>ee[a]!=null?ee[a]:255,write(a,v){ee[a]=v&255},update(a,v){ee[a]=v&255},get(a,v){return ee[a]},put(a,v){ee[a]=v;return v},commit(){return true},begin(){}},
+  Wire:{begin(){},setClock(){},beginTransmission(){},write(){return 1},endTransmission(){return 0},requestFrom(){return 0},available(){return 0},read(){return -1},onReceive(){},onRequest(){}},
+  SPI:{begin(){},end(){},transfer:x=>x,transfer16:x=>x,beginTransaction(){},endTransaction(){},setBitOrder(){},setDataMode(){},setClockDivider(){}},
+  SPI_MODE0:0,SPI_MODE1:1,SPI_MODE2:2,SPI_MODE3:3,SPI_CLOCK_DIV4:4,SPI_CLOCK_DIV16:16,
+  Stepper:(spr,...pins)=>({pos:0,setSpeed(){},step(n){this.pos+=n}}),
+  ESP:{restart(){},getFreeHeap:()=>200000,getChipId:()=>1234},ESP32:{},
+  Serial1:api.Serial,Serial2:api.Serial,SerialUSB:api.Serial,
+  Timer1:{initialize(){},attachInterrupt(){},setPeriod(){},pwm(){},start(){},stop(){}},
+  WiFiClient:()=>({connect(){return true},print(){},println(){},available(){return 0},stop(){},connected(){return false},read(){return -1}}),
+  WebServer:()=>({on(){},begin(){},handleClient(){},send(){},arg:()=>'',onNotFound(){}}),HTTPClient:()=>({begin(){},GET(){return 200},getString(){return ''},end(){}}),
+  Ticker:()=>({attach(){},detach(){}}),RTC_DS3231:()=>({begin(){return true},now:()=>({year:()=>2026,month:()=>1,day:()=>1,hour:()=>12,minute:()=>0,second:()=>0}),adjust(){}}),DateTime:()=>({}),
+  OneWire:()=>({}),DallasTemperature:()=>({begin(){},requestTemperatures(){},getTempCByIndex:()=>24,getTempFByIndex:()=>75.2}),
+  IRrecv:()=>({enableIRIn(){},decode(){return false},resume(){}}),IRremote:{},MFRC522:()=>({PCD_Init(){},PICC_IsNewCardPresent(){return false},PICC_ReadCardSerial(){return false}}),
+  Keypad:()=>({getKey(){return 0}}),makeKeymap:x=>x,SoftwareSerial:()=>({begin(){},print:api.Serial.print,println:api.Serial.println,available:()=>0,read:()=>-1,write(){},listen(){}}),
+  Bounce:()=>({attach(){},interval(){},update(){return false},read(){return 0},fell(){return false},rose(){return false}}),
+  Adafruit_SSD1306:()=>({begin(){return true},clearDisplay(){},display(){},setTextSize(){},setTextColor(){},setCursor(){},print(){},println(){},drawPixel(){},drawLine(){},drawRect(){},fillRect(){},drawCircle(){},fillCircle(){},dim(){}}),
+  WHITE:1,BLACK:0,SSD1306_WHITE:1,SSD1306_BLACK:0,SSD1306_SWITCHCAPVCC:2,
+  MAX7219:0});
+ /* Arduino has no real 'int' overflow here, but keep long/int 16-bit-style wrap only where the program asks (uint8_t etc are not truncated) */
+ /* extend Servo + NeoPixel */
+ const _S=api.Servo;api.Servo=()=>{const o=_S();o.attach=function(p){this.i=idx(p);if(this.i>=0)cp.md[this.i]=1;return 1};return o};api.ServoESP32=api.Servo;api.PWMServo=api.Servo;
+ const _N=api.Adafruit_NeoPixel;if(_N){const hsv=(h,s,v)=>{h=((h%65536)+65536)%65536/65536*6;s=(s==null?255:s)/255;v=(v==null?255:v)/255;const i=Math.floor(h),f=h-i,p=v*(1-s),q=v*(1-s*f),t=v*(1-s*(1-f)),r=[v,q,p,p,t,v][i%6],g=[t,v,v,q,p,p][i%6],b=[p,p,t,v,v,q][i%6];return((Math.round(r*255)<<16)|(Math.round(g*255)<<8)|Math.round(b*255))>>>0};
+  api.Adafruit_NeoPixel=(n,pin,t)=>{const o=_N(n,pin,t),oc=o.Color;o.Color=(r,g,b)=>oc(r,g,b);o.ColorHSV=hsv;
+   o.gamma32=x=>x;o.gamma8=x=>x;o.sine8=x=>Math.round(127.5+127.5*Math.sin(x*Math.PI/128));o.getBrightness=()=>o.br;o.canShow=()=>true;o.setPin=()=>{};o.updateLength=l=>{o.n=l};o.updateType=()=>{};o.getPixels=()=>o.buf;o.rainbow=(first,cyc,sat,bri,gam)=>{first=first||0;cyc=cyc||1;for(let k=0;k<o.n;k++)o.setPixelColor(k,hsv(first+k*cyc*65536/o.n,sat,bri))};
+   o.setPixelColor=function(k,a,g,b){if(k<0||k>=o.n)return;if(g===undefined)o.buf[k]=[(a>>16)&255,(a>>8)&255,a&255];else o.buf[k]=[a&255,g&255,b&255]};return o};
+  Object.assign(api,{NEO_RGBW:4,NEO_GRBW:5,NEO_WRGB:6,NEO_KHZ800:0,NEO_KHZ400:256,NEO_RBG:7,NEO_GBR:8,NEO_BGR:9});api.Adafruit_NeoMatrix=api.Adafruit_NeoPixel;api.neoPixelType=0}
+ return api}}
+
+/* ================= OLED (SSD1306) display part + FastLED + Adafruit_GFX ================= */
+const OLEDS=new WeakMap(),oledOf=m=>{let o=OLEDS.get(m);if(!o){const cv=document.createElement('canvas');cv.width=128;cv.height=64;o={cv,x:cv.getContext('2d'),n:0};OLEDS.set(m,o);o.x.fillStyle='#05080c';o.x.fillRect(0,0,128,64)}return o};
+KS.oled={lb:()=>'OLED 128x64',oled:1,nolab:1,i:()=>['SDA','SCL'],o:()=>[],out:()=>[],sz:()=>[200,130],
+ draw:(c,x,y,w,h)=>{tl(x,y,w,'OLED 128×64 (SSD1306, I2C)');const o=oledOf(c);ctx.fillStyle='#000';ctx.fillRect(x+9,y+21,182,92);ctx.imageSmoothingEnabled=false;ctx.drawImage(o.cv,x+10,y+22,180,90);ctx.imageSmoothingEnabled=true}};
+EM(ACG,'OLED 128x64 (SSD1306, I2C)','oled');
+{const _t=translate;translate=function(src){let s=String(src);
+ s=s.replace(/&\s*Wire\d?\b/g,'Wire').replace(/(\w)::(\w)/g,'$1.$2').replace(/\bFastLED\.delay\s*\(/g,'delay(');
+ s=s.replace(/\baddLeds\s*<\s*\w+\s*,\s*(\w+)\s*(?:,[^>]*)?>\s*\(/g,'addLeds($1, ');
+ s=s.replace(/\bCRGB\s+(\w+)\s*\[([^\]]*)\]\s*;/g,'let $1=Array.from({length:($2)||1},()=>CRGB(0,0,0));');
+ s=s.replace(/\b(CRGB|CHSV)\s+(\w+)\s*\(([^)]*)\)\s*;/g,'let $2=$1($3);').replace(/\b(CRGB|CHSV)\s+(\w+)\s*;/g,'let $2=$1(0,0,0);').replace(/\b(CRGB|CHSV)\s+(\w+)\s*=/g,'let $2=');
+ s=s.replace(/\b(Adafruit_SSD1306|Adafruit_SH1106G|Adafruit_SH110X)\s+(\w+)\s*(?:\(([^)]*)\))?\s*;/g,(m,T,n,a)=>'let '+n+'=Adafruit_SSD1306('+(a||'')+');');
+ return _t(s)}}
+{const _m=mkApi;mkApi=function(c,B,cp){const api=_m(c,B,cp),idx=p=>{let i=typeof p=='number'?B.n2i[p]:B.nm2i[String(p)];return i==null?-1:i},R=Math.round;
+ const netsOf=i=>{const s=c.sim_;if(!s||i<0)return null;const rt=netRoot(s);return{s,rt,mine:new Set([rt(pk(c.id,0,i)),rt(pk(c.id,1,i))])}};
+ const hs=(h,s,v)=>{h=(((h%256)+256)%256)/256*6;s=(s==null?255:s)/255;v=(v==null?255:v)/255;const i=Math.floor(h),f=h-i,p=v*(1-s),q=v*(1-s*f),t=v*(1-s*(1-f));return[[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]][i%6].map(z=>R(z*255))};
+ const sc=(a,b)=>(a*(b+1))>>8,L8=x=>(((x%256)+256)%256);
+ const nm={Red:[255,0,0],Green:[0,255,0],Blue:[0,0,255],White:[255,255,255],Black:[0,0,0],Yellow:[255,255,0],Orange:[255,165,0],Purple:[128,0,128],Cyan:[0,255,255],Magenta:[255,0,255],Pink:[255,192,203],Aqua:[0,255,255],Gold:[255,215,0],Violet:[238,130,238],Lime:[0,255,0],Teal:[0,128,128],Crimson:[220,20,60],HotPink:[255,105,180],DarkRed:[139,0,0],DarkGreen:[0,100,0],DarkBlue:[0,0,139],Turquoise:[64,224,208],Indigo:[75,0,130],Silver:[192,192,192],Gray:[128,128,128],Brown:[165,42,42],Maroon:[128,0,0],Navy:[0,0,128],Salmon:[250,128,114],Coral:[255,127,80],FairyLight:[255,228,177],Amethyst:[153,102,204]};
+ const norm=x=>x==null?[0,0,0]:typeof x=='number'?[(x>>16)&255,(x>>8)&255,x&255]:x.h!=null&&x.r==null?hs(x.h,x.s,x.v):[x.r&255,x.g&255,x.b&255];
+ const CR=(r,g,b)=>{const o={r:0,g:0,b:0,setRGB(a,b2,c2){o.r=a;o.g=b2;o.b=c2;return o},setHSV(h,s,v){[o.r,o.g,o.b]=hs(h,s,v);return o},fadeToBlackBy(k){o.r=sc(o.r,255-k);o.g=sc(o.g,255-k);o.b=sc(o.b,255-k);return o},fadeLightBy(k){return o.fadeToBlackBy(k)},nscale8(k){o.r=sc(o.r,k);o.g=sc(o.g,k);o.b=sc(o.b,k);return o},maximizeBrightness(){const m=Math.max(o.r,o.g,o.b)||1;o.r=R(o.r*255/m);o.g=R(o.g*255/m);o.b=R(o.b*255/m);return o},getLuma(){return R(.299*o.r+.587*o.g+.114*o.b)}};
+  if(g===undefined&&r!=null){[o.r,o.g,o.b]=norm(r)}else{o.r=r|0;o.g=g|0;o.b=b|0}return o};
+ Object.keys(nm).forEach(k=>Object.defineProperty(CR,k,{get:()=>CR(...nm[k])}));
+ const fl={ctl:[],br:255,addLeds(pin,arr,n){const i=idx(pin);if(i>=0)cp.md[i]=1;this.ctl.push({i,arr,n:n||arr.length});return this},setBrightness(b){this.br=Math.max(0,Math.min(255,b))},getBrightness(){return this.br},setMaxPowerInVoltsAndMilliamps(){},setMaxPowerInMilliWatts(){},setCorrection(){},setTemperature(){},setDither(){},
+  show(b){for(const k of this.ctl){const n=netsOf(k.i);if(!n)continue;const px=[];for(let j=0;j<k.n;j++)px.push(norm(k.arr[j]));for(const m of n.s.cs)if(m.t=='M'&&KS[m.k].neo&&m.st&&m.st.px&&n.mine.has(n.rt(pk(m.id,0,0)))){for(let j=0;j<m.st.px.length&&j<px.length;j++)m.st.px[j]=px[j].map(z=>R(z*(b==null?this.br:b)/255));m.st.fr=(m.st.fr|0)+1}}},
+  clear(sh){for(const k of this.ctl)for(let j=0;j<k.n;j++)k.arr[j]=CR(0,0,0);if(sh)this.show()},showColor(col){for(const k of this.ctl)for(let j=0;j<k.n;j++)k.arr[j]=CR(col);this.show()}};
+ const rnd=(a,b)=>b==null?Math.floor(Math.random()*(a==null?256:a)):a+Math.floor(Math.random()*(b-a));
+ Object.assign(api,{CRGB:CR,CHSV:(h,s,v)=>({h:h|0,s:s==null?255:s,v:v==null?255:v}),FastLED:fl,HUE_RED:0,HUE_ORANGE:32,HUE_YELLOW:64,HUE_GREEN:96,HUE_AQUA:128,HUE_BLUE:160,HUE_PURPLE:192,HUE_PINK:224,
+  WS2812:0,WS2812B:0,WS2811:0,NEOPIXEL:0,SK6812:0,APA102:0,GRB:0,RGB:0,BRG:0,
+  fill_solid(a,n,col){for(let j=0;j<n;j++)a[j]=CR(col)},fill_rainbow(a,n,h,d){d=d==null?5:d;for(let j=0;j<n;j++)a[j]=CR(...hs(h+j*d,255,255))},fadeToBlackBy(a,n,k){for(let j=0;j<n;j++)a[j].fadeToBlackBy(k)},nscale8(a,n,k){for(let j=0;j<n;j++)a[j].nscale8(k)},
+  blend:(a,b,t)=>{const p=norm(a),q=norm(b);return CR(...p.map((v,i)=>R(v+(q[i]-v)*t/255)))},
+  random8:rnd,random16:(a,b)=>rnd(a==null?65536:a,b),scale8:sc,qadd8:(a,b)=>Math.min(255,a+b),qsub8:(a,b)=>Math.max(0,a-b),lerp8by8:(a,b,t)=>R(a+(b-a)*t/255),
+  sin8:x=>R(127.5+127.5*Math.sin(L8(x)*2*Math.PI/256)),cos8:x=>R(127.5+127.5*Math.cos(L8(x)*2*Math.PI/256)),
+  beat8:(bpm,tb)=>L8(R(cp.vt*bpm*256/60000)),beatsin8:(bpm,lo,hi,tb,ph)=>{lo=lo||0;hi=hi==null?255:hi;const v=127.5+127.5*Math.sin(((cp.vt*bpm/60000)%1)*2*Math.PI+(ph||0)*Math.PI/128);return lo+R(v*(hi-lo)/255)},
+  beatsin16:(bpm,lo,hi)=>{lo=lo||0;hi=hi==null?65535:hi;const v=.5+.5*Math.sin(((cp.vt*bpm/60000)%1)*2*Math.PI);return lo+R(v*(hi-lo))}});
+ /* ---- Adafruit_GFX / SSD1306 ---- */
+ const oledT=()=>{const s=c.sim_;if(!s)return null;const rt=netRoot(s),mine=new Set();for(let i=0;i<64;i++){mine.add(rt(pk(c.id,0,i)));mine.add(rt(pk(c.id,1,i)))}for(const m of s.cs)if(m.t=='M'&&KS[m.k].oled&&(mine.has(rt(pk(m.id,0,0)))||mine.has(rt(pk(m.id,0,1)))))return m;return null};
+ const gc=document.createElement('canvas'),gx=gc.getContext('2d',{willReadFrequently:true});
+ api.Adafruit_SSD1306=(w,h)=>{const W=128,H=(h&&h<=64)?h:64,b=new Uint8Array(W*H);let cx=0,cy=0,ts=1,col=1,wrap=1,inv=0,rot=0;
+  const px=(x,y,k)=>{x=Math.trunc(x);y=Math.trunc(y);if(x<0||y<0||x>=W||y>=H)return;const i=y*W+x;b[i]=(k==null?col:k)==2?1-b[i]:((k==null?col:k)?1:0)},
+  line=(x0,y0,x1,y1,k)=>{x0=Math.trunc(x0);y0=Math.trunc(y0);x1=Math.trunc(x1);y1=Math.trunc(y1);const dx=Math.abs(x1-x0),dy=-Math.abs(y1-y0),sx=x0<x1?1:-1,sy=y0<y1?1:-1;let e=dx+dy;for(;;){px(x0,y0,k);if(x0==x1&&y0==y1)break;const e2=2*e;if(e2>=dy){e+=dy;x0+=sx}if(e2<=dx){e+=dx;y0+=sy}}},
+  fr=(x,y,w2,h2,k)=>{for(let j=0;j<h2;j++)for(let i=0;i<w2;i++)px(x+i,y+j,k)},
+  circ=(x0,y0,r,k,f)=>{for(let y=-r;y<=r;y++)for(let x=-r;x<=r;x++){const d=x*x+y*y;if(f?d<=r*r+r*.8:Math.abs(d-r*r)<=r)px(x0+x,y0+y,k)}},
+  ch=t=>{if(t=='\n'){cx=0;cy+=8*ts;return}if(t=='\r')return;if(wrap&&cx+6*ts>W){cx=0;cy+=8*ts}gc.width=6*ts;gc.height=8*ts;gx.clearRect(0,0,gc.width,gc.height);gx.fillStyle='#000';gx.font='bold '+(7.4*ts)+'px ui-monospace,Menlo,Consolas,monospace';gx.textBaseline='top';gx.fillText(t,0,ts*.4);const d=gx.getImageData(0,0,gc.width,gc.height).data;for(let j=0;j<gc.height;j++)for(let i=0;i<gc.width;i++)if(d[(j*gc.width+i)*4+3]>110)px(cx+i,cy+j);cx+=6*ts},
+  put=v=>{for(const t of(typeof v=='number'&&!Number.isInteger(v)?v.toFixed(2):typeof v=='number'?String(v):String(v)))ch(t)};
+  return{begin(){return true},width:()=>W,height:()=>H,clearDisplay(){b.fill(0);cx=cy=0},fillScreen(k){b.fill(k?1:0)},
+   display(){const m=oledT();if(!m)return;const o=oledOf(m),im=o.x.createImageData(128,64);for(let i=0;i<128*64;i++){const on=i<W*H&&(inv?1-b[i]:b[i]),j=i*4;im.data[j]=on?190:6;im.data[j+1]=on?225:9;im.data[j+2]=on?255:14;im.data[j+3]=255}o.x.putImageData(im,0,0);o.n++},
+   drawPixel:(x,y,k)=>px(x,y,k),drawLine:(a,b2,c2,d,k)=>line(a,b2,c2,d,k),drawFastHLine:(x,y,l,k)=>line(x,y,x+l-1,y,k),drawFastVLine:(x,y,l,k)=>line(x,y,x,y+l-1,k),
+   drawRect:(x,y,w2,h2,k)=>{line(x,y,x+w2-1,y,k);line(x,y+h2-1,x+w2-1,y+h2-1,k);line(x,y,x,y+h2-1,k);line(x+w2-1,y,x+w2-1,y+h2-1,k)},fillRect:(x,y,w2,h2,k)=>fr(x,y,w2,h2,k),drawRoundRect(x,y,w2,h2,r,k){this.drawRect(x,y,w2,h2,k)},fillRoundRect(x,y,w2,h2,r,k){fr(x,y,w2,h2,k)},
+   drawCircle:(x,y,r,k)=>circ(x,y,r,k,0),fillCircle:(x,y,r,k)=>circ(x,y,r,k,1),drawTriangle(a,b2,c2,d,e,f,k){line(a,b2,c2,d,k);line(c2,d,e,f,k);line(e,f,a,b2,k)},
+   fillTriangle(a,b2,c2,d,e,f,k){const x0=Math.min(a,c2,e),x1=Math.max(a,c2,e),y0=Math.min(b2,d,f),y1=Math.max(b2,d,f),s=(px_,py,qx,qy,rx,ry)=>(px_-rx)*(qy-ry)-(qx-rx)*(py-ry);for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const d1=s(x,y,a,b2,c2,d),d2=s(x,y,c2,d,e,f),d3=s(x,y,e,f,a,b2);if(!((d1<0||d2<0||d3<0)&&(d1>0||d2>0||d3>0)))px(x,y,k)}},
+   drawBitmap(x,y,bm,w2,h2,k){const rb=Math.ceil(w2/8);for(let j=0;j<h2;j++)for(let i=0;i<w2;i++)if((bm[j*rb+(i>>3)]>>(7-(i&7)))&1)px(x+i,y+j,k)},
+   setCursor(x,y){cx=x;cy=y},getCursorX:()=>cx,getCursorY:()=>cy,setTextSize(s){ts=Math.max(1,s|0)},setTextColor(k){col=k==null?1:k},setTextWrap(w2){wrap=w2?1:0},setRotation(r){rot=r},invertDisplay(i){inv=i?1:0},dim(){},ssd1306_command(){},startscrollright(){},startscrollleft(){},stopscroll(){},
+   print(v){put(v)},println(v){if(v!==undefined)put(v);ch('\n')},write(v){put(typeof v=='number'?String.fromCharCode(v):v)},printf(f,...a){let k=0;put(String(f).replace(/%[-\d.]*[a-zA-Z]/g,()=>a[k++]))},
+   getTextBounds(t,x,y,x1,y1,w2,h2){}}};
+ api.Adafruit_SH1106G=api.Adafruit_SSD1306;api.SH110X_WHITE=1;api.INVERSE=2;api.SSD1306_INVERSE=2;api.SSD1306_I2C_ADDRESS=0x3C;
+ return api}}
+EXS['OLED - Hello + bouncing ball']=`// Uno -> OLED 128x64 (SSD1306): SDA = A4, SCL = A5
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+int x = 10, y = 30, dx = 2, dy = 1;
+void setup() {
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  display.clearDisplay();
+}
+void loop() {
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+  display.println("Hello LogicLab!");
+  display.print("t = ");
+  display.print(millis() / 1000);
+  display.println(" s");
+  display.drawRect(0, 20, 128, 44, SSD1306_WHITE);
+  display.fillCircle(x, y, 4, SSD1306_WHITE);
+  x += dx; y += dy;
+  if (x < 5 || x > 122) dx = -dx;
+  if (y < 25 || y > 59) dy = -dy;
+  display.display();
+  delay(30);
+}
+`;
+EXS['FastLED - rainbow strip']=`// Uno + FastLED: DATA = pin 6, 8 LEDs (wire pin 6 to the NeoPixel strip DIN)
+#include <FastLED.h>
+#define NUM_LEDS 8
+#define DATA_PIN 6
+CRGB leds[NUM_LEDS];
+uint8_t hue = 0;
+void setup() {
+  FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, NUM_LEDS);
+  FastLED.setBrightness(120);
+}
+void loop() {
+  fill_rainbow(leds, NUM_LEDS, hue, 32);
+  leds[hue % NUM_LEDS] = CRGB::White;
+  FastLED.show();
+  hue += 4;
+  delay(40);
+}
+`;
+PRE.push({n:'Arduino + OLED 128x64 (SSD1306)',d:'Uno draws text, a box and a bouncing ball on a real I2C OLED part (SDA=A4, SCL=A5).',s:()=>`part u M:mcu b=uno\npart o M:oled\nwire u.A4 -> o.SDA\nwire u.A5 -> o.SCL\nsketch u "OLED - Hello + bouncing ball"`});
+PRE.push({n:'FastLED rainbow on NeoPixel strip',d:'FastLED sketch on pin 6 animates an 8-LED WS2812 strip.',s:()=>`part u M:mcu b=uno\npart st M:neo n=8\nwire u.D6 -> st.DIN\nsketch u "FastLED - rainbow strip"`});
+pal();renderPre();
 </script></body></html>
