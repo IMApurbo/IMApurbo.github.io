@@ -745,7 +745,7 @@ function delSel(){if(!sels.size)return;const pre=snapState();sels.forEach(c=>del
 /* ---------- UI ---------- */
 function place(c,pos){const pre=snapState();c.id=uid++;c.x=pos?snap(pos.x-30):snap((W/2-ox)/z-30+Math.random()*60);c.y=pos?snap(pos.y-20):snap((H/2-oy)/z-20+Math.random()*60);c.src=[];init(c);sim.cs.push(c);sim.map[c.id]=c;rec(pre)}
 function add(t,def,pos){const c={t};if(def)c.def=def;if(t=='LED')c.color=LC[0];place(c,pos)}
-function addE(i,pos){const e=CAT[i];if(e.ic){if(!lib[e.n]){lib[e.n]=e.ic();saveLib();renderLib()}add('IC',e.n,pos);return}const c={t:e.t};if(!e.fam)c.lab=e.n;if(e.gn)c.n=e.gn;['color','k'].forEach(f=>e[f]!=null&&(c[f]=e[f]));if(e.p)c.p={...e.p};place(c,pos)}
+function addE(i,pos){const e=CAT[i];if(e.blk){openBlockDlg(pos);return}if(e.ic){if(!lib[e.n]){lib[e.n]=e.ic();saveLib();renderLib()}add('IC',e.n,pos);return}const c={t:e.t};if(!e.fam)c.lab=e.n;if(e.gn)c.n=e.gn;['color','k','w','h','name'].forEach(f=>e[f]!=null&&(c[f]=e[f]));if(e.p)c.p={...e.p};place(c,pos)}
 let GR={},fh;
 function dp(e){if(e.ic)return'Built from gates – drop it, then zoom in to see inside';if(e.t!='M')return e.n;const K=KS[e.k],p=e.p||{},op=K.op||[];return('in: '+K.i(p).filter(n=>!op.includes(n)).join(' ')+' | out: '+K.o(p).filter(n=>!op.includes(n)).join(' ')+(op.length?' | optional (double-click part): '+op.join(' '):'')).slice(0,300)}
 function pal(q){q=(q||'').toLowerCase();GR={};CAT.forEach((e,i)=>{if(q&&!(e.n+' '+e.g).toLowerCase().includes(q))return;(GR[e.g]=GR[e.g]||[]).push(`<button draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${i}')" ondragend="$('#fly').hidden=true" onclick="addE(${i})" title="${dp(e)}">${e.n}</button>`)});
@@ -785,8 +785,35 @@ else if(had)sim=mk(JSON.parse(snapState()));det=null;$('#md').hidden=true}
 /* ---------- drawing ---------- */
 function curve(a,b,ka,kb){const d=Math.max(30,Math.abs(b.x-a.x)/2),s1=ka===0?-1:1,s2=kb===1?1:-1;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.bezierCurveTo(a.x+s1*d,a.y,b.x+s2*d,b.y,b.x,b.y)}
 function wire(a,b,on,hl,ka,kb,cf){if(hl){curve(a,b,ka,kb);ctx.lineWidth=9;ctx.strokeStyle='rgba(74,163,255,.6)';ctx.stroke()}curve(a,b,ka,kb);ctx.lineWidth=3;if(cf){ctx.strokeStyle='#ff3b3b';ctx.shadowColor='#ff0000';ctx.shadowBlur=10;ctx.stroke();ctx.shadowBlur=0;SHORTS++}else if(on){ctx.strokeStyle='#ffd23f';ctx.shadowColor='#ffb300';ctx.shadowBlur=8;ctx.stroke();ctx.shadowBlur=0;ctx.strokeStyle='#fffbe0';ctx.lineWidth=1.5;ctx.setLineDash([4,14]);ctx.lineDashOffset=-T*0.04;ctx.stroke();ctx.setLineDash([])}else{ctx.strokeStyle='#7a8599';ctx.stroke()}}
-function draw(s){for(const c of s.cs){const n=spec(c).ni;for(let i=0;i<n;i++){const r=c.src[i],m=r&&s.map[r.id];if(m){const a=pin(m,1,r.o),b=pin(c,0,i);if(a&&b){const nn=s.nr&&s.nr.get(pk(m.id,1,r.o)),v=nn?netv(nn):m.o[r.o];wire(a,b,v,s===sim&&selW&&selW.c===c&&selW.i===i&&!selW.l,1,0,nn&&nn.cf)}}}
-for(const l of c.lk||[]){const m=s.map[l.id];if(!m)continue;const a=pin(c,l.k,l.i),b=pin(m,l.k2,l.j);if(a&&b){const nn=s.nr&&s.nr.get(pk(c.id,l.k,l.i)),v=nn?netv(nn):0;wire(a,b,v,s===sim&&selW&&selW.l===l,l.k,l.k2,nn&&nn.cf)}}}for(const c of s.cs)dcomp(c)}
+
+/* ---- decorative zone panels (NOTE with colour + height) and Arduino-style pin-header strip ---- */
+function isPnl(c){return c.t=='NOTE'&&!!c.color&&c.h>60}
+function dpnl(c){const w=c.w,h=c.h,col=c.color;ctx.save();
+ctx.beginPath();ctx.roundRect(c.x,c.y,w,h,14);ctx.globalAlpha=.08;ctx.fillStyle=col;ctx.fill();
+ctx.globalAlpha=.8;ctx.lineWidth=2.5;ctx.strokeStyle=col;ctx.stroke();
+ctx.restore()}
+
+function dragSet(a){const set=new Set(a);for(const p of a)if(isPnl(p))for(const q of sim.cs){if(q===p||set.has(q))continue;const s=spec(q);if(q.x>=p.x&&q.y>=p.y&&q.x+s.w<=p.x+p.w&&q.y+s.h<=p.y+p.h)set.add(q)}return[...set].map(q=>[q,q.x,q.y])}
+const PCOL=['#2b6fd6','#8a4fd6','#1f9d55','#c27a00','#b8860b','#0b6e7a','#c0392b','#6b7280'];
+function openBlockDlg(pos,c){const old=document.getElementById('bkd');if(old)old.remove();
+const d=document.createElement('div');d.id='bkd';d.style.cssText='position:fixed;inset:0;background:#0007;display:flex;align-items:center;justify-content:center;z-index:30';
+d.innerHTML='<div class="box" style="width:min(340px,94vw)"><b>'+(c?'Edit block':'Add colored block')+'</b><div class="row">Title <input id="bkt" style="flex:1" maxlength="60"></div><div class="row">Colour <span id="bks" style="display:flex;gap:6px;flex-wrap:wrap"></span></div><div class="row">Custom <input type="color" id="bkc" style="padding:0;width:44px;height:28px"></div><div class="row"><button class="on" id="bko">'+(c?'Save':'Add block')+'</button><button id="bkx">Cancel</button></div></div>';
+document.body.appendChild(d);const T=d.querySelector('#bkt'),C=d.querySelector('#bkc'),S=d.querySelector('#bks');
+T.value=c?c.name||'':'Block title';C.value=c&&/^#[0-9a-f]{6}$/i.test(c.color)?c.color:PCOL[0];
+const mark=()=>S.querySelectorAll('button').forEach(b=>b.style.outline=b.dataset.c.toLowerCase()==C.value.toLowerCase()?'3px solid var(--t)':'none');
+PCOL.forEach(col=>{const b=document.createElement('button');b.dataset.c=col;b.style.cssText='width:28px;height:28px;border-radius:6px;padding:0;background:'+col;b.onclick=()=>{C.value=col;mark()};S.appendChild(b)});C.oninput=mark;mark();
+const close=()=>d.remove(),ok=()=>{const t=T.value.trim(),col=C.value;if(c){const pre=snapState();c.name=t;c.color=col;rec(pre)}else place({t:'NOTE',color:col,name:t,w:300,h:200},pos);close()};
+d.querySelector('#bko').onclick=ok;d.querySelector('#bkx').onclick=close;d.addEventListener('keydown',e=>{if(e.key=='Enter')ok();else if(e.key=='Escape')close()});d.addEventListener('pointerdown',e=>{if(e.target===d)close()});T.focus();T.select()}
+addEventListener('dblclick',e=>{if(e.target!==cv)return;const c=hitComp(W2(e));if(!c||!isPnl(c))return;e.stopPropagation();e.preventDefault();openBlockDlg(null,c)},true);
+E('Annotations','Colored block - click, then set title & colour',{t:'NOTE',blk:1});
+function dband(c){ctx.save();ctx.beginPath();ctx.roundRect(c.x,c.y,c.w,32,[14,14,0,0]);ctx.fillStyle=c.color;ctx.fill();ctx.fillStyle='#fff';ctx.font='bold 14px system-ui';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(c.name||'',c.x+14,c.y+17);if(sels.has(c)){ctx.strokeStyle='#4aa3ff';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.strokeRect(c.x-4,c.y-4,c.w+8,c.h+8);ctx.setLineDash([])}if(c===sel||c===hov){const q=10/(ctx.getTransform().a/dpr);ctx.fillStyle='#4aa3ff';ctx.fillRect(c.x+c.w-q/2,c.y+c.h-q/2,q,q)}ctx.restore()}
+function dstrip(c){const w=c.w;ctx.save();if(c.val>0){const n=c.val,sp=c.val2||100,y0=c.y+(c.th||0),sx=c.x+w-90;
+ctx.beginPath();ctx.roundRect(sx,y0,70,(n-1)*sp+70,8);ctx.fillStyle='#14181f';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#000';ctx.stroke();
+for(let i=0;i<n;i++){const cy=y0+35+i*sp;ctx.fillStyle='#e0b84a';ctx.fillRect(sx+10,cy-9,18,18);ctx.fillStyle='#14181f';ctx.fillRect(sx+15,cy-4,8,8);
+ctx.fillStyle='#fff';ctx.font='bold 13px system-ui';ctx.textAlign='left';ctx.fillText('D'+i,sx+38,cy)}}
+ctx.restore()}
+function draw(s){for(const c of s.cs)if(isPnl(c))dpnl(c);for(const c of s.cs){const n=spec(c).ni;for(let i=0;i<n;i++){const r=c.src[i],m=r&&s.map[r.id];if(m){const a=pin(m,1,r.o),b=pin(c,0,i);if(a&&b){const nn=s.nr&&s.nr.get(pk(m.id,1,r.o)),v=nn?netv(nn):m.o[r.o];wire(a,b,v,s===sim&&selW&&selW.c===c&&selW.i===i&&!selW.l,1,0,nn&&nn.cf)}}}
+for(const l of c.lk||[]){const m=s.map[l.id];if(!m)continue;const a=pin(c,l.k,l.i),b=pin(m,l.k2,l.j);if(a&&b){const nn=s.nr&&s.nr.get(pk(c.id,l.k,l.i)),v=nn?netv(nn):0;wire(a,b,v,s===sim&&selW&&selW.l===l,l.k,l.k2,nn&&nn.cf)}}}for(const c of s.cs)if(isPnl(c)){dband(c);if(c.val>0)dstrip(c)}for(const c of s.cs)if(!isPnl(c))dcomp(c)}
 function dcomp(c){const sp=spec(c),w=sp.w,h=sp.h,t=c.t,S=ctx.getTransform().a/dpr,v=c.iv||[];ctx.lineWidth=2;ctx.strokeStyle=C.b;ctx.fillStyle=C.p;
 if(t=='LED'||t=='RGB'){const cx=c.x+w/2,cy=c.y+h/2,r=Math.min(w,h)*(t=='LED'?.41:.45),on=t=='LED'?(c.pv?c.pv[0]>.03:(v[0]||c.lv>.03)):(c.pv?c.pv[0]+c.pv[1]+c.pv[2]>.03:(v[0]||v[1]||v[2]||(c.lc&&c.lc[0]+c.lc[1]+c.lc[2]>.03))),col=t=='LED'?(c.color||LC[0]):`rgb(${Math.round(((c.pv||c.lc)?(c.pv||c.lc)[0]:v[0])*255)},${Math.round(((c.pv||c.lc)?(c.pv||c.lc)[1]:v[1])*255)},${Math.round(((c.pv||c.lc)?(c.pv||c.lc)[2]:v[2])*255)})`;
 ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(cx,cy,r-3,0,7);if(on){ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=20;if(t=='LED'&&(c.pv||c.lv!=null)&&(c.pv||!v[0]))ctx.globalAlpha=Math.max(.3,c.pv?c.pv[0]:c.lv)}else{ctx.fillStyle=t=='LED'?(c.color||LC[0]):'#888';ctx.globalAlpha=.2}ctx.fill();ctx.shadowBlur=0;ctx.globalAlpha=1}
@@ -818,13 +845,13 @@ requestAnimationFrame(frame)}
 /* ---------- interaction ---------- */
 const W2=e=>{const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left-ox)/z,y:(e.clientY-r.top-oy)/z}};
 function hitPin(p){const r=9/z;for(let q=sim.cs.length-1;q>=0;q--){const c=sim.cs[q],sp=spec(c);for(let k=1;k>=0;k--)for(const i of pins(c,k,sp)){const a=pin(c,k,i);if(Math.hypot(a.x-p.x,a.y-p.y)<r)return{c,k,i}}}return null}
-function hitComp(p){for(let q=sim.cs.length-1;q>=0;q--){const c=sim.cs[q],s=spec(c);if(p.x>=c.x&&p.x<=c.x+s.w&&p.y>=c.y&&p.y<=c.y+s.h)return c}return null}
+function hitComp(p){for(let q=sim.cs.length-1;q>=0;q--){const c=sim.cs[q],s=spec(c);if(isPnl(c)&&!(p.y<=c.y+32))continue;if(p.x>=c.x&&p.x<=c.x+s.w&&p.y>=c.y&&p.y<=c.y+s.h)return c}return null}
 function del(c){sim.cs=sim.cs.filter(x=>x!==c);delete sim.map[c.id];sim.cs.forEach(o=>{o.src.forEach((s,i)=>{if(s&&s.id==c.id)o.src[i]=null});o.lk=(o.lk||[]).filter(l=>l.id!=c.id)});save()}
 cv.addEventListener('pointerdown',e=>{if(e.button)return;cv.setPointerCapture(e.pointerId);audInit();pre0=snapState();const p=cur=W2(e),hp=hitPin(p);
 if(PK){if(hp)pickPin(hp);else drag={t:'p',sx:e.clientX,sy:e.clientY,ox,oy};return}
 if(hp){if(e.shiftKey&&hp.c.t=='IC')drag={t:'pin',...hp};else drag={t:'w',...hp,mb:(hp.k==0&&hp.c.src[hp.i])?1:0,x0:e.clientX,y0:e.clientY};return}
 const rh=hitHandle(p);if(rh){sel=rh;sels=new Set([rh]);drag={t:'rs',c:rh};return}
-const c=hitComp(p);if(c){selW=null;sel=c;if(e.shiftKey){sels.has(c)?sels.delete(c):sels.add(c)}else if(!sels.has(c))sels=new Set([c]);drag={t:'c',c,p0:p,st:[...sels].map(q=>[q,q.x,q.y]),mv:0,sx:e.clientX,sy:e.clientY,sh:e.shiftKey};if(c.t=='M'&&KS[c.k].mom)c.s=1}
+const c=hitComp(p);if(c){selW=null;sel=c;if(e.shiftKey){sels.has(c)?sels.delete(c):sels.add(c)}else if(!sels.has(c))sels=new Set([c]);drag={t:'c',c,p0:p,st:dragSet([...sels]),mv:0,sx:e.clientX,sy:e.clientY,sh:e.shiftKey};if(c.t=='M'&&KS[c.k].mom)c.s=1}
 else if(e.shiftKey||tool=='sel')drag={t:'mq',p0:p,add:e.shiftKey};else{sel=null;sels=new Set();selW=hitWire(p);drag={t:'p',sx:e.clientX,sy:e.clientY,ox,oy}}});
 cv.addEventListener('pointermove',e=>{const p=cur=W2(e);if(!drag){hov=hitComp(p);cv.style.cursor=hitHandle(p)?'nwse-resize':tool=='sel'?'crosshair':'';return}
 if(drag.t=='p'){ox=drag.ox+e.clientX-drag.sx;oy=drag.oy+e.clientY-drag.sy}
@@ -1112,7 +1139,7 @@ function openDocs(){$('#dt').value=aiDocs();$('#dm').hidden=false;$('#cpm').text
 function copyDocs(){const t=$('#dt');t.select();let p;try{p=navigator.clipboard.writeText(t.value)}catch(e){}Promise.resolve(p).then(()=>{$('#cpm').textContent='copied (or press Ctrl+C)'}).catch(()=>{$('#cpm').textContent='press Ctrl+C to copy'})}
 const q2=x=>/[\s=]/.test(String(x))?'"'+String(x).replace(/"/g,'')+'"':x;
 function genLines(cs){const nm=c=>'p'+c.id,L=[];const ord=[...cs.filter(c=>c.t=='IN'),...cs.filter(c=>c.t!='IN'&&c.t!='OUT'),...cs.filter(c=>c.t=='OUT')];
-ord.forEach(c=>{const kv=[];if(G[c.t]&&c.n&&c.n!=2)kv.push('n='+c.n);if(c.t=='LED'&&c.color)kv.push('color='+c.color);if((c.t=='IN'||c.t=='OUT'||c.t=='NOTE'||c.t=='SW')&&c.name)kv.push('name='+q2(c.name));if((c.t=='SW'||c.t=='IN')&&c.s)kv.push('s=1');if(c.w)kv.push('w='+c.w);if(c.h)kv.push('h='+c.h);
+ord.forEach(c=>{const kv=[];if(G[c.t]&&c.n&&c.n!=2)kv.push('n='+c.n);if((c.t=='LED'||c.t=='NOTE')&&c.color)kv.push('color='+c.color);if((c.t=='IN'||c.t=='OUT'||c.t=='NOTE'||c.t=='SW')&&c.name)kv.push('name='+q2(c.name));if((c.t=='SW'||c.t=='IN')&&c.s)kv.push('s=1');if(c.t=='NOTE')['val','val2','th'].forEach(f=>c[f]!=null&&kv.push(f+'='+c[f]));if(c.w)kv.push('w='+c.w);if(c.h)kv.push('h='+c.h);
 ['val','val2','th'].forEach(k=>c[k]!=null&&kv.push(k+'='+c[k]));if(c.t=='M')Object.entries(c.p||{}).forEach(([k,v])=>kv.push(k+'='+v));const ty=c.t=='M'?'M:'+c.k:c.t=='IC'?q2(c.def):c.t;L.push(`part ${nm(c)} ${ty} at ${Math.round(c.x)} ${Math.round(c.y)} ${kv.join(' ')}`.trim());if(c.t=='M'&&c.mem&&c.mem.length)L.push(`mem ${nm(c)} ${c.mem.join(',')}`);if(c.t=='M'&&KS[c.k].cpu&&c.code)L.push('code '+nm(c)+' "'+c.code.replace(/"/g,"'").replace(/\n/g,'¶')+'"')});
 const byId={};cs.forEach(c=>byId[c.id]=c);cs.forEach(c=>c.src.forEach((r,i)=>{const sc=r&&byId[r.id];if(!sc)return;const so=pinNames(sc)[1][r.o]||'o'+r.o,di=pinNames(c)[0][i]||'i'+i;L.push(`wire ${nm(sc)}.${so} -> ${nm(c)}.${di}`)}));cs.forEach(c=>(c.lk||[]).forEach(l=>{const m=byId[l.id];if(!m)return;const pn=(q,k,i)=>(k?'out:':'in:')+(pinNames(q)[k][i]||(k?'o':'i')+i);L.push(`link ${nm(c)}.${pn(c,l.k,l.i)} ${nm(m)}.${pn(m,l.k2,l.j)}`)}));return L}
 function exportScript(){const out=['# exported from LogicLab'],seen=new Set();const dep=n=>{if(seen.has(n)||!lib[n])return;seen.add(n);lib[n].comps.forEach(c=>c.t=='IC'&&dep(c.def));out.push('define '+q2(n)+(lib[n].circuit?' circuit':''),...genLines(lib[n].comps).map(l=>'  '+l),'end')};sim.cs.forEach(c=>c.t=='IC'&&dep(c.def));out.push(...genLines(sim.cs));return out.join('\n')}
@@ -1162,14 +1189,14 @@ return L.map((t,i)=>{const n=i+1;let op=t[0].toUpperCase(),a=t[1],cnt=t.length-1
 const rs=(x,d)=>{d=d||0;if(x in lab)return lab[x];if(x in K&&d<6)return rs(K[x],d+1);const v=asmNum(x);if(isNaN(v))throw new Error(/^[A-Za-z_]\w*$/.test(x)?'asm: unknown label or constant "'+x+'" (instruction '+n+')':'asm: bad operand "'+x+'" (instruction '+n+')');return v};
 if(PSEUDO[op]){if(cnt)throw new Error('asm: '+op+' takes no operand (instruction '+n+')');[op,a]=PSEUDO[op]}
 const o=OPS.indexOf(op);if(o<0)throw new Error('asm: unknown instruction "'+t[0]+'" (instruction '+n+'). Valid: '+OPS.join(' ')+' + INC DEC CLR TST');let v=0;
-if(NOARG.includes(op)){if(cnt)throw new Error('asm: '+op+' takes no operand (instruction '+n+')')}
+if(NOARG.includes(op)){if(cnt&&(op=='OUT'||op=='IN')){if(cnt>1)throw new Error('asm: '+op+' takes one operand (instruction '+n+')');v=rs(a);if(v<0||v>255)throw new Error('asm: port '+v+' is out of range 0-255 (instruction '+n+')')}else if(cnt)throw new Error('asm: '+op+' takes no operand (instruction '+n+')')}
 else{if(a==null||a==='')throw new Error('asm: '+op+' needs an operand (instruction '+n+')');if(cnt>1)throw new Error('asm: '+op+' takes one operand (instruction '+n+')');v=rs(a);
 if(RAMOP.includes(op)){if(v<0||v>15)throw new Error('asm: RAM address '+v+' is out of range 0-15 (instruction '+n+')')}
 else if(JOPS.includes(op)){if(v<0||v>255)throw new Error('asm: jump target '+v+' is out of range 0-255 (instruction '+n+')')}
 else{if(v<-128||v>255)throw new Error('asm: value '+v+' does not fit in 8 bits, use -128..255 (instruction '+n+')');v&=255}}
 return o<<8|v})}
 function disasm(mem){let n=mem.length;while(n&&!mem[n-1])n--;const T=new Set();for(let i=0;i<n;i++){const op=OPS[mem[i]>>8];if(JOPS.includes(op)&&(mem[i]&255)<n)T.add(mem[i]&255)}
-const o=[];for(let i=0;i<n;i++){const v=mem[i]||0,op=OPS[v>>8]||'NOP';if(T.has(i))o.push('L'+i+':');o.push(NOARG.includes(op)?op:op+' '+(JOPS.includes(op)&&(v&255)<n?'L'+(v&255):v&255))}return o.join('\n')}
+const o=[];for(let i=0;i<n;i++){const v=mem[i]||0,op=OPS[v>>8]||'NOP';if(T.has(i))o.push('L'+i+':');o.push(NOARG.includes(op)&&!((op=='OUT'||op=='IN')&&(v&255))?op:op+' '+(JOPS.includes(op)&&(v&255)<n?'L'+(v&255):v&255))}return o.join('\n')}
 function ctlRom(){const J=1,JZ=2,JNZ=4,WM=8,WO=16,WZ=32,SB=64,HL=128,A=n=>n<<8,F=n=>n<<11,R=[];
 R[0]=0;R[1]=A(2);R[2]=A(3);R[3]=WM;R[4]=A(1)|WZ;R[5]=A(1)|WZ|F(1);R[6]=A(1)|WZ|SB;R[7]=WO;R[8]=J;R[9]=JZ;R[10]=JNZ;R[11]=A(1)|WZ|F(2);R[12]=A(1)|WZ|F(6);R[13]=A(1)|WZ|SB|F(1);R[14]=A(1)|WZ|F(7);R[15]=HL;R[16]=A(4);R[17]=A(1)|WZ|F(3);R[18]=A(1)|WZ|F(4);R[19]=A(1)|WZ|F(5);return R}
 function mcu(prog){const S=['# LL-8: 8-bit microcontroller. Inputs: P0-P7 switches (IN instruction), RST, CLK. Outputs: output port (OUT instruction) shown on LED bar + decimal display. 1 instruction per clock.'],P=x=>S.push(x),W=(a,b)=>S.push('wire '+a+' -> '+b);
@@ -2165,7 +2192,7 @@ function lex(src){src=String(src).replace(/\r/g,'');let out='',i=0;
   if(ch=='/'&&nx=='*'){i+=2;while(i<src.length&&!(src[i]=='*'&&src[i+1]=='/')){if(src[i]=='\n')out+='\n';i++}i+=2;continue}
   if(ch=='"'){let j=i+1;out+='"';while(j<src.length&&src[j]!='"'&&src[j]!='\n'){if(src[j]=='\\')out+=src[j++];out+=src[j++]}out+='"';i=j+1;continue}
   out+=ch;i++}
- const defs=new Map(),T=[];
+ const defs=new Map([['INPUT','0'],['OUTPUT','1'],['HIGH','1'],['LOW','0']]),T=[];
  const lines=out.split('\n').map((l,k)=>{const m=l.match(/^\s*#\s*(\w+)\s*(.*)$/);if(!m)return l;if(m[1]=='define'){const d=m[2].match(/^([A-Za-z_]\w*)(\(?)\s*(.*)$/);if(!d)throw new CErr('bad #define',k+1);if(d[2]=='(')throw new CErr('#define with arguments is not supported',k+1);defs.set(d[1],d[3])}return''});
  const RX=/\s+|0[xX][0-9a-fA-F]+|0[bB][01]+|\d+|[A-Za-z_]\w*|'(\\?.)'|"[^"]*"|<<=|>>=|==|!=|<=|>=|&&|\|\||\+\+|--|\+=|-=|\*=|\/=|%=|&=|\|=|\^=|<<|>>|[-+*\/%&|^~!<>=?:;,(){}\[\]]|[^]/y;
  const ESC={n:10,t:9,r:13,0:0,'\\':92,"'":39,'"':34};
@@ -2281,7 +2308,19 @@ function compile_(src){
    if(n=='input'||n=='in'||n=='IN'){if(e.args.length)err(n+'() takes no arguments',e.ln);emit('IN')}
    else if(n=='output'||n=='out'||n=='OUT'){if(e.args.length!=1)err(n+'(x) takes exactly one value',e.ln);g(e.args[0]);emit('OUT')}
    else if(n=='halt'||n=='HLT'){emit('HLT')}
-   else err(`unknown function '${n}'. Built-in: input(), output(x), halt().`+(funcs[n]?' User functions are not supported – put the code in main() or use #define.':''),e.ln);return}
+   else if(n=='__in'){emit('IN '+e.args[0].v)}
+   else if(n=='__out'){g(e.args[1]);emit('OUT '+e.args[0].v)}
+   else if(n=='pinMode'||n=='digitalWrite'){if(e.args.length!=2)err(n+'(pin, '+(n=='pinMode'?'mode':'value')+') takes two values',e.ln);const pa=fold(e.args[0]);if(pa.k!='num'||pa.v>7)err('the pin must be a fixed number 0-7 (or a #define) – this computer has pins 0..7',e.ln);
+    const m=1<<pa.v,rd=n=='pinMode'?2:1,wr=n=='pinMode'?1:0,I=(k)=>({k:'call',name:'__in',args:[{k:'num',v:k}],ln:e.ln}),
+     mk=(op,v)=>({k:'expr',ln:e.ln,e:{k:'call',name:'__out',ln:e.ln,args:[{k:'num',v:wr},{k:'bin',op,a:I(rd),b:{k:'num',v},ln:e.ln}]}}),
+     setS=mk('|',m),clrS=mk('&',255^m),val=fold(e.args[1]);
+    if(val.k=='num')s(val.v?setS:clrS);else s({k:'if',c:e.args[1],a:setS,e:clrS,ln:e.ln});return}
+   else if(n=='digitalRead'){if(e.args.length!=1)err('digitalRead(pin) takes one value',e.ln);const pa=fold(e.args[0]);if(pa.k!='num'||pa.v>7)err('the pin must be a fixed number 0-7 (or a #define) – this computer has pins 0..7',e.ln);
+    g({k:'bin',op:'!=',ln:e.ln,a:{k:'bin',op:'&',ln:e.ln,a:{k:'call',name:'__in',args:[{k:'num',v:0}],ln:e.ln},b:{k:'num',v:1<<pa.v}},b:{k:'num',v:0}});return}
+   else if(n=='analogRead'){if(e.args.length!=1)err('analogRead(pin) takes one value',e.ln);const pa=fold(e.args[0]);if(pa.k!='num'||pa.v!=1)err('analogRead works on pin 1 only (the potentiometer) on this computer',e.ln);emit('IN 3');return}
+   else if(n=='analogWrite'){if(e.args.length!=2)err('analogWrite(pin, value) takes two values',e.ln);const pa=fold(e.args[0]);if(pa.k!='num'||pa.v!=5)err('analogWrite works on pin 5 only (the servo) on this computer: value 0-255 = angle 0-180 degrees',e.ln);g(e.args[1]);emit('OUT 2');return}
+   else if(n=='delay'){if(e.args.length!=1)err('delay(n) takes one value (n loops of about 6 clock cycles, 0-255)',e.ln);const t=allocT(),Ls=nl(),Le=nl();g(e.args[0]);emit('STA '+t);place(Ls);emit('LDA '+t);emit('TST');emit('JZ '+Le);emit('SUBI 1');emit('STA '+t);emit('JMP '+Ls);place(Le);free(t);return}
+   else err(`unknown function '${n}'. Built-in: input(), output(x), halt(), pinMode(pin,mode), digitalWrite(pin,value), digitalRead(pin), analogRead(1), analogWrite(5,value), delay(n).`+(funcs[n]?' User functions are not supported – put the code in main() or use #define.':''),e.ln);return}
   case'bin':return genBin(e)}}
  function s(st){curLn=st.ln||curLn;switch(st.k){
   case'nop':return;
@@ -2325,7 +2364,11 @@ const CC_EX={
 'Blink all LEDs':'int x = 0;\nwhile (1) {\n  x = ~x;\n  output(x);\n}',
 'Count the switches that are ON':'int v = input(), n = 0;\nwhile (v != 0) {\n  n += v & 1;\n  v >>= 1;\n}\noutput(n);\nhalt();',
 'Arduino style: setup() / loop()':'int count;\nvoid setup() { count = 0; }\nvoid loop() {\n  count = count + 2;\n  output(count);\n}',
-'Knight-rider':'int x = 1;\nwhile (1) {\n  while (x != 128) { output(x); x <<= 1; }\n  while (x != 1)   { output(x); x >>= 1; }\n}'};
+'Knight-rider':'int x = 1;\nwhile (1) {\n  while (x != 128) { output(x); x <<= 1; }\n  while (x != 1)   { output(x); x >>= 1; }\n}',
+'Arduino pins: switch to LED (use the Arduino-pin computer)':'// pin 0 = switch (input), pin 2 = LED (output)\n#define BUTTON 0\n#define LED 2\nvoid setup() {\n  pinMode(BUTTON, INPUT);\n  pinMode(LED, OUTPUT);\n}\nvoid loop() {\n  digitalWrite(LED, digitalRead(BUTTON));\n}',
+'Arduino pins: blink with delay':'#define LED 7\nvoid setup() {\n  pinMode(LED, OUTPUT);\n}\nvoid loop() {\n  digitalWrite(LED, HIGH);\n  delay(20);\n  digitalWrite(LED, LOW);\n  delay(20);\n}',
+'Arduino pins: AND / OR / XOR of two switches':'// switches on pins 0 and 1 -> LEDs on pin 5 (AND), 6 (OR), 7 (XOR)\nvoid setup() {\n  pinMode(5, OUTPUT);\n  pinMode(6, OUTPUT);\n  pinMode(7, OUTPUT);\n}\nvoid loop() {\n  int a = digitalRead(0);\n  int b = digitalRead(1);\n  digitalWrite(5, a && b);\n  digitalWrite(6, a || b);\n  digitalWrite(7, a != b);\n}',
+'Arduino pins: potentiometer turns servo':'#define POT 1\n#define SERVO 5\nvoid loop() {\n  analogWrite(SERVO, analogRead(POT));\n}'};
 function ccWords(c){if(c.code==null)c.code=CC_SAMPLE;if(c.cw===undefined){const r=LLC.compile(c.code);c.cw=r.words||[];c.cerr=r.error||null}return c.cw}
 KS.ccomp={lb:()=>'C Compiler',i:()=>['CK','RST'],o:p=>[...Bn(p.a,'A'),...Bn(p.w,'D'),'WE','DONE'],ck:()=>0,rs:()=>1,init:()=>0,
  nx:(v,c)=>{const W=ccWords(c);return c.st<W.length?c.st+1:c.st},
@@ -2393,6 +2436,80 @@ W('am.Y0..7','rom.A0..7');
 W('alu.MW','wg.A');W('wg.Y','ram.WE');W('alu.OW','outr.EN');W('alu.ZN','zr.D0');W('alu.CN','cr.D0');W('zr.Q0','alu.ZF zl.D');W('cr.Q0','alu.CF cl.D');
 W('alu.JMP','pc.LD');W('alu.HLT','nh.A hlt.D');W('nh.Y','pc.EN');
 W('outr.Q0..7','ob.L0..7');W('outr.Q0..7','dd.D0..7');
+P('ccload cc');return S.join('\n')}});
+
+/* ---- 8-bit ADC / DAC parts (used by the Arduino-style computer) ---- */
+KS.adc8={lb:()=>'8-bit ADC',i:()=>['AIN'],o:()=>Bn(8,'D'),sk:(c,v,s)=>{c.av=Math.round(lvl(s,c,0)*255)},out:(v,c)=>nb(c.av||0,8)};
+KS.dac8={lb:()=>'8-bit DAC',i:()=>Bn(8,'D'),o:()=>['OUT'],out:v=>[+(bv(v,0,8)>=128)],ao:v=>[bv(v,0,8)/255]};
+EM('Analog / Converters','8-bit ADC (analog in → 8 bits)','adc8',{});EM('Analog / Converters','8-bit DAC (8 bits → analog out)','dac8',{});
+/* ---- Complete computer with Arduino-style pins: code decides which pin is input / output ---- */
+const PINC=['// Arduino-style pins D0..D7','// D0 = switch, D1 = potentiometer, D2 = LED, D5 = servo','#define SWITCH 0','#define POT 1','#define LED 2','#define SERVO 5','void setup() {','  pinMode(SWITCH, INPUT);','  pinMode(LED, OUTPUT);','}','void loop() {','  digitalWrite(LED, digitalRead(SWITCH));   // switch ON -> LED lights','  analogWrite(SERVO, analogRead(POT));      // potentiometer turns the servo','}'].join('¶');
+PRE.push({n:'Computer with Arduino-style pins – code sets each pin as input / output',d:'Colour-coded teaching board. Gold = input devices (button D0, potentiometer D1, switches), teal = the D0-D7 pin header, red = output devices (LED D2, servo D5, pin monitor), blue/purple/green/orange = software, memory, CPU and pin logic. In C: pinMode, digitalWrite, digitalRead, analogRead(1), analogWrite(5,v), delay(n). Double-click the compiler to edit the code, then toggle RST.',s:()=>{const S=[],P=x=>S.push(x),W=(a,b)=>S.push('wire '+a+' -> '+b),
+N=(id,x,y,t)=>P('part '+id+' NOTE name="'+t+'" at '+x+' '+y),
+Z=(id,x,y,w,h,t,col,ex)=>P('part '+id+' NOTE name="'+t+'" color='+col+' w='+w+' h='+h+' at '+x+' '+y+(ex||'')),
+R=b=>60+120*b,
+BLUE='#2b6fd6',PURP='#8a4fd6',GRN='#1f9d55',ORG='#c27a00',GOLD='#b8860b',TEAL='#0b6e7a',RED='#c0392b',GREY='#6b7280',ROSE='#9b6b6b';
+/* ---- colour guide (follow the numbers 1 -> 7) ---- */
+N('g0',-30,-200,'COLOUR GUIDE - follow the numbers 1 to 7: every colour is one job in the computer');
+const G7=[['1 SOFTWARE',BLUE,'C code > compiler > ROM'],['2 MEMORY & CONTROL',PURP,'ROM word + counter = 1 instr/clk'],['3 CPU CORE',GRN,'ALU runs the instruction'],['4 PIN LOGIC',ORG,'PORT, DIR, ADC, DAC registers'],['5 INPUT DEVICES',GOLD,'button, pot+ADC, switches'],['6 HEADER D0-D7',TEAL,'each pin = input or output'],['7 OUTPUT DEVICES',RED,'LED, servo+DAC, monitor, value']];
+G7.forEach((g,i)=>{Z('gz'+i,-30+i*270,-150,250,80,g[0],g[1]);N('gt'+i,-20+i*270,-110,g[2])});
+/* ---- 1-4 : software, memory, CPU, pin logic ---- */
+Z('z1',-30,0,330,660,'1 · CLOCK & C COMPILER',BLUE);
+Z('z2',330,0,420,800,'2 · PROGRAM MEMORY & CONTROL',PURP);
+Z('z3',770,0,640,830,'3 · CPU CORE (Advanced ALU)',GRN);
+Z('z4',1430,0,480,820,'4 · PIN LOGIC (PORT / DIRECTION)',ORG);
+/* ---- 5 : INPUT section - one block per input device ---- */
+Z('z5',1960,0,290,820,'5 · INPUT DEVICES (into the pins)',GOLD);
+Z('bi0',1975,60,260,96,'BUTTON · D0',GOLD);
+Z('bi1',1975,176,260,216,'POTENTIOMETER · D1 + ADC',GOLD);
+Z('bi2',1975,412,260,270,'SWITCHES · D2 D3 D4 D6 D7',GOLD);
+Z('bi3',1975,702,260,96,'TIED LOW · D5',GOLD);
+Z('z6',2280,0,300,860,'6 · ARDUINO HEADER  D0 – D7',TEAL,' val=8 val2=100 th=70');
+/* ---- 7 : OUTPUT section - one block per output device ---- */
+Z('z7',2610,0,370,1226,'7 · OUTPUT DEVICES (from the pins)',RED);
+Z('bo0',2625,60,340,96,'LED · D2',RED);
+Z('bo1',2625,176,340,310,'SERVO · D5 + DAC',RED);
+Z('bo2',2625,506,340,430,'PIN MONITOR · DIR and LEVEL',RED);
+Z('bo3',2625,956,340,250,'PIN VALUE · D0-D7 as a number',RED);
+/* ---- parts ---- */
+['clk CLK at 0 70','rst SW name=RST at 0 140','cc M:ccomp a=8 w=13 lab="C Compiler" at 100 70',
+'am M:mux k=1 w=8 lab="ROM addr" at 360 70','ndn NOT at 370 400','ldr OR2 at 370 470','rom M:rom a=8 w=13 lab="Program ROM 256x13" at 500 70','pc M:cnt n=8 m=up ld=1 lab="Program counter" at 500 520',
+'alu M:alux n=8 lab="Advanced ALU" at 800 70','wg AND2 at 1010 330','nh NOT at 1010 640','hlt "Red LED" at 1020 710','acc M:reg n=8 lab=Accumulator at 1130 70','ram M:ram a=4 w=8 lab="RAM 16x8" at 1130 300','zr M:reg n=1 lab="Z flag" at 1130 610','cr M:reg n=1 lab="Carry flag" at 1270 610','zl "Green LED" at 1155 720','cl "Yellow LED" at 1295 720',
+'d0n NOT at 1450 70','d1n NOT at 1450 130','enp AND n=3 at 1450 210','end AND n=3 at 1450 300','ena AND n=3 at 1450 390',
+'port M:regen n=8 lab="PORT register (OUT 0)" at 1560 70','ddr M:regen n=8 lab="DIRECTION register (OUT 1)" at 1560 310','rsel M:mux k=2 w=8 lab="IN select" at 1800 70',
+'p0 SW name=D0 at 1995 106','pot M:pot lab="D1 potentiometer" at 1995 222','adc M:adc8 at 2130 222',
+'p2 SW name=D2 at 1995 458','p3 SW name=D3 at 1995 498','p4 SW name=D4 at 1995 538','p6 SW name=D6 at 1995 578','p7 SW name=D7 at 1995 618','lo LO at 1995 750',
+'ledd LED color=#ff3b3b at 2650 110','dacr M:regen n=8 lab="ANALOG OUT register (OUT 2)" at 2640 222','dac M:dac8 at 2845 222','sv M:servo at 2835 386','dd "Decimal display 8-bit" at 2640 1002'].forEach(x=>P('part '+x));
+for(let b=0;b<8;b++){
+ P('part pm'+b+' M:mux k=1 w=1 lab="D'+b+' pin" at 2310 '+(70+100*b));
+ P('part dl'+b+' LED color=#ffd23f at 2645 '+(552+44*b));
+ P('part lv'+b+' LED color=#38d96a at 2705 '+(552+44*b))}
+/* ---- captions ---- */
+N('c1',0,40,'CLOCK');N('c2',20,500,'Double-click the compiler to edit the C code,');N('c3',20,530,'then switch RST on and off:');N('c4',20,560,'ROM is re-written, CPU restarts,');N('c5',20,590,'all pins start as INPUT.');
+N('c6',360,36,'ROM addr mux');N('c7',500,36,'Filled by the compiler after RST');N('c8',360,368,'RESET LOGIC');N('c9',500,486,'1 word per clock');
+N('c10',800,36,'I0-I12 = opcode(5) + operand(8)');N('c11',1130,36,'ACC');N('c12',1130,268,'MEMORY');N('c13',1130,578,'Z FLAG');N('c14',1270,578,'CARRY FLAG');N('c15',1130,760,'ZERO');N('c16',1280,760,'CARRY');N('c17',1010,756,'HALT');
+N('c18',1450,36,'OUT decode');N('c19',1560,36,'PORT: digitalWrite');N('c20',1560,282,'DIRECTION: 1 = OUTPUT, 0 = INPUT (pinMode)');N('c22',1795,36,'IN select');
+N('c23',1560,560,'IN 0 = pin levels');N('c24',1560,590,'IN 1 = PORT');N('c25',1560,620,'IN 2 = DIRECTION');N('c26',1560,650,'IN 3 = ADC (analogRead)');
+N('c27',2300,36,'PIN LOGIC');
+N('ci0',2055,112,'push = HIGH');N('ci1',1995,280,'turn the knob');N('ci1b',1995,314,'analogRead(1)');N('ci2',2055,464,'free inputs');N('ci3',2045,756,'tied LOW');
+N('co0',2700,116,'LED');N('co1',2640,430,'analogWrite(5, v)');
+for(let b=0;b<8;b++)N('cm'+b,2755,556+44*b,'D'+b);
+N('c37',2640,898,'DIR lit = OUTPUT, LEVEL lit = HIGH');
+N('c35',2790,1010,'DECIMAL value');N('c36',2790,1050,'of D0-D7');
+P('ccode cc "'+PINC+'"');
+/* ---- wiring (logic unchanged) ---- */
+W('clk.Q','pc.CK acc.CK zr.CK cr.CK port.CK ddr.CK dacr.CK ram.CK');W('ldr.Y','pc.RST acc.RST zr.RST cr.RST port.RST ddr.RST dacr.RST');
+W('cc.D0..12','rom.DI0..12');W('cc.WE','rom.WE');W('clk.Q','cc.CK rom.CK');W('rst.Q','cc.RST ldr.A');W('cc.DONE','am.S0 ndn.A wg.B');W('ndn.Y','ldr.B');W('rom.D0..12','alu.I0..12');W('rom.D0..3','ram.A0..3');W('rom.D0..7','pc.D0..7');
+W('acc.Q0..7','alu.A0..7 ram.D0..7 port.D0..7 ddr.D0..7 dacr.D0..7');W('ram.Q0..7','alu.M0..7');W('alu.F0..7','acc.D0..7');
+for(let b=0;b<8;b++){W('cc.A'+b,'am.I0.'+b);W('pc.Q'+b,'am.I1.'+b)}
+W('am.Y0..7','rom.A0..7');
+W('alu.MW','wg.A');W('wg.Y','ram.WE');W('alu.ZN','zr.D0');W('alu.CN','cr.D0');W('zr.Q0','alu.ZF zl.D');W('cr.Q0','alu.CF cl.D');
+W('alu.JMP','pc.LD');W('alu.HLT','nh.A hlt.D');W('nh.Y','pc.EN');
+W('rom.D0','d0n.A end.B rsel.S0');W('rom.D1','d1n.A ena.C rsel.S1');W('d0n.Y','enp.B ena.B');W('d1n.Y','enp.C end.C');
+W('alu.OW','enp.A end.A ena.A');W('enp.Y','port.EN');W('end.Y','ddr.EN');W('ena.Y','dacr.EN');
+for(let b=0;b<8;b++){const ext=b==1?'pot.OUT':b==5?'lo.Q':'p'+b+'.Q';W(ext,'pm'+b+'.I0');W('port.Q'+b,'pm'+b+'.I1 rsel.I1.'+b);W('ddr.Q'+b,'pm'+b+'.S0 rsel.I2.'+b+' dl'+b+'.D');W('pm'+b+'.Y','rsel.I0.'+b+' lv'+b+'.D dd.D'+b);W('adc.D'+b,'rsel.I3.'+b)}
+W('pm2.Y','ledd.D');W('pot.OUT','adc.AIN');W('dacr.Q0..7','dac.D0..7');W('dac.OUT','sv.SIG');
+W('rsel.Y0..7','alu.P0..7');
 P('ccload cc');return S.join('\n')}});
 
 /* ---------- boot ---------- */
