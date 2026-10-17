@@ -2122,7 +2122,9 @@ function lex(src){src=String(src).replace(/\r/g,'');let out='',i=0;
  lines.forEach((l,k)=>{const sv=RX.lastIndex;scan(l,k+1,0);RX.lastIndex=sv});
  T.push({t:'eof',v:'',ln:lines.length});return T}
 function compile(src){try{return compile_(src)}catch(e){if(e instanceof CErr)return{error:{msg:e.message,ln:e.ln}};if(/^asm:/.test(e.message))return{error:{msg:e.message.replace(/^asm:\s*/,'assembler: ')}};throw e}}
+let P20=false;
 function compile_(src){
+ P20=/\/\/\s*MCU-20/.test(src);
  const T=lex(src);let p=0,curLn=1;const err=(m,ln)=>{throw new CErr(m,ln||curLn)};
  const peek=()=>T[p],next=()=>T[p++],isOp=v=>T[p].t=='op'&&T[p].v==v,eat=v=>isOp(v)?(p++,true):false,
   tk=t=>t.t=='eof'?'end of file':t.t=='str'?'"'+t.v+'"':String(t.v),want=v=>{if(!eat(v))err(`expected '${v}' but found '${tk(T[p])}'`,T[p].ln)};
@@ -2225,15 +2227,15 @@ function compile_(src){
    else if(n=='halt'||n=='HLT'){emit('HLT')}
    else if(n=='__in'){emit('IN '+e.args[0].v)}
    else if(n=='__out'){g(e.args[1]);emit('OUT '+e.args[0].v)}
-   else if(n=='pinMode'||n=='digitalWrite'){if(e.args.length!=2)err(n+'(pin, '+(n=='pinMode'?'mode':'value')+') takes two values',e.ln);const pa=fold(e.args[0]);if(pa.k!='num'||pa.v>7)err('the pin must be a fixed number 0-7 (or a #define) – this computer has pins 0..7',e.ln);
-    const m=1<<pa.v,rd=n=='pinMode'?2:1,wr=n=='pinMode'?1:0,I=(k)=>({k:'call',name:'__in',args:[{k:'num',v:k}],ln:e.ln}),
+   else if(n=='pinMode'||n=='digitalWrite'){if(e.args.length!=2)err(n+'(pin, '+(n=='pinMode'?'mode':'value')+') takes two values',e.ln);const pa=fold(e.args[0]);if(pa.k!='num'||pa.v>(P20?19:7))err(P20?'the pin must be a fixed number 0-19 (or a #define) – the MCU-20 has pins 0..19':'the pin must be a fixed number 0-7 (or a #define) – this computer has pins 0..7',e.ln);
+    const pg=P20?pa.v>>3:0,pb=P20?pa.v&7:pa.v,m=1<<pb,rd=P20?(n=='pinMode'?6+pg:3+pg):(n=='pinMode'?2:1),wr=P20?rd:(n=='pinMode'?1:0),I=(k)=>({k:'call',name:'__in',args:[{k:'num',v:k}],ln:e.ln}),
      mk=(op,v)=>({k:'expr',ln:e.ln,e:{k:'call',name:'__out',ln:e.ln,args:[{k:'num',v:wr},{k:'bin',op,a:I(rd),b:{k:'num',v},ln:e.ln}]}}),
      setS=mk('|',m),clrS=mk('&',255^m),val=fold(e.args[1]);
     if(val.k=='num')s(val.v?setS:clrS);else s({k:'if',c:e.args[1],a:setS,e:clrS,ln:e.ln});return}
-   else if(n=='digitalRead'){if(e.args.length!=1)err('digitalRead(pin) takes one value',e.ln);const pa=fold(e.args[0]);if(pa.k!='num'||pa.v>7)err('the pin must be a fixed number 0-7 (or a #define) – this computer has pins 0..7',e.ln);
-    g({k:'bin',op:'!=',ln:e.ln,a:{k:'bin',op:'&',ln:e.ln,a:{k:'call',name:'__in',args:[{k:'num',v:0}],ln:e.ln},b:{k:'num',v:1<<pa.v}},b:{k:'num',v:0}});return}
-   else if(n=='analogRead'){if(e.args.length!=1)err('analogRead(pin) takes one value',e.ln);const pa=fold(e.args[0]);if(pa.k!='num'||pa.v!=1)err('analogRead works on pin 1 only (the potentiometer) on this computer',e.ln);emit('IN 3');return}
-   else if(n=='analogWrite'){if(e.args.length!=2)err('analogWrite(pin, value) takes two values',e.ln);const pa=fold(e.args[0]);if(pa.k!='num'||pa.v!=5)err('analogWrite works on pin 5 only (the servo) on this computer: value 0-255 = angle 0-180 degrees',e.ln);g(e.args[1]);emit('OUT 2');return}
+   else if(n=='digitalRead'){if(e.args.length!=1)err('digitalRead(pin) takes one value',e.ln);const pa=fold(e.args[0]);if(pa.k!='num'||pa.v>(P20?19:7))err(P20?'the pin must be a fixed number 0-19 (or a #define) – the MCU-20 has pins 0..19':'the pin must be a fixed number 0-7 (or a #define) – this computer has pins 0..7',e.ln);
+    g({k:'bin',op:'!=',ln:e.ln,a:{k:'bin',op:'&',ln:e.ln,a:{k:'call',name:'__in',args:[{k:'num',v:P20?pa.v>>3:0}],ln:e.ln},b:{k:'num',v:1<<(P20?pa.v&7:pa.v)}},b:{k:'num',v:0}});return}
+   else if(n=='analogRead'){if(P20)err('the MCU-20 has digital pins only – use digitalRead(pin)',e.ln);if(e.args.length!=1)err('analogRead(pin) takes one value',e.ln);const pa=fold(e.args[0]);if(pa.k!='num'||pa.v!=1)err('analogRead works on pin 1 only (the potentiometer) on this computer',e.ln);emit('IN 3');return}
+   else if(n=='analogWrite'){if(P20)err('the MCU-20 has digital pins only – use digitalWrite(pin, value)',e.ln);if(e.args.length!=2)err('analogWrite(pin, value) takes two values',e.ln);const pa=fold(e.args[0]);if(pa.k!='num'||pa.v!=5)err('analogWrite works on pin 5 only (the servo) on this computer: value 0-255 = angle 0-180 degrees',e.ln);g(e.args[1]);emit('OUT 2');return}
    else if(n=='delay'){if(e.args.length!=1)err('delay(n) takes one value (n loops of about 6 clock cycles, 0-255)',e.ln);const t=allocT(),Ls=nl(),Le=nl();g(e.args[0]);emit('STA '+t);place(Ls);emit('LDA '+t);emit('TST');emit('JZ '+Le);emit('SUBI 1');emit('STA '+t);emit('JMP '+Ls);place(Le);free(t);return}
    else err(`unknown function '${n}'. Built-in: input(), output(x), halt(), pinMode(pin,mode), digitalWrite(pin,value), digitalRead(pin), analogRead(1), analogWrite(5,value), delay(n).`+(funcs[n]?' User functions are not supported – put the code in main() or use #define.':''),e.ln);return}
   case'bin':return genBin(e)}}
@@ -2427,6 +2429,45 @@ W('alu.OW','enp.A end.A ena.A');W('enp.Y','port.EN');W('end.Y','ddr.EN');W('ena.
 for(let b=0;b<8;b++){const ext=b==1?'pot.OUT':b==5?'lo.Q':'p'+b+'.Q';W(ext,'pm'+b+'.I0');W('port.Q'+b,'pm'+b+'.I1 rsel.I1.'+b);W('ddr.Q'+b,'pm'+b+'.S0 rsel.I2.'+b+' dl'+b+'.D');W('pm'+b+'.Y','rsel.I0.'+b+' lv'+b+'.D dd.D'+b);W('adc.D'+b,'rsel.I3.'+b)}
 W('pm2.Y','ledd.D');W('pot.OUT','adc.AIN');W('dacr.Q0..7','dac.D0..7');W('dac.OUT','sv.SIG');
 W('rsel.Y0..7','alu.P0..7');
+P('ccload cc');return S.join('\n')}});
+
+
+/* ---- MCU-20: a complete microcontroller built from components, 20 individually controlled pins ---- */
+const MCU20C=(()=>{const pr=[[0,3],[1,4],[2,5],[8,11],[9,12],[10,13],[16,19],[17,18]];return['// MCU-20: pins IO0..IO19. pinMode() sets the direction of ONE pin, digitalWrite() drives it, digitalRead() reads it.','// 8 pins are made outputs here (LED). Each one copies a switch pin. All other pins stay INPUT - change the code to use them.','void setup() {',...pr.map(q=>'  pinMode('+q[0]+', OUTPUT);'),'}','void loop() {',...pr.map(q=>'  digitalWrite('+q[0]+', digitalRead('+q[1]+'));'),'}'].join('¶')})();
+PRE.push({n:'Microcontroller MCU-20 – 20 individual pins (built from components)',d:'A complete microcontroller made of real parts: C compiler, program ROM, program counter, ALU, accumulator, RAM, three PORT registers + three DIRECTION registers, a pin multiplexer for each of 20 pins and an input-select mux. Every pin IO0-IO19 has its own switch, direction lamp and level LED. In C: pinMode, digitalWrite, digitalRead on any pin 0-19. Double-click the compiler to edit the code, then toggle RST.',s:()=>{const S=[],P=x=>S.push(x),W=(a,b)=>S.push('wire '+a+' -> '+b),N=(id,x,y,t)=>P('part '+id+' NOTE name=\"'+t+'\" at '+x+' '+y);
+['clk CLK at 0 70','rst SW name=RST at 0 140','cc M:ccomp a=8 w=13 lab=\"C Compiler\" at 100 70','am M:mux k=1 w=8 lab=\"ROM addr\" at 360 70','ndn NOT at 370 400','ldr OR2 at 370 470','rom M:rom a=8 w=13 lab=\"Program ROM 256x13\" at 500 70','pc M:cnt n=8 m=up ld=1 lab=\"Program counter\" at 500 520',
+'alu M:alux n=8 lab=\"Advanced ALU\" at 800 70','wg AND2 at 1010 330','nh NOT at 1010 640','hlt \"Red LED\" at 1020 710','acc M:reg n=8 lab=Accumulator at 1130 70','ram M:ram a=4 w=8 lab=\"RAM 16x8\" at 1130 300','zr M:reg n=1 lab=\"Z flag\" at 1130 610','cr M:reg n=1 lab=\"Carry flag\" at 1270 610','zl \"Green LED\" at 1155 720','cl \"Yellow LED\" at 1295 720',
+'dcd M:dcd k=4 lab=\"Register decoder (OUT)\" at 1450 70',
+'porta M:regen n=8 lab=\"PORT A  IO0-IO7\" at 1700 70','portb M:regen n=8 lab=\"PORT B  IO8-IO15\" at 1700 300','portc M:regen n=4 lab=\"PORT C  IO16-IO19\" at 1700 530',
+'ddra M:regen n=8 lab=\"DIRECTION A\" at 1950 70','ddrb M:regen n=8 lab=\"DIRECTION B\" at 1950 300','ddrc M:regen n=4 lab=\"DIRECTION C\" at 1950 530',
+'rsel M:mux k=3 w=8 lab=\"IN select (0-7)\" at 2250 70','rsel2 M:mux k=1 w=8 lab=\"IN select (8)\" at 2500 70'].forEach(x=>P('part '+x));
+for(let i=0;i<20;i++){const y=70+i*70;
+ P('part p'+i+' SW name=IO'+i+' at 2780 '+(y+8));
+ P('part pm'+i+' M:mux k=1 w=1 lab=\"IO'+i+' pin\" at 2930 '+y);
+ P('part dl'+i+' LED color=#ffd23f at 3140 '+(y+4));
+ P('part lv'+i+' LED name=IO'+i+' color='+(i<10?'#ff3b3b':'#38d96a')+' at 3200 '+(y+4))}
+N('n1',100,30,'1) C COMPILER (double-click)');N('n2',500,30,'2) PROGRAM ROM');N('n3',500,480,'3) PROGRAM COUNTER');N('n4',800,30,'4) ADVANCED ALU');N('n5',1130,30,'ACCUMULATOR');
+N('n6',1450,30,'5) OUT DECODE: operand 3-8 picks a register');N('n7',1700,30,'6) PORT registers (level to drive)');N('n8',1950,30,'7) DIRECTION registers (1 = output)');N('n9',2250,30,'8) IN SELECT: 0-2 pins, 3-5 PORT, 6-8 DIR');
+N('n10',2780,30,'9) SWITCHES');N('n11',2930,30,'10) PIN MUX');N('n12',3140,30,'11) DIR / LEVEL');
+N('n13',0,-40,'RST on then off: compiler re-writes ROM, all pins become INPUT');
+P('ccode cc \"'+MCU20C+'\"');
+W('clk.Q','pc.CK acc.CK zr.CK cr.CK ram.CK porta.CK portb.CK portc.CK ddra.CK ddrb.CK ddrc.CK');
+W('ldr.Y','pc.RST acc.RST zr.RST cr.RST porta.RST portb.RST portc.RST ddra.RST ddrb.RST ddrc.RST');
+W('cc.D0..12','rom.DI0..12');W('cc.WE','rom.WE');W('clk.Q','cc.CK rom.CK');W('rst.Q','cc.RST ldr.A');W('cc.DONE','am.S0 ndn.A wg.B');W('ndn.Y','ldr.B');W('rom.D0..12','alu.I0..12');W('rom.D0..3','ram.A0..3');W('rom.D0..7','pc.D0..7');
+W('acc.Q0..7','alu.A0..7 ram.D0..7 porta.D0..7 portb.D0..7 ddra.D0..7 ddrb.D0..7');W('acc.Q0..3','portc.D0..3 ddrc.D0..3');W('ram.Q0..7','alu.M0..7');W('alu.F0..7','acc.D0..7');
+for(let b=0;b<8;b++){W('cc.A'+b,'am.I0.'+b);W('pc.Q'+b,'am.I1.'+b)}
+W('am.Y0..7','rom.A0..7');
+W('alu.MW','wg.A');W('wg.Y','ram.WE');W('alu.ZN','zr.D0');W('alu.CN','cr.D0');W('zr.Q0','alu.ZF zl.D');W('cr.Q0','alu.CF cl.D');
+W('alu.JMP','pc.LD');W('alu.HLT','nh.A hlt.D');W('nh.Y','pc.EN');
+W('rom.D0..3','dcd.A0..3');W('alu.OW','dcd.EN');W('dcd.Y3','porta.EN');W('dcd.Y4','portb.EN');W('dcd.Y5','portc.EN');W('dcd.Y6','ddra.EN');W('dcd.Y7','ddrb.EN');W('dcd.Y8','ddrc.EN');
+W('rom.D0..2','rsel.S0..2');W('rom.D3','rsel2.S0');
+for(let b=0;b<8;b++){W('rsel.Y'+b,'rsel2.I0.'+b);W('rsel2.Y'+b,'alu.P'+b)}
+const PRT=['porta','portb','portc'],DDR=['ddra','ddrb','ddrc'];
+for(let i=0;i<20;i++){const g=i>>3,b=i&7;
+ W('p'+i+'.Q','pm'+i+'.I0');
+ W(PRT[g]+'.Q'+b,'pm'+i+'.I1 rsel.I'+(3+g)+'.'+b);
+ W(DDR[g]+'.Q'+b,'pm'+i+'.S0 dl'+i+'.D '+(g<2?'rsel.I'+(6+g)+'.'+b:'rsel2.I1.'+b));
+ W('pm'+i+'.Y','rsel.I'+g+'.'+b+' lv'+i+'.D')}
 P('ccload cc');return S.join('\n')}});
 
 /* ---------- boot ---------- */
