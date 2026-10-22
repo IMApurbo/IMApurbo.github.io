@@ -186,7 +186,7 @@ const nets=new Map(),nr=new Map();
 for(const key of par.keys()){const r=f(key);if(!lr.has(r))continue;let n=nets.get(r);if(!n){n={drv:[],cf:0};nets.set(r,n)}nr.set(key,n);if(key&128){const m=s.map[key>>8];if(m)n.drv.push({m,o:key&127})}}
 s.nr=nr}
 function netv(n){let a=0,b=0,wa=0,wb=0;for(const d of n.drv){const m=d.m;if(m.z&&m.z[d.o])continue;const v=m.o[d.o];if(m.wk){v?wa++:wb++}else v?a++:b++}
-n.cf=(a&&b)||(!a&&!b&&wa&&wb)?1:0;return a&&!b?1:b?0:(wa&&!wb?1:0)}
+n.cf=(a&&b)||(!a&&!b&&wa&&wb)?1:0;return a?1:b?0:(wa&&!wb?1:0)}
 function netDrivers(s,c,i){if(s.nr){const n=s.nr.get(pk(c.id,0,i));if(n)return n.drv.filter(d=>!(d.m.z&&d.m.z[d.o]))}const r=c.src[i],m=r&&s.map[r.id];return m&&!(m.z&&m.z[r.o])?[{m,o:r.o}]:[]}
 function avOf(d,vr){const m=d.m,K=m.t=='M'&&KS[m.k];if(K&&K.an){const a=K.an(m,d.o,vr);if(a!=null)return a}return m.ao&&m.ao[d.o]!=null?m.ao[d.o]:m.o[d.o]}
 function lvl(s,c,i){let x=0;for(const d of netDrivers(s,c,i)){const a=avOf(d,5);if(a>x)x=a}return Math.min(1,x)}
